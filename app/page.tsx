@@ -3,7 +3,7 @@
 home page
 
 */
-import Timer from '@/components/pomdoro/timer';
+import Timer from '@/components/pomodoro/timer';
 import TaskList from '@/components/tasks/tasklist';
 
 export default function Home() {
