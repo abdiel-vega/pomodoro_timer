@@ -1,8 +1,9 @@
 /*
 
-pomodoro timer react context
+pomodoro timer react context with local storage fallback
 
 - manages timer state across the application
+- uses local storage when supabase authentication is not available
 
 */
 'use client';

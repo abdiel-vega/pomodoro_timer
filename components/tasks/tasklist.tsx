@@ -7,7 +7,7 @@ task list component
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getTasks, completeTask, deleteTask } from '@/lib/supabase';
+import { getTags, createTag, DEFAULT_TAGS, getTasks, completeTask, deleteTask } from '@/lib/supabase';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Task, Tag } from '@/types/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { PlusIcon, ClockIcon, TrashIcon, EditIcon, PlayIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 
 export default function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -24,7 +25,34 @@ export default function TaskList() {
   const router = useRouter();
   const { setCurrentTask } = usePomodoroTimer();
 
-  // Load tasks from database
+  // Initialize application with default tags if none exist
+  useEffect(() => {
+    const initializeDefaultTags = async () => {
+      try {
+        const existingTags = await getTags();
+        
+        // If no tags exist, create default tags
+        if (existingTags.length === 0) {
+          for (const tag of DEFAULT_TAGS) {
+            try {
+              await createTag(tag);
+            } catch (error) {
+              console.warn(`Failed to create default tag "${tag.name}":`, error);
+            }
+          }
+          
+          // Show success message
+          toast.success('Default tags have been created');
+        }
+      } catch (error) {
+        console.error('Error initializing tags:', error);
+      }
+    };
+    
+    initializeDefaultTags();
+  }, []);
+
+  // Load tasks from database or local storage
   useEffect(() => {
     const loadTasks = async () => {
       try {
@@ -33,6 +61,7 @@ export default function TaskList() {
         setTasks(taskData);
       } catch (error) {
         console.error('Failed to load tasks:', error);
+        toast.error('Failed to load tasks');
       } finally {
         setLoading(false);
       }
@@ -60,8 +89,10 @@ export default function TaskList() {
           task.id === taskId ? updatedTask : task
         )
       );
+      toast.success('Task completed');
     } catch (error) {
       console.error('Failed to complete task:', error);
+      toast.error('Failed to complete task');
     }
   };
 
@@ -72,14 +103,17 @@ export default function TaskList() {
       setTasks(prevTasks => 
         prevTasks.filter(task => task.id !== taskId)
       );
+      toast.success('Task deleted');
     } catch (error) {
       console.error('Failed to delete task:', error);
+      toast.error('Failed to delete task');
     }
   };
 
   // Handle selecting a task for the timer
   const handleSelectTask = (task: Task) => {
     setCurrentTask(task);
+    toast.success(`Now focusing on: ${task.title}`);
   };
 
   // Type guard to check if a tag is a Tag object

@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ClockIcon, CheckSquareIcon, SettingsIcon, LogOutIcon } from 'lucide-react';
+import { ClockIcon, SettingsIcon, LogOutIcon } from 'lucide-react';
 import './globals.css';
 
 const fontSans = FontSans({
@@ -57,11 +57,6 @@ export default function RootLayout({
                     <Button variant="ghost" asChild>
                       <Link href="/" className="flex items-center">
                         <ClockIcon className="mr-2 h-4 w-4" /> Timer
-                      </Link>
-                    </Button>
-                    <Button variant="ghost" asChild>
-                      <Link href="/tasks" className="flex items-center">
-                        <CheckSquareIcon className="mr-2 h-4 w-4" /> Tasks
                       </Link>
                     </Button>
                     <Button variant="ghost" asChild>
