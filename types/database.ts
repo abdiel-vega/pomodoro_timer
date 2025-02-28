@@ -22,7 +22,8 @@ export interface User {
     notifications: boolean;
   }
   
-  export interface Task {
+  // Modify the Task interface in your types/database.ts
+export interface Task {
     id: string;
     user_id: string;
     title: string;
@@ -33,7 +34,8 @@ export interface User {
     created_at: string;
     updated_at: string;
     completed_at: string | null;
-    tags?: Tag[]; // Optional array of associated tags
+    // Either make it a union type or a separate property
+    tags?: Tag[] | string[]; // This indicates it can be either format
   }
   
   export interface Session {
