@@ -1,4 +1,8 @@
-// components/tasks/TaskForm.tsx
+/*
+
+task form component
+
+*/
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -11,14 +15,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -36,6 +32,11 @@ export default function TaskForm({ taskId }: TaskFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Type guard to check if a tag is a Tag object
+  const isTagObject = (tag: any): tag is Tag => {
+    return typeof tag === 'object' && tag !== null && 'id' in tag && 'name' in tag && 'color' in tag;
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
@@ -50,8 +51,15 @@ export default function TaskForm({ taskId }: TaskFormProps) {
           setTitle(task.title);
           setDescription(task.description || '');
           setEstimatedPomodoros(task.estimated_pomodoros);
-          if (task.tags) {
-            setSelectedTags(task.tags.map(tag => tag.id));
+          
+          // Check if task.tags exists and is an array
+          if (task.tags && Array.isArray(task.tags)) {
+            const tagIds: string[] = task.tags.map(tag => 
+              // If tag is an object with id property, use that id
+              // If tag is already a string (id), use it directly
+              isTagObject(tag) ? tag.id : tag
+            );
+            setSelectedTags(tagIds);
           }
         }
       } catch (error) {

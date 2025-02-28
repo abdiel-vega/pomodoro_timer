@@ -1,75 +1,95 @@
-import DeployButton from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import HeaderAuth from "@/components/header-auth";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { hasEnvVars } from "@/utils/supabase/check-env-vars";
-import { Geist } from "next/font/google";
-import { ThemeProvider } from "next-themes";
-import Link from "next/link";
-import "./globals.css";
+/*
 
-const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+root layout
 
-export const metadata = {
-  metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
-};
+- this layout will display across the whole application
 
-const geistSans = Geist({
-  display: "swap",
-  subsets: ["latin"],
+*/
+import { PomodoroProvider } from '@/contexts/pomodoro_context';
+import { Toaster } from '@/components/ui/sonner';
+import { Inter as FontSans } from 'next/font/google';
+import { ThemeProvider } from '@/components/theme-provider';
+import { cn } from '@/lib/utils';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ClockIcon, CheckSquareIcon, SettingsIcon, LogOutIcon } from 'lucide-react';
+import './globals.css';
+
+const fontSans = FontSans({
+  subsets: ['latin'],
+  variable: '--font-sans',
 });
+
+export const metadata: Metadata = {
+  title: 'Pomodoro Timer',
+  description: 'A Next.js application for managing tasks with the Pomodoro technique',
+};
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" className={geistSans.className} suppressHydrationWarning>
-      <body className="bg-background text-foreground">
+    <html lang="en" suppressHydrationWarning>
+      <body className={cn(
+        'min-h-screen bg-background font-sans antialiased',
+        fontSans.variable
+      )}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <main className="min-h-screen flex flex-col items-center">
-            <div className="flex-1 w-full flex flex-col gap-20 items-center">
-              <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-                <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-                  <div className="flex gap-5 items-center font-semibold">
-                    <Link href={"/"}>Next.js Supabase Starter</Link>
-                    <div className="flex items-center gap-2">
-                      <DeployButton />
-                    </div>
+          <PomodoroProvider>
+            <div className="flex min-h-screen flex-col">
+              <header className="sticky top-0 z-10 w-full border-b bg-background">
+                <div className="container flex h-16 items-center justify-between py-4">
+                  <div className="flex items-center gap-2">
+                    <Link href="/" className="font-bold text-xl flex items-center">
+                      <ClockIcon className="mr-2 h-6 w-6" />
+                      <span>Pomodoro</span>
+                    </Link>
                   </div>
-                  {!hasEnvVars ? <EnvVarWarning /> : <HeaderAuth />}
+                  <nav className="flex items-center gap-4">
+                    <Button variant="ghost" asChild>
+                      <Link href="/" className="flex items-center">
+                        <ClockIcon className="mr-2 h-4 w-4" /> Timer
+                      </Link>
+                    </Button>
+                    <Button variant="ghost" asChild>
+                      <Link href="/tasks" className="flex items-center">
+                        <CheckSquareIcon className="mr-2 h-4 w-4" /> Tasks
+                      </Link>
+                    </Button>
+                    <Button variant="ghost" asChild>
+                      <Link href="/settings" className="flex items-center">
+                        <SettingsIcon className="mr-2 h-4 w-4" /> Settings
+                      </Link>
+                    </Button>
+                    <form action="/auth/signout" method="post">
+                      <Button type="submit" variant="outline" size="sm" className="ml-2">
+                        <LogOutIcon className="mr-2 h-4 w-4" /> Sign Out
+                      </Button>
+                    </form>
+                  </nav>
                 </div>
-              </nav>
-              <div className="flex flex-col gap-20 max-w-5xl p-5">
+              </header>
+              <main className="flex-1 container py-8">
                 {children}
-              </div>
-
-              <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-                <p>
-                  Powered by{" "}
-                  <a
-                    href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-                    target="_blank"
-                    className="font-bold hover:underline"
-                    rel="noreferrer"
-                  >
-                    Supabase
-                  </a>
-                </p>
-                <ThemeSwitcher />
+              </main>
+              <footer className="border-t py-6">
+                <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
+                  <p className="text-sm text-muted-foreground text-center md:text-left">
+                    &copy; {new Date().getFullYear()} Pomodoro Timer. All rights reserved.
+                  </p>
+                </div>
               </footer>
             </div>
-          </main>
+            <Toaster />
+          </PomodoroProvider>
         </ThemeProvider>
       </body>
     </html>

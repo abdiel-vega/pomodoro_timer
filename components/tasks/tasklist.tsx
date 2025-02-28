@@ -1,11 +1,15 @@
-// components/tasks/TaskList.tsx
+/*
+
+task list component
+
+*/
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getTasks, completeTask, deleteTask } from '@/lib/supabase';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
-import { Task } from '@/types/database';
+import { Task, Tag } from '@/types/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -78,6 +82,11 @@ export default function TaskList() {
     setCurrentTask(task);
   };
 
+  // Type guard to check if a tag is a Tag object
+  const isTagObject = (tag: any): tag is Tag => {
+    return typeof tag === 'object' && tag !== null && 'id' in tag && 'name' in tag && 'color' in tag;
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -139,11 +148,18 @@ export default function TaskList() {
                           </div>
                           {task.tags && task.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
-                              {task.tags.map(tag => (
-                                <Badge key={tag.id} style={{ backgroundColor: tag.color }}>
-                                  {tag.name}
-                                </Badge>
-                              ))}
+                              {Array.isArray(task.tags) && task.tags.map((tag, index) => {
+                                // Check if tag is a Tag object or a string
+                                if (isTagObject(tag)) {
+                                  return (
+                                    <Badge key={tag.id} style={{ backgroundColor: tag.color }}>
+                                      {tag.name}
+                                    </Badge>
+                                  );
+                                }
+                                // If it's a string (ID), we can't display it properly
+                                return null;
+                              })}
                             </div>
                           )}
                         </div>

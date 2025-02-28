@@ -22,8 +22,15 @@ export interface User {
     notifications: boolean;
   }
   
-  // Modify the Task interface in your types/database.ts
-export interface Task {
+  export interface Tag {
+    id: string;
+    user_id: string;
+    name: string;
+    color: string;
+  }
+  
+  // Improved Task interface to better handle different tag formats
+  export interface Task {
     id: string;
     user_id: string;
     title: string;
@@ -34,8 +41,7 @@ export interface Task {
     created_at: string;
     updated_at: string;
     completed_at: string | null;
-    // Either make it a union type or a separate property
-    tags?: Tag[] | string[]; // This indicates it can be either format
+    tags?: (Tag | string)[]; // Can be Tag objects or string IDs
   }
   
   export interface Session {
@@ -47,13 +53,6 @@ export interface Task {
     started_at: string;
     ended_at: string | null;
     is_completed: boolean;
-  }
-  
-  export interface Tag {
-    id: string;
-    user_id: string;
-    name: string;
-    color: string;
   }
   
   export interface TaskTag {
