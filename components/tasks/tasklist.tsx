@@ -1,12 +1,13 @@
 /*
 
-task list component
+taskList component
 
-*/
+- uses dialog instead of page navigation for creating/editing tasks
+
+ */
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { getTags, createTag, DEFAULT_TAGS, getTasks, completeTask, deleteTask } from '@/lib/supabase';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Task, Tag } from '@/types/database';
@@ -17,12 +18,14 @@ import { Badge } from '@/components/ui/badge';
 import { PlusIcon, ClockIcon, TrashIcon, EditIcon, PlayIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import TaskDialog from '@/components/tasks/taskdialog';
 
 export default function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
-  const router = useRouter();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | undefined>(undefined);
   const { setCurrentTask } = usePomodoroTimer();
 
   // Initialize application with default tags if none exist
@@ -53,20 +56,20 @@ export default function TaskList() {
   }, []);
 
   // Load tasks from database or local storage
-  useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        setLoading(true);
-        const taskData = await getTasks();
-        setTasks(taskData);
-      } catch (error) {
-        console.error('Failed to load tasks:', error);
-        toast.error('Failed to load tasks');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      const taskData = await getTasks();
+      setTasks(taskData);
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+      toast.error('Failed to load tasks');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadTasks();
   }, []);
 
@@ -116,122 +119,155 @@ export default function TaskList() {
     toast.success(`Now focusing on: ${task.title}`);
   };
 
+  // Open dialog for creating a new task
+  const handleNewTask = () => {
+    setEditingTaskId(undefined);
+    setDialogOpen(true);
+  };
+
+  // Open dialog for editing an existing task
+  const handleEditTask = (taskId: string) => {
+    setEditingTaskId(taskId);
+    setDialogOpen(true);
+  };
+
+  // Handle dialog close
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setEditingTaskId(undefined);
+  };
+
+  // Handle successful task creation or update
+  const handleTaskSuccess = () => {
+    loadTasks();
+  };
+
   // Type guard to check if a tag is a Tag object
   const isTagObject = (tag: any): tag is Tag => {
     return typeof tag === 'object' && tag !== null && 'id' in tag && 'name' in tag && 'color' in tag;
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Tasks</CardTitle>
-        <Button onClick={() => router.push('/tasks/new')} size="sm">
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Add Task
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="pending" onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value={activeTab}>
-            {loading ? (
-              <div className="flex justify-center p-4">
-                <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
-              </div>
-            ) : filteredTasks.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {activeTab === 'pending' 
-                  ? "No pending tasks. Create a new one to get started!"
-                  : activeTab === 'completed'
-                    ? "No completed tasks yet."
-                    : "No tasks found."}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filteredTasks.map(task => (
-                  <div 
-                    key={task.id}
-                    className="border rounded-lg p-4 flex items-start justify-between gap-3 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start gap-3 flex-1">
-                      <Checkbox 
-                        checked={task.is_completed}
-                        onCheckedChange={() => handleTaskComplete(task.id)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                          {task.title}
-                        </h3>
-                        {task.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {task.description}
-                          </p>
-                        )}
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <ClockIcon className="h-3 w-3 mr-1" />
-                            <span>
-                              {task.completed_pomodoros}/{task.estimated_pomodoros} pomodoros
-                            </span>
-                          </div>
-                          {task.tags && task.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {Array.isArray(task.tags) && task.tags.map((tag, index) => {
-                                // Check if tag is a Tag object or a string
-                                if (isTagObject(tag)) {
-                                  return (
-                                    <Badge key={tag.id} style={{ backgroundColor: tag.color }}>
-                                      {tag.name}
-                                    </Badge>
-                                  );
-                                }
-                                // If it's a string (ID), we can't display it properly
-                                return null;
-                              })}
-                            </div>
+    <>
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Tasks</CardTitle>
+          <Button onClick={handleNewTask} size="sm">
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Add Task
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="pending" onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="completed">Completed</TabsTrigger>
+              <TabsTrigger value="all">All</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value={activeTab}>
+              {loading ? (
+                <div className="flex justify-center p-4">
+                  <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
+                </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {activeTab === 'pending' 
+                    ? "No pending tasks. Create a new one to get started!"
+                    : activeTab === 'completed'
+                      ? "No completed tasks yet."
+                      : "No tasks found."}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredTasks.map(task => (
+                    <div 
+                      key={task.id}
+                      className="border rounded-lg p-4 flex items-start justify-between gap-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-start gap-3 flex-1">
+                        <Checkbox 
+                          checked={task.is_completed}
+                          onCheckedChange={() => handleTaskComplete(task.id)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                            {task.title}
+                          </h3>
+                          {task.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {task.description}
+                            </p>
                           )}
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <div className="flex items-center text-xs text-muted-foreground">
+                              <ClockIcon className="h-3 w-3 mr-1" />
+                              <span>
+                                {task.completed_pomodoros}/{task.estimated_pomodoros} pomodoros
+                              </span>
+                            </div>
+                            {task.tags && task.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {Array.isArray(task.tags) && task.tags.map((tag, index) => {
+                                  // Check if tag is a Tag object or a string
+                                  if (isTagObject(tag)) {
+                                    return (
+                                      <Badge key={tag.id} style={{ backgroundColor: tag.color }}>
+                                        {tag.name}
+                                      </Badge>
+                                    );
+                                  }
+                                  // If it's a string (ID), we can't display it properly
+                                  return null;
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex gap-1">
-                      {!task.is_completed && (
+                      <div className="flex gap-1">
+                        {!task.is_completed && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleSelectTask(task)}
+                            title="Focus on this task"
+                          >
+                            <PlayIcon className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => handleSelectTask(task)}
-                          title="Focus on this task"
+                          onClick={() => handleEditTask(task.id)}
                         >
-                          <PlayIcon className="h-4 w-4" />
+                          <EditIcon className="h-4 w-4" />
                         </Button>
-                      )}
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => router.push(`/tasks/edit/${task.id}`)}
-                      >
-                        <EditIcon className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleTaskDelete(task.id)}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleTaskDelete(task.id)}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Task Dialog */}
+      <TaskDialog 
+        isOpen={dialogOpen}
+        onClose={handleDialogClose}
+        onSuccess={handleTaskSuccess}
+        taskId={editingTaskId}
+      />
+    </>
   );
 }
