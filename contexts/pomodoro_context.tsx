@@ -10,7 +10,7 @@ pomodoro timer react context with local storage fallback
 
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Task, UserSettings, Session } from '@/types/database';
-import { createSession, completeSession, getUserSettings } from '@/lib/supabase';
+import { createSession, completeSession, getUserSettings, updateUserSettings } from '@/lib/supabase';
 
 // Default settings in case we can't load from database
 const DEFAULT_SETTINGS: UserSettings = {
@@ -56,7 +56,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [timerType, setTimerType] = useState<TimerType>('work');
-  const [timeRemaining, setTimeRemaining] = useState<number>(settings.workDuration * 60);
+  const [timeRemaining, setTimeRemaining] = useState<number>(DEFAULT_SETTINGS.workDuration * 60);
   const [completedPomodoros, setCompletedPomodoros] = useState<number>(0);
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   
@@ -64,7 +64,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const currentSessionId = useRef<string | null>(null);
   
-  // Load user settings from database
+  // Load user settings from database or localStorage
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -145,7 +145,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       setCompletedPomodoros(prev => prev + 1);
       
       // Determine next break type
-      const isLongBreak = completedPomodoros % settings.longBreakInterval === 0;
+      const nextPomodoro = completedPomodoros + 1;
+      const isLongBreak = nextPomodoro % settings.longBreakInterval === 0;
       const nextType = isLongBreak ? 'long_break' : 'short_break';
       setTimerType(nextType);
       setTimeRemaining(isLongBreak 
@@ -253,7 +254,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     setTimerState('idle');
   };
   
-  // Update settings
+  // Update settings - FIX: Properly call updateUserSettings function
   const updateSettings = async (newSettings: Partial<UserSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettings(updatedSettings);
@@ -269,9 +270,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
     }
     
-    // Save to database
+    // Save to database or localStorage
     try {
-      await updateSettings(newSettings);
+      await updateUserSettings(updatedSettings);
     } catch (error) {
       console.error('Failed to update settings:', error);
     }

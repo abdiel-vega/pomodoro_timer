@@ -5,6 +5,9 @@ root layout
 - this layout will display across the whole application
 
 */
+'use client';
+
+import { useEffect, useState } from 'react';
 import { PomodoroProvider } from '@/contexts/pomodoro_context';
 import { Toaster } from '@/components/ui/sonner';
 import { Inter as FontSans } from 'next/font/google';
@@ -13,7 +16,8 @@ import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ClockIcon, SettingsIcon, LogOutIcon } from 'lucide-react';
+import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 import './globals.css';
 
 const fontSans = FontSans({
@@ -21,16 +25,35 @@ const fontSans = FontSans({
   variable: '--font-sans',
 });
 
-export const metadata: Metadata = {
-  title: 'Pomodoro Timer',
-  description: 'A Next.js application for managing tasks with the Pomodoro technique',
-};
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const supabase = createClient();
+
+  // Check if user is authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+    };
+    
+    checkAuth();
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setIsAuthenticated(!!session);
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(
@@ -64,11 +87,25 @@ export default function RootLayout({
                         <SettingsIcon className="mr-2 h-4 w-4" /> Settings
                       </Link>
                     </Button>
-                    <form action="/auth/signout" method="post">
-                      <Button type="submit" variant="outline" size="sm" className="ml-2">
-                        <LogOutIcon className="mr-2 h-4 w-4" /> Sign Out
+                    
+                    {isAuthenticated === null ? (
+                      // Loading state
+                      <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
+                    ) : isAuthenticated ? (
+                      // User is authenticated
+                      <form action="/auth/signout" method="post">
+                        <Button type="submit" variant="outline" size="sm" className="ml-2">
+                          <LogOutIcon className="mr-2 h-4 w-4" /> Sign Out
+                        </Button>
+                      </form>
+                    ) : (
+                      // User is not authenticated
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/sign-in" className="flex items-center">
+                          <LogInIcon className="mr-2 h-4 w-4" /> Sign In
+                        </Link>
                       </Button>
-                    </form>
+                    )}
                   </nav>
                 </div>
               </header>

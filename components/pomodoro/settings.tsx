@@ -89,7 +89,7 @@ export default function Settings() {
             max={60}
             step={1}
             value={[settings.workDuration]}
-            onValueCommit={handleWorkDurationChange}
+            onValueChange={handleWorkDurationChange}
             className="mt-2"
           />
         </div>
@@ -106,7 +106,7 @@ export default function Settings() {
             max={15}
             step={1}
             value={[settings.shortBreakDuration]}
-            onValueCommit={handleShortBreakDurationChange}
+            onValueChange={handleShortBreakDurationChange}
             className="mt-2"
           />
         </div>
@@ -123,7 +123,7 @@ export default function Settings() {
             max={30}
             step={1}
             value={[settings.longBreakDuration]}
-            onValueCommit={handleLongBreakDurationChange}
+            onValueChange={handleLongBreakDurationChange}
             className="mt-2"
           />
         </div>
@@ -140,7 +140,7 @@ export default function Settings() {
             max={8}
             step={1}
             value={[settings.longBreakInterval]}
-            onValueCommit={handleLongBreakIntervalChange}
+            onValueChange={handleLongBreakIntervalChange}
             className="mt-2"
           />
         </div>
