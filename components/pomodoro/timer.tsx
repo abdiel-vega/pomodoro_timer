@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { PlayIcon, PauseIcon, RotateCcwIcon, SkipForwardIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function Timer() {
   const {
@@ -102,13 +103,19 @@ export default function Timer() {
                 Total Pomodoros: {completedPomodoros}
               </p>
               {currentTask && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Working on: {currentTask.title}
-                </p>
+                <div className="mt-2">
+                   <Badge 
+                    variant="outline" 
+                    className="text-xs py-1 px-2 border-primary/50 text-primary"
+                  >
+                    Working on: {currentTask.title}
+                  </Badge>
+                </div>
               )}
             </div>
           </div>
           
+          {/* Rest of the component remains the same */}
           {/* Timer Display */}
           <div className="w-48 h-48 rounded-full border-8 border-muted flex items-center justify-center relative">
             <span className="text-4xl font-bold">{formatTime(timeRemaining)}</span>
