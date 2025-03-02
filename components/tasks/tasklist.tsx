@@ -26,7 +26,9 @@ export default function TaskList() {
   const [activeTab, setActiveTab] = useState('pending');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | undefined>(undefined);
-  const { setCurrentTask } = usePomodoroTimer();
+  
+  // Get context including the refreshTasks function and tasksVersion
+  const { setCurrentTask, refreshTasks, tasksVersion } = usePomodoroTimer();
 
   // Initialize application with default tags if none exist
   useEffect(() => {
@@ -60,6 +62,7 @@ export default function TaskList() {
     try {
       setLoading(true);
       const taskData = await getTasks();
+      console.log('Loaded tasks:', taskData);
       setTasks(taskData);
     } catch (error) {
       console.error('Failed to load tasks:', error);
@@ -69,9 +72,10 @@ export default function TaskList() {
     }
   };
 
+  // Initial load and refresh when tasksVersion changes
   useEffect(() => {
     loadTasks();
-  }, []);
+  }, [tasksVersion]); // This will reload tasks whenever tasksVersion changes
 
   // Filter tasks based on active tab
   const filteredTasks = tasks.filter(task => {
@@ -93,6 +97,9 @@ export default function TaskList() {
         )
       );
       toast.success('Task completed');
+      
+      // Refresh tasks in the context to ensure all components are in sync
+      await refreshTasks();
     } catch (error) {
       console.error('Failed to complete task:', error);
       toast.error('Failed to complete task');
@@ -107,6 +114,9 @@ export default function TaskList() {
         prevTasks.filter(task => task.id !== taskId)
       );
       toast.success('Task deleted');
+      
+      // Refresh tasks in the context to ensure all components are in sync
+      await refreshTasks();
     } catch (error) {
       console.error('Failed to delete task:', error);
       toast.error('Failed to delete task');
@@ -138,8 +148,9 @@ export default function TaskList() {
   };
 
   // Handle successful task creation or update
-  const handleTaskSuccess = () => {
-    loadTasks();
+  const handleTaskSuccess = async () => {
+    // Use the refreshTasks function instead of calling loadTasks directly
+    await refreshTasks();
   };
 
   // Type guard to check if a tag is a Tag object
@@ -192,9 +203,31 @@ export default function TaskList() {
                           className="mt-1"
                         />
                         <div className="flex-1 min-w-0">
-                          <h3 className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                            {task.title}
-                          </h3>
+                          <div className="flex items-center gap-2">
+                            {/* Tag color indicators */}
+                            {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
+                              <div className="flex space-x-0.5 mr-1">
+                                {task.tags.map((tag, index) => {
+                                  if (isTagObject(tag)) {
+                                    return (
+                                      <div 
+                                        key={tag.id} 
+                                        className="w-3 h-3 rounded-full border border-background shadow-sm" 
+                                        style={{ backgroundColor: tag.color }}
+                                        title={tag.name}
+                                      />
+                                    );
+                                  }
+                                  return null;
+                                })}
+                              </div>
+                            )}
+
+                            <h3 className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                              {task.title}
+                            </h3>
+                          </div>
+                          
                           {task.description && (
                             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                               {task.description}

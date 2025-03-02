@@ -9,6 +9,7 @@ task dialog component
 
 import React, { useState, useEffect } from 'react';
 import { createTask, updateTask, getTaskById, getTags } from '@/lib/supabase';
+import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Task, Tag } from '@/types/database';
 import { 
   Dialog, 
@@ -40,6 +41,9 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Get refreshTasks from context
+  const { refreshTasks } = usePomodoroTimer();
 
   // Type guard to check if a tag is a Tag object
   const isTagObject = (tag: any): tag is Tag => {
@@ -117,8 +121,13 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
         toast.success('Task created successfully');
       }
 
-      // Close dialog and refresh tasks
+      // Use refreshTasks to update all UI components
+      await refreshTasks();
+
+      // Call onSuccess callback
       onSuccess();
+
+      // Close dialog
       onClose();
     } catch (error) {
       console.error('Error saving task:', error);

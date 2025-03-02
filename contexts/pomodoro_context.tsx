@@ -8,9 +8,17 @@ pomodoro timer react context with local storage fallback
 */
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { Task, UserSettings, Session } from '@/types/database';
-import { createSession, completeSession, getUserSettings, updateUserSettings } from '@/lib/supabase';
+import { 
+  createSession, 
+  completeSession, 
+  getUserSettings, 
+  updateUserSettings,
+  updateTask,
+  getTasks
+} from '@/lib/supabase';
+import { toast } from 'sonner';
 
 // Default settings in case we can't load from database
 const DEFAULT_SETTINGS: UserSettings = {
@@ -48,6 +56,10 @@ interface PomodoroContextType {
   skipTimer: () => void;
   setCurrentTask: (task: Task | null) => void;
   updateSettings: (newSettings: Partial<UserSettings>) => void;
+  
+  // Task update listener for UI synchronization
+  refreshTasks: () => Promise<void>;
+  tasksVersion: number; // A counter that increments whenever tasks are updated
 }
 
 const PomodoroContext = createContext<PomodoroContextType | undefined>(undefined);
@@ -61,10 +73,31 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const [completedPomodoros, setCompletedPomodoros] = useState<number>(0);
   const [currentCyclePosition, setCurrentCyclePosition] = useState<number>(0); // Start at position 0 (of 4)
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
+  const [tasksVersion, setTasksVersion] = useState<number>(0); // For triggering re-renders
   
   // References
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const currentSessionId = useRef<string | null>(null);
+  
+  // Function to refresh tasks - can be called by any component to get the latest task data
+  const refreshTasks = useCallback(async () => {
+    try {
+      const taskData = await getTasks();
+      
+      // If we have a current task, update it with the latest data
+      if (currentTask) {
+        const updatedCurrentTask = taskData.find(task => task.id === currentTask.id);
+        if (updatedCurrentTask) {
+          setCurrentTask(updatedCurrentTask);
+        }
+      }
+      
+      // Increment the version to trigger UI updates
+      setTasksVersion(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to refresh tasks:', error);
+    }
+  }, [currentTask]);
   
   // Load user settings from database or localStorage
   useEffect(() => {
@@ -120,6 +153,45 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     // Since we're now zero-based, we need a long break when position reaches (interval - 1)
     return currentCyclePosition >= settings.longBreakInterval - 1;
   };
+
+  // Update the estimated pomodoros for current task
+  const incrementTaskEstimatedPomodoros = async () => {
+    if (currentTask) {
+      try {
+        console.log('Incrementing estimated pomodoros for task:', currentTask.title);
+        
+        // Create a new task object with incremented estimated_pomodoros
+        const newEstimatedPomodoros = currentTask.estimated_pomodoros + 1;
+        
+        // Log the update we're about to perform
+        console.log(`Updating task ${currentTask.id}: estimated_pomodoros from ${currentTask.estimated_pomodoros} to ${newEstimatedPomodoros}`);
+        
+        // Update the task in the database
+        await updateTask(currentTask.id, {
+          estimated_pomodoros: newEstimatedPomodoros
+        });
+        
+        // Update the current task in local state
+        setCurrentTask({
+          ...currentTask,
+          estimated_pomodoros: newEstimatedPomodoros
+        });
+        
+        // Show a toast notification
+        toast.success(`Estimated pomodoros for "${currentTask.title}" increased to ${newEstimatedPomodoros}`);
+        
+        // Refresh all tasks to ensure UI consistency
+        await refreshTasks();
+        
+        console.log('Task updated successfully');
+      } catch (error) {
+        console.error('Failed to update task estimated pomodoros:', error);
+        toast.error('Failed to update task pomodoros');
+      }
+    } else {
+      console.log('No current task selected, skipping increment');
+    }
+  };
   
   // Handle timer complete
   const handleTimerComplete = async () => {
@@ -149,6 +221,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     
     // Update state based on timer type
     if (timerType === 'work') {
+      // Increment current task's estimated pomodoros if this is a work session
+      if (currentTask) {
+        await incrementTaskEstimatedPomodoros();
+      }
+
       // Increment completed pomodoros counter (total count)
       setCompletedPomodoros(prev => prev + 1);
       
@@ -156,10 +233,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       const newPosition = currentCyclePosition + 1;
       
       // Determine next break type based on cycle position
-      // Since we're now zero-based, we check if newPosition >= settings.longBreakInterval
       const isLongBreak = newPosition >= settings.longBreakInterval;
       
-      // Update cycle position - if we exceeded the interval, we'll reset after the long break
+      // Update cycle position
       setCurrentCyclePosition(newPosition);
       
       // Set the appropriate break type
@@ -263,14 +339,18 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     
     // Fixed skip logic:
     if (timerType === 'work') {
-      // When skipping a work session, count it as complete
+      // When skipping a work session, increment current task's estimated pomodoros
+      if (currentTask) {
+        await incrementTaskEstimatedPomodoros();
+      }
+
+      // Count it as complete
       setCompletedPomodoros(prev => prev + 1);
       
       // Increment current cycle position
       const newPosition = currentCyclePosition + 1;
       
       // Determine if we need a long break
-      // Since we're now zero-based, we check if newPosition >= settings.longBreakInterval
       const isLongBreak = newPosition >= settings.longBreakInterval;
       
       // Update cycle position
@@ -345,7 +425,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     resetTimer,
     skipTimer,
     setCurrentTask,
-    updateSettings
+    updateSettings,
+    refreshTasks,
+    tasksVersion
   };
   
   return (
