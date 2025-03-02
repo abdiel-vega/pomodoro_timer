@@ -160,7 +160,7 @@ export default function Settings() {
 
           <div className="flex items-center justify-between">
             <Label htmlFor="autoStartPomodoros" className="cursor-pointer">
-              Auto-start Pomodoros
+              Auto-start Focus Time
             </Label>
             <Switch
               id="autoStartPomodoros"

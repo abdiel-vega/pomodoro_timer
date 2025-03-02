@@ -96,14 +96,14 @@ export default function Timer() {
             <h2 className="text-2xl font-bold">{getTimerTitle()}</h2>
             <div className="flex flex-col gap-1 mt-2">
               <p className="text-sm text-muted-foreground">
-                cycles: {currentCyclePosition}/{settings.longBreakInterval}
+                Cycles: {currentCyclePosition}/{settings.longBreakInterval}
               </p>
               <p className="text-xs text-muted-foreground">
-                total pomodoros: {completedPomodoros}
+                Total Pomodoros: {completedPomodoros}
               </p>
               {currentTask && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  working on: {currentTask.title}
+                  Working on: {currentTask.title}
                 </p>
               )}
             </div>

@@ -27,8 +27,8 @@ export default function TaskList() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | undefined>(undefined);
   
-  // Get context including the refreshTasks function and tasksVersion
-  const { setCurrentTask, refreshTasks, tasksVersion } = usePomodoroTimer();
+  // Get context including the currentTask, refreshTasks function and tasksVersion
+  const { currentTask, setCurrentTask, refreshTasks, tasksVersion } = usePomodoroTimer();
 
   // Initialize application with default tags if none exist
   useEffect(() => {
@@ -98,6 +98,11 @@ export default function TaskList() {
       );
       toast.success('Task completed');
       
+      // If this was the current task, unset it
+      if (currentTask && currentTask.id === taskId) {
+        setCurrentTask(null);
+      }
+      
       // Refresh tasks in the context to ensure all components are in sync
       await refreshTasks();
     } catch (error) {
@@ -114,6 +119,11 @@ export default function TaskList() {
         prevTasks.filter(task => task.id !== taskId)
       );
       toast.success('Task deleted');
+      
+      // If this was the current task, unset it
+      if (currentTask && currentTask.id === taskId) {
+        setCurrentTask(null);
+      }
       
       // Refresh tasks in the context to ensure all components are in sync
       await refreshTasks();
@@ -158,6 +168,11 @@ export default function TaskList() {
     return typeof tag === 'object' && tag !== null && 'id' in tag && 'name' in tag && 'color' in tag;
   };
 
+  // Check if a task is the currently focused task
+  const isCurrentTask = (taskId: string): boolean => {
+    return !!(currentTask && currentTask.id === taskId);
+  };
+
   return (
     <>
       <Card className="w-full">
@@ -194,73 +209,76 @@ export default function TaskList() {
                   {filteredTasks.map(task => (
                     <div 
                       key={task.id}
-                      className="border rounded-lg p-4 flex items-start justify-between gap-3 hover:bg-muted/50 transition-colors"
+                      className={`border rounded-lg p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors ${isCurrentTask(task.id) ? 'border-primary bg-primary/5' : ''}`}
                     >
-                      <div className="flex items-start gap-3 flex-1">
-                        <Checkbox 
-                          checked={task.is_completed}
-                          onCheckedChange={() => handleTaskComplete(task.id)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            {/* Tag color indicators */}
-                            {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
-                              <div className="flex space-x-0.5 mr-1">
-                                {task.tags.map((tag, index) => {
-                                  if (isTagObject(tag)) {
-                                    return (
-                                      <div 
-                                        key={tag.id} 
-                                        className="w-3 h-3 rounded-full border border-background shadow-sm" 
-                                        style={{ backgroundColor: tag.color }}
-                                        title={tag.name}
-                                      />
-                                    );
-                                  }
-                                  return null;
-                                })}
-                              </div>
-                            )}
-
-                            <h3 className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                              {task.title}
-                            </h3>
-                          </div>
-                          
-                          {task.description && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {task.description}
-                            </p>
-                          )}
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <div className="flex items-center text-xs text-muted-foreground">
-                              <ClockIcon className="h-3 w-3 mr-1" />
-                              <span>
-                                {task.completed_pomodoros}/{task.estimated_pomodoros} pomodoros
-                              </span>
+                      <Checkbox 
+                        checked={task.is_completed}
+                        onCheckedChange={() => handleTaskComplete(task.id)}
+                        className="mt-1 flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {/* Tag color indicators */}
+                          {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
+                            <div className="flex space-x-0.5 mr-1">
+                              {task.tags.map((tag, index) => {
+                                if (isTagObject(tag)) {
+                                  return (
+                                    <div 
+                                      key={tag.id} 
+                                      className="w-3 h-3 rounded-full border border-background shadow-sm" 
+                                      style={{ backgroundColor: tag.color }}
+                                      title={tag.name}
+                                    />
+                                  );
+                                }
+                                return null;
+                              })}
                             </div>
-                            {task.tags && task.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {Array.isArray(task.tags) && task.tags.map((tag, index) => {
-                                  // Check if tag is a Tag object or a string
-                                  if (isTagObject(tag)) {
-                                    return (
-                                      <Badge key={tag.id} style={{ backgroundColor: tag.color }}>
-                                        {tag.name}
-                                      </Badge>
-                                    );
-                                  }
-                                  // If it's a string (ID), we can't display it properly
-                                  return null;
-                                })}
-                              </div>
+                          )}
+
+                          <h3 className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                            {task.title}
+                            {isCurrentTask(task.id) && (
+                              <Badge variant="outline" className="ml-2 border-primary text-primary text-xs">
+                                Focused
+                              </Badge>
                             )}
+                          </h3>
+                        </div>
+                        
+                        {task.description && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {task.description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <ClockIcon className="h-3 w-3 mr-1" />
+                            <span>
+                              {task.completed_pomodoros}/{task.estimated_pomodoros} pomodoros
+                            </span>
                           </div>
+                          {task.tags && task.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {Array.isArray(task.tags) && task.tags.map((tag, index) => {
+                                // Check if tag is a Tag object or a string
+                                if (isTagObject(tag)) {
+                                  return (
+                                    <Badge key={tag.id} style={{ backgroundColor: tag.color }}>
+                                      {tag.name}
+                                    </Badge>
+                                  );
+                                }
+                                // If it's a string (ID), we can't display it properly
+                                return null;
+                              })}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="flex gap-1">
-                        {!task.is_completed && (
+                      <div className="flex gap-1 flex-shrink-0">
+                        {!task.is_completed && !isCurrentTask(task.id) && (
                           <Button 
                             variant="ghost" 
                             size="sm"

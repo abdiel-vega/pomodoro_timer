@@ -154,38 +154,38 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     return currentCyclePosition >= settings.longBreakInterval - 1;
   };
 
-  // Update the estimated pomodoros for current task
-  const incrementTaskEstimatedPomodoros = async () => {
+  // Increment the completed pomodoros for current task
+  const incrementTaskCompletedPomodoros = async () => {
     if (currentTask) {
       try {
-        console.log('Incrementing estimated pomodoros for task:', currentTask.title);
+        console.log('Incrementing completed pomodoros for task:', currentTask.title);
         
-        // Create a new task object with incremented estimated_pomodoros
-        const newEstimatedPomodoros = currentTask.estimated_pomodoros + 1;
+        // Create a new value for completed_pomodoros
+        const newCompletedPomodoros = currentTask.completed_pomodoros + 1;
         
         // Log the update we're about to perform
-        console.log(`Updating task ${currentTask.id}: estimated_pomodoros from ${currentTask.estimated_pomodoros} to ${newEstimatedPomodoros}`);
+        console.log(`Updating task ${currentTask.id}: completed_pomodoros from ${currentTask.completed_pomodoros} to ${newCompletedPomodoros}`);
         
         // Update the task in the database
         await updateTask(currentTask.id, {
-          estimated_pomodoros: newEstimatedPomodoros
+          completed_pomodoros: newCompletedPomodoros
         });
         
         // Update the current task in local state
         setCurrentTask({
           ...currentTask,
-          estimated_pomodoros: newEstimatedPomodoros
+          completed_pomodoros: newCompletedPomodoros
         });
         
         // Show a toast notification
-        toast.success(`Estimated pomodoros for "${currentTask.title}" increased to ${newEstimatedPomodoros}`);
+        toast.success(`Completed a pomodoro for "${currentTask.title}" (${newCompletedPomodoros}/${currentTask.estimated_pomodoros})`);
         
         // Refresh all tasks to ensure UI consistency
         await refreshTasks();
         
         console.log('Task updated successfully');
       } catch (error) {
-        console.error('Failed to update task estimated pomodoros:', error);
+        console.error('Failed to update task completed pomodoros:', error);
         toast.error('Failed to update task pomodoros');
       }
     } else {
@@ -221,9 +221,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     
     // Update state based on timer type
     if (timerType === 'work') {
-      // Increment current task's estimated pomodoros if this is a work session
+      // Increment current task's completed pomodoros if this is a work session
       if (currentTask) {
-        await incrementTaskEstimatedPomodoros();
+        await incrementTaskCompletedPomodoros();
       }
 
       // Increment completed pomodoros counter (total count)
@@ -339,9 +339,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     
     // Fixed skip logic:
     if (timerType === 'work') {
-      // When skipping a work session, increment current task's estimated pomodoros
+      // When skipping a work session, increment current task's completed pomodoros
       if (currentTask) {
-        await incrementTaskEstimatedPomodoros();
+        await incrementTaskCompletedPomodoros();
       }
 
       // Count it as complete
