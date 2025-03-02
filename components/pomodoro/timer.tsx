@@ -17,6 +17,8 @@ export default function Timer() {
     timerState,
     timerType,
     timeRemaining,
+    completedPomodoros,
+    currentCyclePosition,
     settings,
     startTimer,
     pauseTimer,
@@ -92,11 +94,19 @@ export default function Timer() {
           {/* Timer Title */}
           <div className="text-center">
             <h2 className="text-2xl font-bold">{getTimerTitle()}</h2>
-            {currentTask && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Working on: {currentTask.title}
+            <div className="flex flex-col gap-1 mt-2">
+              <p className="text-sm text-muted-foreground">
+                cycles: {currentCyclePosition}/{settings.longBreakInterval}
               </p>
-            )}
+              <p className="text-xs text-muted-foreground">
+                total pomodoros: {completedPomodoros}
+              </p>
+              {currentTask && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  working on: {currentTask.title}
+                </p>
+              )}
+            </div>
           </div>
           
           {/* Timer Display */}

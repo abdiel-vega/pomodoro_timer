@@ -32,6 +32,7 @@ interface PomodoroContextType {
   timerType: TimerType;
   timeRemaining: number;
   completedPomodoros: number;
+  currentCyclePosition: number; // Which pomodoro in the cycle (0-3 typically)
   
   // Settings
   settings: UserSettings;
@@ -58,6 +59,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const [timerType, setTimerType] = useState<TimerType>('work');
   const [timeRemaining, setTimeRemaining] = useState<number>(DEFAULT_SETTINGS.workDuration * 60);
   const [completedPomodoros, setCompletedPomodoros] = useState<number>(0);
+  const [currentCyclePosition, setCurrentCyclePosition] = useState<number>(0); // Start at position 0 (of 4)
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   
   // References
@@ -112,6 +114,12 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [timerState]);
+
+  // Helper function to determine if we need a long break
+  const needsLongBreak = () => {
+    // Since we're now zero-based, we need a long break when position reaches (interval - 1)
+    return currentCyclePosition >= settings.longBreakInterval - 1;
+  };
   
   // Handle timer complete
   const handleTimerComplete = async () => {
@@ -141,15 +149,23 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     
     // Update state based on timer type
     if (timerType === 'work') {
-      // Increment completed pomodoros
+      // Increment completed pomodoros counter (total count)
       setCompletedPomodoros(prev => prev + 1);
       
-      // Determine next break type
-      const nextPomodoro = completedPomodoros + 1;
-      const isLongBreak = nextPomodoro % settings.longBreakInterval === 0;
+      // Increment current cycle position
+      const newPosition = currentCyclePosition + 1;
+      
+      // Determine next break type based on cycle position
+      // Since we're now zero-based, we check if newPosition >= settings.longBreakInterval
+      const isLongBreak = newPosition >= settings.longBreakInterval;
+      
+      // Update cycle position - if we exceeded the interval, we'll reset after the long break
+      setCurrentCyclePosition(newPosition);
+      
+      // Set the appropriate break type
       const nextType = isLongBreak ? 'long_break' : 'short_break';
       setTimerType(nextType);
-      setTimeRemaining(isLongBreak 
+      setTimeRemaining(nextType === 'long_break' 
         ? settings.longBreakDuration * 60 
         : settings.shortBreakDuration * 60);
         
@@ -158,7 +174,14 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => startTimer(), 1500);
       }
     } else {
-      // Coming from a break, go back to work
+      // Coming from a break
+      
+      // If we just finished a long break, reset the cycle position to 0
+      if (timerType === 'long_break') {
+        setCurrentCyclePosition(0);
+      }
+      
+      // Go back to work
       setTimerType('work');
       setTimeRemaining(settings.workDuration * 60);
       
@@ -238,15 +261,36 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
     }
     
-    // Logic similar to handleTimerComplete but without incrementing pomodoros if skipping work
+    // Fixed skip logic:
     if (timerType === 'work') {
-      const isLongBreak = completedPomodoros % settings.longBreakInterval === 0;
+      // When skipping a work session, count it as complete
+      setCompletedPomodoros(prev => prev + 1);
+      
+      // Increment current cycle position
+      const newPosition = currentCyclePosition + 1;
+      
+      // Determine if we need a long break
+      // Since we're now zero-based, we check if newPosition >= settings.longBreakInterval
+      const isLongBreak = newPosition >= settings.longBreakInterval;
+      
+      // Update cycle position
+      setCurrentCyclePosition(newPosition);
+      
+      // Set the appropriate break type
       const nextType = isLongBreak ? 'long_break' : 'short_break';
       setTimerType(nextType);
-      setTimeRemaining(isLongBreak 
+      setTimeRemaining(nextType === 'long_break' 
         ? settings.longBreakDuration * 60 
         : settings.shortBreakDuration * 60);
     } else {
+      // When skipping a break
+      
+      // If we're skipping a long break, reset the cycle position to 0
+      if (timerType === 'long_break') {
+        setCurrentCyclePosition(0);
+      }
+      
+      // Go back to work
       setTimerType('work');
       setTimeRemaining(settings.workDuration * 60);
     }
@@ -254,7 +298,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     setTimerState('idle');
   };
   
-  // Update settings - FIX: Properly call updateUserSettings function
+  // Update settings
   const updateSettings = async (newSettings: Partial<UserSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettings(updatedSettings);
@@ -292,6 +336,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     timerType,
     timeRemaining,
     completedPomodoros,
+    currentCyclePosition,
     settings,
     currentTask,
     startTimer,
