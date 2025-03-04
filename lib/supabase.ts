@@ -505,6 +505,61 @@ export async function completeTask(taskId: string): Promise<Task> {
   throw new Error('Task not found or could not be completed');
 }
 
+export async function markTaskIncomplete(taskId: string): Promise<Task> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      // Update task in Supabase
+      const { data, error } = await supabase
+        .from('tasks')
+        .update({
+          is_completed: false,
+          completed_at: null
+        })
+        .eq('id', taskId)
+        .select()
+        .single();
+        
+      if (error) {
+        throw error;
+      }
+      
+      return data;
+    }
+  } catch (error) {
+    console.warn('Failed to mark task as incomplete in Supabase:', error);
+  }
+  
+  // Fallback to local storage
+  if (isBrowser) {
+    try {
+      const storedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
+      
+      if (storedTasks) {
+        let tasks: Task[] = JSON.parse(storedTasks);
+        const taskIndex = tasks.findIndex(t => t.id === taskId);
+        
+        if (taskIndex !== -1) {
+          tasks[taskIndex] = {
+            ...tasks[taskIndex],
+            is_completed: false,
+            completed_at: null,
+            updated_at: new Date().toISOString()
+          };
+          
+          localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+          return tasks[taskIndex];
+        }
+      }
+    } catch (e) {
+      console.error('Error marking task incomplete in localStorage:', e);
+    }
+  }
+  
+  throw new Error('Task not found or could not be updated');
+}
+
 // Tag related functions
 export async function getTags(): Promise<TagsResponse> {
   try {
