@@ -10,11 +10,9 @@ import { createClient } from '@/utils/supabase/client';
 import { 
   Task, 
   Session, 
-  Tag, 
   UserSettings,
   TasksResponse, 
   SessionsResponse, 
-  TagsResponse 
 } from '@/types/database';
 
 // Initialize the Supabase client
@@ -38,8 +36,7 @@ const isBrowser = typeof window !== 'undefined';
 const STORAGE_KEYS = {
   SETTINGS: 'pomodoro_settings',
   TASKS: 'pomodoro_tasks',
-  SESSIONS: 'pomodoro_sessions',
-  TAGS: 'pomodoro_tags'
+  SESSIONS: 'pomodoro_sessions'
 };
 
 // Helper to generate UUID for local items
@@ -149,41 +146,14 @@ export async function getTasks(): Promise<TasksResponse> {
       // User is authenticated, get tasks from Supabase
       const { data, error } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          tags:task_tags(
-            tags(*)
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
         
       if (error) {
         throw error;
       }
       
-      // Process the response to transform nested structure to Task[]
-      const formattedTasks = data.map((task: any) => {
-        // Extract the tag objects from the nested structure
-        let extractedTags = [];
-        
-        if (task.tags && Array.isArray(task.tags)) {
-          extractedTags = task.tags.map((tt: any) => {
-            // Handle the nested structure where tags is a property
-            if (tt && tt.tags && typeof tt.tags === 'object') {
-              return tt.tags;
-            }
-            return null;
-          }).filter(Boolean); // Remove null values
-        }
-        
-        return {
-          ...task,
-          tags: extractedTags
-        };
-      });
-      
-      console.log("Formatted tasks with extracted tags:", formattedTasks);
-      return formattedTasks;
+      return data;
     }
   } catch (error) {
     console.error('Failed to get tasks from Supabase:', error);
@@ -210,12 +180,7 @@ export async function getTaskById(taskId: string): Promise<Task> {
       // User is authenticated, get task from Supabase
       const { data, error } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          tags:task_tags(
-            tags(*)
-          )
-        `)
+        .select('*')
         .eq('id', taskId)
         .single();
         
@@ -223,22 +188,7 @@ export async function getTaskById(taskId: string): Promise<Task> {
         throw error;
       }
       
-      // Process tags
-      let extractedTags = [];
-      if (data.tags && Array.isArray(data.tags)) {
-        extractedTags = data.tags.map((tt: any) => {
-          // Handle the nested structure where tags is a property
-          if (tt && tt.tags && typeof tt.tags === 'object') {
-            return tt.tags;
-          }
-          return null;
-        }).filter(Boolean); // Remove null values
-      }
-      
-      return {
-        ...data,
-        tags: extractedTags
-      };
+      return data;
     }
   } catch (error) {
     console.error('Failed to get task by ID from Supabase:', error);
@@ -262,19 +212,18 @@ export async function getTaskById(taskId: string): Promise<Task> {
   throw new Error('Task not found');
 }
 
-export async function createTask(task: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at'> & { tags?: string[] }): Promise<Task> {
+export async function createTask(task: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at'>): Promise<Task> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      // First create the task in Supabase
+      // Create the task in Supabase
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
         .insert([
           {
             ...task,
-            user_id: user.id,
-            tags: undefined // Remove tags property as it's not in the tasks table
+            user_id: user.id
           }
         ])
         .select()
@@ -284,24 +233,7 @@ export async function createTask(task: Omit<Task, 'id' | 'user_id' | 'created_at
         throw taskError;
       }
       
-      // If task has tags, create the relationships
-      if (task.tags && task.tags.length > 0) {
-        const taskTags = task.tags.map(tagId => ({
-          task_id: taskData.id,
-          tag_id: tagId
-        }));
-        
-        const { error: tagError } = await supabase
-          .from('task_tags')
-          .insert(taskTags);
-          
-        if (tagError) {
-          throw tagError;
-        }
-      }
-      
-      // Get the complete task with tags
-      return getTaskById(taskData.id);
+      return taskData;
     }
   } catch (error) {
     console.warn('Failed to create task in Supabase:', error);
@@ -321,10 +253,10 @@ export async function createTask(task: Omit<Task, 'id' | 'user_id' | 'created_at
         estimated_pomodoros: task.estimated_pomodoros,
         completed_pomodoros: 0,
         is_completed: false,
+        is_important: task.is_important || false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        completed_at: null,
-        tags: task.tags || []
+        completed_at: null
       };
       
       tasks.unshift(newTask); // Add to beginning of array
@@ -339,51 +271,19 @@ export async function createTask(task: Omit<Task, 'id' | 'user_id' | 'created_at
   throw new Error('Failed to create task');
 }
 
-export async function updateTask(taskId: string, updates: Partial<Task> & { tags?: string[] }): Promise<Task> {
+export async function updateTask(taskId: string, updates: Partial<Task>): Promise<Task> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      // Extract tags from updates object
-      const { tags, ...taskUpdates } = updates;
-      
       // Update the task in Supabase
       const { error: taskError } = await supabase
         .from('tasks')
-        .update(taskUpdates)
+        .update(updates)
         .eq('id', taskId);
         
       if (taskError) {
         throw taskError;
-      }
-      
-      // If tags are provided, update them
-      if (tags !== undefined) {
-        // First remove all existing task_tags
-        const { error: deleteError } = await supabase
-          .from('task_tags')
-          .delete()
-          .eq('task_id', taskId);
-          
-        if (deleteError) {
-          throw deleteError;
-        }
-        
-        // Then add the new tags
-        if (tags.length > 0) {
-          const taskTags = tags.map(tagId => ({
-            task_id: taskId,
-            tag_id: tagId
-          }));
-          
-          const { error: insertError } = await supabase
-            .from('task_tags')
-            .insert(taskTags);
-            
-          if (insertError) {
-            throw insertError;
-          }
-        }
       }
       
       // Get the updated task
@@ -403,20 +303,11 @@ export async function updateTask(taskId: string, updates: Partial<Task> & { tags
         const taskIndex = tasks.findIndex(t => t.id === taskId);
         
         if (taskIndex !== -1) {
-          // Extract tags if present
-          const { tags, ...otherUpdates } = updates;
-          
-          // Update the task
           tasks[taskIndex] = {
             ...tasks[taskIndex],
-            ...otherUpdates,
+            ...updates,
             updated_at: new Date().toISOString()
           };
-          
-          // Update tags if provided
-          if (tags !== undefined) {
-            tasks[taskIndex].tags = tags;
-          }
           
           localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
           return tasks[taskIndex];
@@ -467,209 +358,24 @@ export async function deleteTask(taskId: string): Promise<void> {
   }
 }
 
-export async function completeTask(taskId: string): Promise<Task> {
+export async function toggleTaskCompletion(taskId: string): Promise<Task> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    // First get the task to determine its current completion state
+    const task = await getTaskById(taskId);
     
-    if (user) {
-      // Complete task in Supabase
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          is_completed: true,
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', taskId);
-        
-      if (error) {
-        throw error;
-      }
-      
-      return getTaskById(taskId);
-    }
-  } catch (error) {
-    console.warn('Failed to complete task in Supabase:', error);
-  }
-  
-  // Fallback to local storage
-  if (isBrowser) {
-    try {
-      const storedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
-      
-      if (storedTasks) {
-        let tasks: Task[] = JSON.parse(storedTasks);
-        const taskIndex = tasks.findIndex(t => t.id === taskId);
-        
-        if (taskIndex !== -1) {
-          tasks[taskIndex] = {
-            ...tasks[taskIndex],
-            is_completed: true,
-            completed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
-          return tasks[taskIndex];
-        }
-      }
-    } catch (e) {
-      console.error('Error completing task in localStorage:', e);
-    }
-  }
-  
-  throw new Error('Task not found or could not be completed');
-}
-
-export async function markTaskIncomplete(taskId: string): Promise<Task> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
+    // Set the opposite completion state
+    const updates = {
+      is_completed: !task.is_completed,
+      completed_at: task.is_completed ? null : new Date().toISOString()
+    };
     
-    if (user) {
-      // Update task in Supabase
-      const { data, error } = await supabase
-        .from('tasks')
-        .update({
-          is_completed: false,
-          completed_at: null
-        })
-        .eq('id', taskId)
-        .select()
-        .single();
-        
-      if (error) {
-        throw error;
-      }
-      
-      return data;
-    }
+    // Update the task
+    return await updateTask(taskId, updates);
   } catch (error) {
-    console.warn('Failed to mark task as incomplete in Supabase:', error);
+    console.error('Failed to toggle task completion:', error);
+    throw error;
   }
-  
-  // Fallback to local storage
-  if (isBrowser) {
-    try {
-      const storedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
-      
-      if (storedTasks) {
-        let tasks: Task[] = JSON.parse(storedTasks);
-        const taskIndex = tasks.findIndex(t => t.id === taskId);
-        
-        if (taskIndex !== -1) {
-          tasks[taskIndex] = {
-            ...tasks[taskIndex],
-            is_completed: false,
-            completed_at: null,
-            updated_at: new Date().toISOString()
-          };
-          
-          localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
-          return tasks[taskIndex];
-        }
-      }
-    } catch (e) {
-      console.error('Error marking task incomplete in localStorage:', e);
-    }
-  }
-  
-  throw new Error('Task not found or could not be updated');
 }
-
-// Tag related functions
-export async function getTags(): Promise<TagsResponse> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      // Get tags from Supabase
-      const { data, error } = await supabase
-        .from('tags')
-        .select('*')
-        .order('name');
-        
-      if (error) {
-        throw error;
-      }
-      
-      return data;
-    }
-  } catch (error) {
-    console.warn('Failed to get tags from Supabase:', error);
-  }
-  
-  // Fallback to local storage
-  if (isBrowser) {
-    try {
-      const storedTags = localStorage.getItem(STORAGE_KEYS.TAGS);
-      return storedTags ? JSON.parse(storedTags) : [];
-    } catch (e) {
-      console.error('Error getting tags from localStorage:', e);
-    }
-  }
-  
-  return [];
-}
-
-export async function createTag(tag: Omit<Tag, 'id' | 'user_id'>): Promise<Tag> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      // Create tag in Supabase
-      const { data, error } = await supabase
-        .from('tags')
-        .insert([
-          {
-            ...tag,
-            user_id: user.id
-          }
-        ])
-        .select()
-        .single();
-        
-      if (error) {
-        throw error;
-      }
-      
-      return data;
-    }
-  } catch (error) {
-    console.warn('Failed to create tag in Supabase:', error);
-  }
-  
-  // Fallback to local storage
-  if (isBrowser) {
-    try {
-      const storedTags = localStorage.getItem(STORAGE_KEYS.TAGS);
-      const tags: Tag[] = storedTags ? JSON.parse(storedTags) : [];
-      
-      const newTag: Tag = {
-        id: generateId(),
-        user_id: 'local-user',
-        name: tag.name,
-        color: tag.color
-      };
-      
-      tags.push(newTag);
-      localStorage.setItem(STORAGE_KEYS.TAGS, JSON.stringify(tags));
-      
-      return newTag;
-    } catch (e) {
-      console.error('Error creating tag in localStorage:', e);
-    }
-  }
-  
-  throw new Error('Failed to create tag');
-}
-
-// Default tags to provide if no tags exist
-export const DEFAULT_TAGS: Omit<Tag, 'id' | 'user_id'>[] = [
-  { name: 'Work', color: '#ff5555' },
-  { name: 'Study', color: '#55ff55' },
-  { name: 'Personal', color: '#5555ff' },
-  { name: 'Urgent', color: '#ff5555' },
-  { name: 'Important', color: '#ffaa55' }
-];
 
 // Session related functions
 export async function getSessions(): Promise<SessionsResponse> {

@@ -8,9 +8,9 @@ task dialog component
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createTask, updateTask, getTaskById, getTags } from '@/lib/supabase';
+import { createTask, updateTask, getTaskById } from '@/lib/supabase';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
-import { Task, Tag } from '@/types/database';
+import { Task } from '@/types/database';
 import { 
   Dialog, 
   DialogContent, 
@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
 interface TaskDialogProps {
@@ -37,18 +37,12 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [estimatedPomodoros, setEstimatedPomodoros] = useState(1);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [isImportant, setIsImportant] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   // Get refreshTasks from context
   const { refreshTasks } = usePomodoroTimer();
-
-  // Type guard to check if a tag is a Tag object
-  const isTagObject = (tag: any): tag is Tag => {
-    return typeof tag === 'object' && tag !== null && 'id' in tag && 'name' in tag && 'color' in tag;
-  };
 
   // Reset form when dialog is opened/closed
   useEffect(() => {
@@ -58,7 +52,7 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
         setTitle('');
         setDescription('');
         setEstimatedPomodoros(1);
-        setSelectedTags([]);
+        setIsImportant(false);
       }
       
       loadData();
@@ -68,26 +62,13 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Load available tags
-      const tags = await getTags();
-      setAvailableTags(tags);
-
       // If editing existing task, load task data
       if (taskId) {
         const task = await getTaskById(taskId);
         setTitle(task.title);
         setDescription(task.description || '');
         setEstimatedPomodoros(task.estimated_pomodoros);
-        
-        // Check if task.tags exists and is an array
-        if (task.tags && Array.isArray(task.tags)) {
-          const tagIds: string[] = task.tags.map(tag => 
-            // If tag is an object with id property, use that id
-            // If tag is already a string (id), use it directly
-            isTagObject(tag) ? tag.id : tag
-          );
-          setSelectedTags(tagIds);
-        }
+        setIsImportant(task.is_important || false);
       }
     } catch (error) {
       console.error('Error loading form data:', error);
@@ -106,7 +87,7 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
         title,
         description: description || null,
         estimated_pomodoros: estimatedPomodoros,
-        tags: selectedTags,
+        is_important: isImportant,
         is_completed: false,
         completed_pomodoros: 0
       };
@@ -135,14 +116,6 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const toggleTag = (tagId: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tagId)
-        ? prev.filter(id => id !== tagId)
-        : [...prev, tagId]
-    );
   };
 
   return (
@@ -195,27 +168,14 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
               />
             </div>
 
-            {availableTags.length > 0 && (
-              <div className="space-y-2">
-                <Label>Tags</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {availableTags.map(tag => (
-                    <Badge
-                      key={tag.id}
-                      style={{ 
-                        backgroundColor: selectedTags.includes(tag.id) ? tag.color : 'transparent',
-                        color: selectedTags.includes(tag.id) ? 'white' : 'currentColor',
-                        borderColor: tag.color
-                      }}
-                      className="cursor-pointer border"
-                      onClick={() => toggleTag(tag.id)}
-                    >
-                      {tag.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isImportant"
+                checked={isImportant}
+                onCheckedChange={setIsImportant}
+              />
+              <Label htmlFor="isImportant">Mark as important</Label>
+            </div>
 
             <DialogFooter className="pt-4">
               <Button 

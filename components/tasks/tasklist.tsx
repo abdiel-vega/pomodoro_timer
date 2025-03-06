@@ -8,14 +8,14 @@ taskList component
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getTags, createTag, DEFAULT_TAGS, getTasks, completeTask, deleteTask } from '@/lib/supabase';
+import { getTasks, deleteTask, toggleTaskCompletion } from '@/lib/supabase';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
-import { Task, Tag } from '@/types/database';
+import { Task } from '@/types/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { PlusIcon, ClockIcon, TrashIcon, EditIcon, PlayIcon } from 'lucide-react';
+import { PlusIcon, ClockIcon, TrashIcon, EditIcon, PlayIcon, AlertCircleIcon, XCircleIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import TaskDialog from '@/components/tasks/taskdialog';
@@ -29,33 +29,6 @@ export default function TaskList() {
   
   // Get context including the currentTask, refreshTasks function and tasksVersion
   const { currentTask, setCurrentTask, refreshTasks, tasksVersion } = usePomodoroTimer();
-
-  // Initialize application with default tags if none exist
-  useEffect(() => {
-    const initializeDefaultTags = async () => {
-      try {
-        const existingTags = await getTags();
-        
-        // If no tags exist, create default tags
-        if (existingTags.length === 0) {
-          for (const tag of DEFAULT_TAGS) {
-            try {
-              await createTag(tag);
-            } catch (error) {
-              console.warn(`Failed to create default tag "${tag.name}":`, error);
-            }
-          }
-          
-          // Show success message
-          toast.success('Default tags have been created');
-        }
-      } catch (error) {
-        console.error('Error initializing tags:', error);
-      }
-    };
-    
-    initializeDefaultTags();
-  }, []);
 
   // Load tasks from database or local storage
   const loadTasks = async () => {
@@ -87,27 +60,35 @@ export default function TaskList() {
     return true; // 'all' tab
   });
 
-  // Handle task completion
-  const handleTaskComplete = async (taskId: string) => {
+  // Handle task completion toggle
+  const handleTaskCompletionToggle = async (taskId: string) => {
     try {
-      const updatedTask = await completeTask(taskId);
+      const updatedTask = await toggleTaskCompletion(taskId);
+      
+      // Update the tasks state with the new task
       setTasks(prevTasks => 
         prevTasks.map(task => 
           task.id === taskId ? updatedTask : task
         )
       );
-      toast.success('Task completed');
       
-      // If this was the current task, unset it
-      if (currentTask && currentTask.id === taskId) {
-        setCurrentTask(null);
+      // Show appropriate toast message
+      if (updatedTask.is_completed) {
+        toast.success('Task completed');
+        
+        // If this was the current task, unset it
+        if (currentTask && currentTask.id === taskId) {
+          setCurrentTask(null);
+        }
+      } else {
+        toast.success('Task marked as incomplete');
       }
       
       // Refresh tasks in the context to ensure all components are in sync
       await refreshTasks();
     } catch (error) {
-      console.error('Failed to complete task:', error);
-      toast.error('Failed to complete task');
+      console.error('Failed to toggle task completion:', error);
+      toast.error('Failed to update task');
     }
   };
 
@@ -139,6 +120,12 @@ export default function TaskList() {
     toast.success(`Now focusing on: ${task.title}`);
   };
 
+  // Handle unselecting the current task (unfocus)
+const handleUnselectTask = () => {
+  setCurrentTask(null);
+  toast.success("Task unfocused");
+};
+
   // Open dialog for creating a new task
   const handleNewTask = () => {
     setEditingTaskId(undefined);
@@ -161,27 +148,6 @@ export default function TaskList() {
   const handleTaskSuccess = async () => {
     // Use the refreshTasks function instead of calling loadTasks directly
     await refreshTasks();
-  };
-
-  // Type guard to check if a tag is a Tag object
-  const isTagObject = (tag: any): tag is Tag => {
-    return typeof tag === 'object' && tag !== null && 'id' in tag && 'name' in tag && 'color' in tag;
-  };
-
-  // Get tag from various possible formats
-  const getTagFromItem = (tagItem: any): Tag | null => {
-    // Direct Tag object
-    if (isTagObject(tagItem)) {
-      return tagItem;
-    }
-    
-    // Nested structure (join record with tags property)
-    if (typeof tagItem === 'object' && tagItem !== null && tagItem.tags && isTagObject(tagItem.tags)) {
-      return tagItem.tags;
-    }
-    
-    // Can't process this format
-    return null;
   };
 
   // Check if a task is the currently focused task
@@ -225,33 +191,23 @@ export default function TaskList() {
                   {filteredTasks.map(task => (
                     <div 
                       key={task.id}
-                      className={`border rounded-lg p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors ${isCurrentTask(task.id) ? 'border-primary bg-primary/5' : ''}`}
+                      className={`border rounded-lg p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors ${
+                        isCurrentTask(task.id) ? 'border-primary bg-primary/5' : 
+                        task.is_important ? 'border-orange-500' : ''
+                      }`}
                     >
                       <Checkbox 
                         checked={task.is_completed}
-                        onCheckedChange={() => handleTaskComplete(task.id)}
+                        onCheckedChange={() => handleTaskCompletionToggle(task.id)}
                         className="mt-1 flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          {/* Tag color indicators - UPDATED */}
-                          {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
-                            <div className="flex space-x-0.5 mr-1">
-                              {task.tags.map((tagItem, index) => {
-                                const tag = getTagFromItem(tagItem);
-                                if (tag) {
-                                  return (
-                                    <div 
-                                      key={tag.id} 
-                                      className="w-3 h-3 rounded-full border border-background shadow-sm" 
-                                      style={{ backgroundColor: tag.color }}
-                                      title={tag.name}
-                                    />
-                                  );
-                                }
-                                return null;
-                              })}
-                            </div>
+                          {/* Important indicator */}
+                          {task.is_important && (
+                            <span title="Important task">
+                              <AlertCircleIcon className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                            </span>
                           )}
 
                           <h3 className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
@@ -277,34 +233,39 @@ export default function TaskList() {
                             </span>
                           </div>
                           
-                          {/* Tag badges - UPDATED */}
-                          {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {task.tags.map((tagItem, index) => {
-                                const tag = getTagFromItem(tagItem);
-                                if (tag) {
-                                  return (
-                                    <Badge key={tag.id} style={{ backgroundColor: tag.color }}>
-                                      {tag.name}
-                                    </Badge>
-                                  );
-                                }
-                                return null;
-                              })}
-                            </div>
+                          {/* Show important badge */}
+                          {task.is_important && (
+                            <Badge 
+                              className="bg-orange-500 text-white"
+                            >
+                              Important
+                            </Badge>
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        {!task.is_completed && !isCurrentTask(task.id) && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleSelectTask(task)}
-                            title="Focus on this task"
-                          >
-                            <PlayIcon className="h-4 w-4" />
-                          </Button>
+                        <div className="flex gap-1 flex-shrink-0">
+                          {!task.is_completed && (
+                          isCurrentTask(task.id) ? (
+                          // Show unfocus button for currently focused task
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleUnselectTask()}
+                              aria-label="Unfocus this task"
+                            >
+                              <XCircleIcon className="h-4 w-4 text-primary" />
+                            </Button>
+                          ) : (
+                            // Show focus button for non-focused tasks
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleSelectTask(task)}
+                              aria-label="Focus on this task"
+                            >
+                              <PlayIcon className="h-4 w-4" />
+                            </Button>
+                          )
                         )}
                         <Button 
                           variant="ghost" 

@@ -53,7 +53,7 @@ interface PomodoroContextType {
   pauseTimer: () => void;
   resumeTimer: () => void;
   resetTimer: () => void;
-  skipTimer: () => void;
+  changeTimerType: (type: TimerType) => void;
   setCurrentTask: (task: Task | null) => void;
   updateSettings: (newSettings: Partial<UserSettings>) => void;
   
@@ -221,6 +221,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     
     // Update state based on timer type
     if (timerType === 'work') {
+      // Only increment pomodoros and cycle position if this was a work timer
+      
       // Increment current task's completed pomodoros if this is a work session
       if (currentTask) {
         await incrementTaskCompletedPomodoros();
@@ -325,56 +327,26 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
-  // Skip current timer
-  const skipTimer = async () => {
-    // If we have an active session, complete it
-    if (currentSessionId.current) {
-      try {
-        await completeSession(currentSessionId.current);
-        currentSessionId.current = null;
-      } catch (error) {
-        console.error('Failed to complete session:', error);
-      }
+  // Change timer type
+  const changeTimerType = (type: TimerType) => {
+    // Only allow changing timer type when timer is idle or finished
+    if (timerState === 'running' || timerState === 'paused') {
+      toast.warning("Please reset or complete the current timer first");
+      return;
     }
     
-    // Fixed skip logic:
-    if (timerType === 'work') {
-      // When skipping a work session, increment current task's completed pomodoros
-      if (currentTask) {
-        await incrementTaskCompletedPomodoros();
-      }
-
-      // Count it as complete
-      setCompletedPomodoros(prev => prev + 1);
-      
-      // Increment current cycle position
-      const newPosition = currentCyclePosition + 1;
-      
-      // Determine if we need a long break
-      const isLongBreak = newPosition >= settings.longBreakInterval;
-      
-      // Update cycle position
-      setCurrentCyclePosition(newPosition);
-      
-      // Set the appropriate break type
-      const nextType = isLongBreak ? 'long_break' : 'short_break';
-      setTimerType(nextType);
-      setTimeRemaining(nextType === 'long_break' 
-        ? settings.longBreakDuration * 60 
-        : settings.shortBreakDuration * 60);
-    } else {
-      // When skipping a break
-      
-      // If we're skipping a long break, reset the cycle position to 0
-      if (timerType === 'long_break') {
-        setCurrentCyclePosition(0);
-      }
-      
-      // Go back to work
-      setTimerType('work');
+    setTimerType(type);
+    
+    // Update time remaining based on the selected timer type
+    if (type === 'work') {
       setTimeRemaining(settings.workDuration * 60);
+    } else if (type === 'short_break') {
+      setTimeRemaining(settings.shortBreakDuration * 60);
+    } else {
+      setTimeRemaining(settings.longBreakDuration * 60);
     }
     
+    // Reset state to idle
     setTimerState('idle');
   };
   
@@ -423,7 +395,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     pauseTimer,
     resumeTimer,
     resetTimer,
-    skipTimer,
+    changeTimerType,
     setCurrentTask,
     updateSettings,
     refreshTasks,

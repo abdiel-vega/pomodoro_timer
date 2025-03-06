@@ -25,7 +25,7 @@ export default function Timer() {
     pauseTimer,
     resumeTimer,
     resetTimer,
-    skipTimer,
+    changeTimerType,
     currentTask
   } = usePomodoroTimer();
 
@@ -74,17 +74,31 @@ export default function Timer() {
     }
   };
 
+  // Get circle background color based on timer type
+  const getCircleBackgroundColor = () => {
+    switch (timerType) {
+      case 'work':
+        return '#CDCDCD';
+      case 'short_break':
+        return '#DAB8FF';
+      case 'long_break':
+        return '#B7C7F2';
+      default:
+        return '#CDCDCD';
+    }
+  };
+
   // Get progress color based on timer type
   const getProgressColor = () => {
     switch (timerType) {
       case 'work':
-        return 'bg-primary';
+        return '#000000';
       case 'short_break':
-        return 'bg-green-500';
+        return '#D58DFF';
       case 'long_break':
-        return 'bg-blue-500';
+        return '#83A4FF';
       default:
-        return 'bg-primary';
+        return '#000000';
     }
   };
 
@@ -115,7 +129,6 @@ export default function Timer() {
             </div>
           </div>
           
-          {/* Rest of the component remains the same */}
           {/* Timer Display */}
           <div className="w-48 h-48 rounded-full border-8 border-muted flex items-center justify-center relative">
             <span className="text-4xl font-bold">{formatTime(timeRemaining)}</span>
@@ -126,16 +139,16 @@ export default function Timer() {
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke="currentColor"
+                  stroke={getCircleBackgroundColor()}
                   strokeWidth="4"
-                  strokeOpacity="0.1"
+                  strokeOpacity="1"
                 />
                 <circle
                   cx="50"
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke={timerType === 'work' ? 'hsl(var(--primary))' : timerType === 'short_break' ? '#22c55e' : '#3b82f6'}
+                  stroke={getProgressColor()}
                   strokeWidth="4"
                   strokeDasharray={`${2 * Math.PI * 45}`}
                   strokeDashoffset={`${2 * Math.PI * 45 * (1 - progressPercentage / 100)}`}
@@ -187,10 +200,15 @@ export default function Timer() {
           
           {/* Progress Bar */}
           <div className="w-full">
-            <Progress 
-              value={progressPercentage} 
-              className={`h-2 ${getProgressColor()}`} 
-            />
+            <div className="h-2 w-full bg-opacity-100 rounded-full overflow-hidden" style={{ backgroundColor: getCircleBackgroundColor() }}>
+              <div 
+                className="h-full transition-all duration-1000 rounded-full" 
+                style={{ 
+                  width: `${progressPercentage}%`,
+                  backgroundColor: getProgressColor()
+                }} 
+              />
+            </div>
           </div>
         </div>
       </CardContent>
