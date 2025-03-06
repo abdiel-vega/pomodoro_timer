@@ -165,10 +165,16 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
                 step={1}
                 value={[estimatedPomodoros]}
                 onValueChange={values => setEstimatedPomodoros(values[0])}
+                className="mt-2"
+                style={{ 
+                  "--slider-bg": "#CDCDCD",
+                  "--slider-fg": "#000000"
+                } as React.CSSProperties}
               />
             </div>
 
-            <div className="flex items-center space-x-2">
+            {/* Added margin-top (mt-6) to increase spacing */}
+            <div className="flex items-center space-x-2 mt-6">
               <Switch
                 id="isImportant"
                 checked={isImportant}

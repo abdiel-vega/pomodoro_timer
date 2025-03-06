@@ -10,7 +10,7 @@ import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { PlayIcon, PauseIcon, RotateCcwIcon, SkipForwardIcon } from 'lucide-react';
+import { PlayIcon, PauseIcon, RotateCcwIcon, BrainIcon, CoffeeIcon, CupSodaIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function Timer() {
@@ -74,31 +74,17 @@ export default function Timer() {
     }
   };
 
-  // Get circle background color based on timer type
-  const getCircleBackgroundColor = () => {
-    switch (timerType) {
-      case 'work':
-        return '#CDCDCD';
-      case 'short_break':
-        return '#DAB8FF';
-      case 'long_break':
-        return '#B7C7F2';
-      default:
-        return '#CDCDCD';
-    }
-  };
-
   // Get progress color based on timer type
   const getProgressColor = () => {
     switch (timerType) {
       case 'work':
-        return '#000000';
+        return 'bg-primary';
       case 'short_break':
-        return '#D58DFF';
+        return 'bg-green-500';
       case 'long_break':
-        return '#83A4FF';
+        return 'bg-blue-500';
       default:
-        return '#000000';
+        return 'bg-primary';
     }
   };
 
@@ -139,16 +125,16 @@ export default function Timer() {
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke={getCircleBackgroundColor()}
+                  stroke="currentColor"
                   strokeWidth="4"
-                  strokeOpacity="1"
+                  strokeOpacity="0.1"
                 />
                 <circle
                   cx="50"
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke={getProgressColor()}
+                  stroke={timerType === 'work' ? 'hsl(var(--primary))' : timerType === 'short_break' ? '#22c55e' : '#3b82f6'}
                   strokeWidth="4"
                   strokeDasharray={`${2 * Math.PI * 45}`}
                   strokeDashoffset={`${2 * Math.PI * 45 * (1 - progressPercentage / 100)}`}
@@ -187,28 +173,45 @@ export default function Timer() {
             >
               <RotateCcwIcon className="h-5 w-5" />
             </Button>
-            
+          </div>
+          
+          {/* Timer Type Selection */}
+          <div className="flex items-center justify-center gap-2 w-full">
             <Button 
-              onClick={skipTimer} 
-              size="lg"
-              variant="outline" 
-              className="rounded-full w-12 h-12 p-0"
+              onClick={() => changeTimerType('work')} 
+              variant={timerType === 'work' ? 'default' : 'outline'}
+              className="flex items-center gap-1"
+              size="sm"
             >
-              <SkipForwardIcon className="h-5 w-5" />
+              <BrainIcon className="h-4 w-4" />
+              Focus Time
+            </Button>
+            <Button 
+              onClick={() => changeTimerType('short_break')} 
+              variant={timerType === 'short_break' ? 'default' : 'outline'}
+              className="flex items-center gap-1"
+              size="sm"
+            >
+              <CoffeeIcon className="h-4 w-4" />
+              Short Break
+            </Button>
+            <Button 
+              onClick={() => changeTimerType('long_break')} 
+              variant={timerType === 'long_break' ? 'default' : 'outline'}
+              className="flex items-center gap-1"
+              size="sm"
+            >
+              <CupSodaIcon className="h-4 w-4" />
+              Long Break
             </Button>
           </div>
           
           {/* Progress Bar */}
           <div className="w-full">
-            <div className="h-2 w-full bg-opacity-100 rounded-full overflow-hidden" style={{ backgroundColor: getCircleBackgroundColor() }}>
-              <div 
-                className="h-full transition-all duration-1000 rounded-full" 
-                style={{ 
-                  width: `${progressPercentage}%`,
-                  backgroundColor: getProgressColor()
-                }} 
-              />
-            </div>
+            <Progress 
+              value={progressPercentage} 
+              className={`h-2 ${getProgressColor()}`} 
+            />
           </div>
         </div>
       </CardContent>
