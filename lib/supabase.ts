@@ -163,25 +163,34 @@ export async function getTasks(): Promise<TasksResponse> {
       
       // Process the response to transform nested structure to Task[]
       const formattedTasks = data.map((task: any) => {
-        let tags: Tag[] = [];
+        // Extract the tag objects from the nested structure
+        let extractedTags = [];
+        
         if (task.tags && Array.isArray(task.tags)) {
-          tags = task.tags.map((tt: any) => tt.tags).filter(Boolean);
+          extractedTags = task.tags.map((tt: any) => {
+            // Handle the nested structure where tags is a property
+            if (tt && tt.tags && typeof tt.tags === 'object') {
+              return tt.tags;
+            }
+            return null;
+          }).filter(Boolean); // Remove null values
         }
         
         return {
           ...task,
-          tags
+          tags: extractedTags
         };
       });
       
+      console.log("Formatted tasks with extracted tags:", formattedTasks);
       return formattedTasks;
     }
   } catch (error) {
-    console.warn('Failed to get tasks from Supabase:', error);
+    console.error('Failed to get tasks from Supabase:', error);
   }
   
   // Fallback to local storage
-  if (isBrowser) {
+  if (typeof window !== 'undefined') {
     try {
       const storedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
       return storedTasks ? JSON.parse(storedTasks) : [];
@@ -215,22 +224,28 @@ export async function getTaskById(taskId: string): Promise<Task> {
       }
       
       // Process tags
-      let tags: Tag[] = [];
+      let extractedTags = [];
       if (data.tags && Array.isArray(data.tags)) {
-        tags = data.tags.map((tt: any) => tt.tags).filter(Boolean);
+        extractedTags = data.tags.map((tt: any) => {
+          // Handle the nested structure where tags is a property
+          if (tt && tt.tags && typeof tt.tags === 'object') {
+            return tt.tags;
+          }
+          return null;
+        }).filter(Boolean); // Remove null values
       }
       
       return {
         ...data,
-        tags
+        tags: extractedTags
       };
     }
   } catch (error) {
-    console.warn('Failed to get task by ID from Supabase:', error);
+    console.error('Failed to get task by ID from Supabase:', error);
   }
   
   // Fallback to local storage
-  if (isBrowser) {
+  if (typeof window !== 'undefined') {
     try {
       const storedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
       const tasks: Task[] = storedTasks ? JSON.parse(storedTasks) : [];

@@ -8,14 +8,14 @@ taskList component
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getTags, createTag, DEFAULT_TAGS, getTasks, completeTask, deleteTask, updateTask } from '@/lib/supabase';
+import { getTags, createTag, DEFAULT_TAGS, getTasks, completeTask, deleteTask } from '@/lib/supabase';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Task, Tag } from '@/types/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { PlusIcon, ClockIcon, TrashIcon, EditIcon, PlayIcon, XCircleIcon } from 'lucide-react';
+import { PlusIcon, ClockIcon, TrashIcon, EditIcon, PlayIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import TaskDialog from '@/components/tasks/taskdialog';
@@ -87,32 +87,27 @@ export default function TaskList() {
     return true; // 'all' tab
   });
 
-  // Handle task completion toggle
-  const handleTaskToggle = async (task: Task) => {
+  // Handle task completion
+  const handleTaskComplete = async (taskId: string) => {
     try {
-      if (task.is_completed) {
-        // If task is already completed, mark it as incomplete
-        await updateTask(task.id, {
-          is_completed: false,
-          completed_at: null
-        });
-        toast.success('Task marked as incomplete');
-      } else {
-        // If task is incomplete, mark it as complete
-        await completeTask(task.id);
-        toast.success('Task completed');
-        
-        // If this was the current task, unset it
-        if (currentTask && currentTask.id === task.id) {
-          setCurrentTask(null);
-        }
+      const updatedTask = await completeTask(taskId);
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId ? updatedTask : task
+        )
+      );
+      toast.success('Task completed');
+      
+      // If this was the current task, unset it
+      if (currentTask && currentTask.id === taskId) {
+        setCurrentTask(null);
       }
       
       // Refresh tasks in the context to ensure all components are in sync
       await refreshTasks();
     } catch (error) {
-      console.error('Failed to toggle task completion:', error);
-      toast.error('Failed to update task');
+      console.error('Failed to complete task:', error);
+      toast.error('Failed to complete task');
     }
   };
 
@@ -144,12 +139,6 @@ export default function TaskList() {
     toast.success(`Now focusing on: ${task.title}`);
   };
 
-  // Handle unfocusing a task
-  const handleUnfocusTask = () => {
-    setCurrentTask(null);
-    toast.success('Task unfocused');
-  };
-
   // Open dialog for creating a new task
   const handleNewTask = () => {
     setEditingTaskId(undefined);
@@ -179,39 +168,25 @@ export default function TaskList() {
     return typeof tag === 'object' && tag !== null && 'id' in tag && 'name' in tag && 'color' in tag;
   };
 
+  // Get tag from various possible formats
+  const getTagFromItem = (tagItem: any): Tag | null => {
+    // Direct Tag object
+    if (isTagObject(tagItem)) {
+      return tagItem;
+    }
+    
+    // Nested structure (join record with tags property)
+    if (typeof tagItem === 'object' && tagItem !== null && tagItem.tags && isTagObject(tagItem.tags)) {
+      return tagItem.tags;
+    }
+    
+    // Can't process this format
+    return null;
+  };
+
   // Check if a task is the currently focused task
   const isCurrentTask = (taskId: string): boolean => {
     return !!(currentTask && currentTask.id === taskId);
-  };
-
-  // Render tags for a task
-  const renderTags = (task: Task) => {
-    if (!task.tags || !Array.isArray(task.tags) || task.tags.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="flex flex-wrap gap-1 ml-1">
-        {task.tags.map((tag) => {
-          if (isTagObject(tag)) {
-            return (
-              <Badge 
-                key={tag.id} 
-                variant="outline" 
-                className="text-xs px-1 py-0 h-5" 
-                style={{ 
-                  borderColor: tag.color,
-                  color: tag.color
-                }}
-              >
-                {tag.name}
-              </Badge>
-            );
-          }
-          return null;
-        })}
-      </div>
-    );
   };
 
   return (
@@ -219,8 +194,8 @@ export default function TaskList() {
       <Card className="w-full">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Tasks</CardTitle>
-          <Button onClick={handleNewTask} size="sm" className="gap-1">
-            <PlusIcon className="h-4 w-4" />
+          <Button onClick={handleNewTask} size="sm">
+            <PlusIcon className="h-4 w-4 mr-2" />
             Add Task
           </Button>
         </CardHeader>
@@ -254,24 +229,39 @@ export default function TaskList() {
                     >
                       <Checkbox 
                         checked={task.is_completed}
-                        onCheckedChange={() => handleTaskToggle(task)}
+                        onCheckedChange={() => handleTaskComplete(task.id)}
                         className="mt-1 flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center flex-wrap gap-1">
-                          <h3 className={`font-medium ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                        <div className="flex items-center gap-2">
+                          {/* Tag color indicators - UPDATED */}
+                          {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
+                            <div className="flex space-x-0.5 mr-1">
+                              {task.tags.map((tagItem, index) => {
+                                const tag = getTagFromItem(tagItem);
+                                if (tag) {
+                                  return (
+                                    <div 
+                                      key={tag.id} 
+                                      className="w-3 h-3 rounded-full border border-background shadow-sm" 
+                                      style={{ backgroundColor: tag.color }}
+                                      title={tag.name}
+                                    />
+                                  );
+                                }
+                                return null;
+                              })}
+                            </div>
+                          )}
+
+                          <h3 className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
                             {task.title}
-                          </h3>
-                          
-                          {/* Focus indicator and tags in same row */}
-                          <div className="flex items-center flex-wrap gap-1">
                             {isCurrentTask(task.id) && (
-                              <Badge variant="outline" className="border-primary text-primary text-xs">
+                              <Badge variant="outline" className="ml-2 border-primary text-primary text-xs">
                                 Focused
                               </Badge>
                             )}
-                            {renderTags(task)}
-                          </div>
+                          </h3>
                         </div>
                         
                         {task.description && (
@@ -286,31 +276,35 @@ export default function TaskList() {
                               {task.completed_pomodoros}/{task.estimated_pomodoros} pomodoros
                             </span>
                           </div>
+                          
+                          {/* Tag badges - UPDATED */}
+                          {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {task.tags.map((tagItem, index) => {
+                                const tag = getTagFromItem(tagItem);
+                                if (tag) {
+                                  return (
+                                    <Badge key={tag.id} style={{ backgroundColor: tag.color }}>
+                                      {tag.name}
+                                    </Badge>
+                                  );
+                                }
+                                return null;
+                              })}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
-                        {!task.is_completed && (
-                          <>
-                            {isCurrentTask(task.id) ? (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={handleUnfocusTask}
-                                title="Unfocus this task"
-                              >
-                                <XCircleIcon className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleSelectTask(task)}
-                                title="Focus on this task"
-                              >
-                                <PlayIcon className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </>
+                        {!task.is_completed && !isCurrentTask(task.id) && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleSelectTask(task)}
+                            title="Focus on this task"
+                          >
+                            <PlayIcon className="h-4 w-4" />
+                          </Button>
                         )}
                         <Button 
                           variant="ghost" 
