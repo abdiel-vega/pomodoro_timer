@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { PlayIcon, PauseIcon, RotateCcwIcon, BrainIcon, CoffeeIcon, CupSodaIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 export default function Timer() {
   const {
@@ -64,27 +65,27 @@ export default function Timer() {
   const getBackgroundColor = () => {
     switch (timerType) {
       case 'work':
-        return 'bg-primary/5';
+        return 'bg-gray-100';
       case 'short_break':
-        return 'bg-green-500/5';
+        return 'bg-violet-50';
       case 'long_break':
-        return 'bg-blue-500/5';
+        return 'bg-blue-50';
       default:
         return 'bg-background';
     }
   };
 
-  // Get progress color based on timer type
-  const getProgressColor = () => {
+  // Get circle stroke color for the timer
+  const getCircleColor = () => {
     switch (timerType) {
       case 'work':
-        return 'bg-primary';
+        return '#000000';
       case 'short_break':
-        return 'bg-green-500';
+        return '#8b5cf6'; // violet-500
       case 'long_break':
-        return 'bg-blue-500';
+        return '#3b82f6'; // blue-500
       default:
-        return 'bg-primary';
+        return 'hsl(var(--primary))';
     }
   };
 
@@ -134,7 +135,7 @@ export default function Timer() {
                   cy="50"
                   r="45"
                   fill="none"
-                  stroke={timerType === 'work' ? 'hsl(var(--primary))' : timerType === 'short_break' ? '#22c55e' : '#3b82f6'}
+                  stroke={getCircleColor()}
                   strokeWidth="4"
                   strokeDasharray={`${2 * Math.PI * 45}`}
                   strokeDashoffset={`${2 * Math.PI * 45 * (1 - progressPercentage / 100)}`}
@@ -206,12 +207,32 @@ export default function Timer() {
             </Button>
           </div>
           
-          {/* Progress Bar */}
+          {/* Progress Bar - We'll use an inline style for overriding the colors */}
           <div className="w-full">
-            <Progress 
-              value={progressPercentage} 
-              className={`h-2 ${getProgressColor()}`} 
-            />
+            {timerType === 'work' && (
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-black h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+            )}
+            {timerType === 'short_break' && (
+              <div className="w-full bg-violet-300 rounded-full h-2">
+                <div 
+                  className="bg-violet-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+            )}
+            {timerType === 'long_break' && (
+              <div className="w-full bg-blue-300 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
