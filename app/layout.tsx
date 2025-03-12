@@ -13,12 +13,16 @@ import { Toaster } from '@/components/ui/sonner';
 import { Inter as FontSans } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import './globals.css';
+import { signOutAction } from './actions';
+
+const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+const supabase = createClient();
+const [user, setUser] = useState<any>(null);
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -34,25 +38,34 @@ export default function RootLayout({
   const supabase = createClient();
 
   // Check if user is authenticated
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+useEffect(() => {
+  const checkAuth = async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) console.error("Auth check error:", error);
       setIsAuthenticated(!!user);
-    };
-    
-    checkAuth();
+      setUser(user);
+      console.log("Auth state:", !!user ? "Authenticated" : "Not authenticated");
+    } catch (err) {
+      console.error("Error checking authentication:", err);
+      setIsAuthenticated(false);
+    }
+  };
+  
+  checkAuth();
     
     // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setIsAuthenticated(!!session);
-      }
-    );
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    (event, session) => {
+      console.log("Auth state changed:", event);
+      setIsAuthenticated(!!session);
+    }
+  );
     
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -93,19 +106,24 @@ export default function RootLayout({
                       <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
                     ) : isAuthenticated ? (
                       // User is authenticated
-                      <form action="/auth/signout" method="post">
-                        <Button type="submit" variant="outline" size="sm" className="ml-2">
-                          <LogOutIcon className="mr-2 h-4 w-4" /> Sign Out
-                        </Button>
-                      </form>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground hidden md:inline">
+                          {user?.email}
+                        </span>
+                        <form action={signOutAction}>
+                          <Button type="submit" variant="outline" size="sm">
+                            <LogOutIcon className="mr-2 h-4 w-4" /> Sign Out
+                          </Button>
+                        </form>
+                      </div>
                     ) : (
                       // User is not authenticated
                       <Button variant="outline" size="sm" asChild>
                         <Link href="/sign-in" className="flex items-center">
                           <LogInIcon className="mr-2 h-4 w-4" /> Sign In
                         </Link>
-                      </Button>
-                    )}
+                        </Button>
+                      )}
                   </nav>
                 </div>
               </header>
