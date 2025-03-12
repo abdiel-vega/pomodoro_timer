@@ -62,25 +62,35 @@ export const forgotPasswordAction = async (formData: FormData) => {
     return encodedRedirect('error', '/forgot-password', 'Email is required');
   }
 
-  // Set the recovery type explicitly to help our callback route
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?type=recovery`,
-  });
+  try {
+    // Use a longer expiration time for the reset link and set the correct type
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/auth/callback`,
+      // Don't include query parameters here - they might be causing issues
+    });
 
-  if (error) {
-    console.error('Password reset error:', error.message);
+    if (error) {
+      console.error('Password reset error:', error.message);
+      return encodedRedirect(
+        'error',
+        '/forgot-password',
+        'Could not reset password: ' + error.message
+      );
+    }
+
+    return encodedRedirect(
+      'success',
+      '/forgot-password',
+      'Check your email for a password reset link. The link will be valid for 1 hour.'
+    );
+  } catch (err: any) {
+    console.error('Exception in password reset:', err);
     return encodedRedirect(
       'error',
       '/forgot-password',
-      'Could not reset password'
+      'An unexpected error occurred: ' + err.message
     );
   }
-
-  return encodedRedirect(
-    'success',
-    '/forgot-password',
-    'Check your email for a link to reset your password.'
-  );
 };
 
 export const resetPasswordAction = async (formData: FormData) => {

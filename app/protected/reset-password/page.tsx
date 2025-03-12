@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/form-message";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Link } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function ResetPassword() {
@@ -22,95 +22,87 @@ export default function ResetPassword() {
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [canResetPassword, setCanResetPassword] = useState(false);
+  const [hasExpiredToken, setHasExpiredToken] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
-  // Check if user is authenticated and in recovery mode
+  // Check for hash fragment error on load
   useEffect(() => {
-    const checkAuthState = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          throw error;
-        }
-        
-        if (data.session) {
-          setCanResetPassword(true);
-        } else {
-          // No valid session - redirect to forgot password
-          setError("No active session. Please request a new password reset link.");
-          setTimeout(() => {
-            router.push('/forgot-password');
-          }, 3000);
-        }
-      } catch (err) {
-        console.error("Auth check error:", err);
-        setError("Authentication error. Please try again.");
+    // Look for hash fragment errors
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash && hash.includes('error=access_denied') && hash.includes('otp_expired')) {
+        setHasExpiredToken(true);
+        setError('Your password reset link has expired. Please request a new one.');
       }
-    };
-    
-    checkAuthState();
+    }
   }, []);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError("");
-    setSuccess("");
+    setError('');
 
-    // Validate passwords match
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      // Update the password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password,
-      });
+      // First check if we have a session
+      const { data } = await supabase.auth.getSession();
       
-      if (updateError) {
-        // Check if the error is about using the same password
-        if (updateError.message.includes('same password')) {
-          setError("You cannot reuse your previous password. Please choose a different one.");
+      // If we have a valid session, try to update the password
+      if (data.session) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          password,
+        });
+
+        if (updateError) {
+          if (updateError.message.includes('same password')) {
+            setError('You cannot reuse your previous password. Please choose a different one.');
+          } else {
+            setError(updateError.message);
+          }
         } else {
-          setError(updateError.message);
+          setSuccess('Password updated successfully! Redirecting to home page...');
+          setTimeout(() => {
+            router.push('/');
+          }, 2000);
         }
       } else {
-        setSuccess("Password updated successfully! Redirecting to home page...");
-        // Redirect after 2 seconds
-        setTimeout(() => {
-          router.push('/');
-        }, 2000);
+        setError('No active session. Please request a new password reset link.');
       }
     } catch (err: any) {
-      console.error("Error resetting password:", err);
-      setError(err.message || "An error occurred while resetting your password");
+      console.error('Error in password reset:', err);
+      setError(err.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Show a loading state or error if we're checking auth
-  if (!canResetPassword && !error) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <div className="animate-pulse text-center">
-          <p>Verifying your session...</p>
-        </div>
-      </div>
-    );
-  }
-
+ // If the token is expired, show a special message with option to request new link
+ if (hasExpiredToken) {
   return (
-    <div className="flex flex-col w-full max-w-md p-4 gap-2 mx-auto">
-      <h1 className="text-2xl font-medium">Reset your password</h1>
-      <p className="text-sm text-foreground/60 mb-4">
-        Please enter your new password below.
-      </p>
+    <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] p-4">
+      <div className="w-full max-w-md bg-card p-6 rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-4">Password Reset Link Expired</h1>
+        <p className="mb-6">The password reset link you clicked has expired. These links are typically valid for a limited time for security reasons.</p>
+        
+        <Button asChild className="w-full">
+          <Link href="/forgot-password">Request a New Reset Link</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+return (
+  <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] p-4">
+    <div className="w-full max-w-md bg-card p-6 rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-2">Reset Password</h1>
+      <p className="text-muted-foreground mb-6">Create a new password for your account</p>
       
       {error && <FormMessage message={{ error }} />}
       {success && <FormMessage message={{ success }} />}
@@ -124,10 +116,9 @@ export default function ResetPassword() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="New password"
+              placeholder="Enter your new password"
               required
               className="pr-10"
-              disabled={!canResetPassword || isSubmitting}
             />
             <Button 
               type="button"
@@ -136,7 +127,6 @@ export default function ResetPassword() {
               className="absolute right-0 top-0 h-full px-3"
               onClick={() => setShowPassword(!showPassword)}
               tabIndex={-1}
-              disabled={!canResetPassword || isSubmitting}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </Button>
@@ -151,10 +141,9 @@ export default function ResetPassword() {
               type={showConfirmPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm password"
+              placeholder="Confirm your new password"
               required
               className="pr-10"
-              disabled={!canResetPassword || isSubmitting}
             />
             <Button 
               type="button"
@@ -163,7 +152,6 @@ export default function ResetPassword() {
               className="absolute right-0 top-0 h-full px-3"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               tabIndex={-1}
-              disabled={!canResetPassword || isSubmitting}
             >
               {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </Button>
@@ -172,12 +160,13 @@ export default function ResetPassword() {
         
         <Button 
           type="submit" 
-          className="w-full"
-          disabled={!canResetPassword || isSubmitting}
+          className="w-full mt-2"
+          disabled={isSubmitting}
         >
           {isSubmitting ? "Resetting password..." : "Reset password"}
         </Button>
       </form>
     </div>
-  );
+  </div>
+);
 }
