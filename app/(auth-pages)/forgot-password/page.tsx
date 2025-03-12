@@ -1,37 +1,78 @@
+'use client';
+
+import { useState } from "react";
 import { forgotPasswordAction } from "@/app/actions";
-import { FormMessage, Message } from "@/components/form-message";
-import { SubmitButton } from "@/components/submit-button";
+import { FormMessage } from "@/components/form-message";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { SmtpMessage } from "../smtp-message";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default async function ForgotPassword(props: {
-  searchParams: Promise<Message>;
-}) {
-  const searchParams = await props.searchParams;
+export default function ForgotPassword() {
+  const [message, setMessage] = useState<{ error?: string; success?: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  async function handleSubmit(formData: FormData) {
+    setIsSubmitting(true);
+    try {
+      // Call the server action and get the result
+      const result = await forgotPasswordAction(formData);
+      setMessage(result);
+    } catch (error: any) {
+      setMessage({ error: error.message || 'An error occurred' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <>
-      <form className="flex-1 flex flex-col w-full gap-2 text-foreground [&>input]:mb-6 min-w-64 max-w-64 mx-auto">
-        <div>
-          <h1 className="text-2xl font-medium">Reset Password</h1>
-          <p className="text-sm text-secondary-foreground">
-            Already have an account?{" "}
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>Reset Password</CardTitle>
+          <CardDescription>
+            Enter your email address and we'll send you a link to reset your password
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" action={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                name="email" 
+                id="email"
+                placeholder="you@example.com" 
+                type="email"
+                required 
+              />
+            </div>
+            
+            {message && <FormMessage message={message} />}
+            
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Sending..." : "Send Reset Link"}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-2">
+          <div className="text-sm text-center">
+            Remember your password?{" "}
             <Link className="text-primary underline" href="/sign-in">
               Sign in
             </Link>
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
-          <Label htmlFor="email">Email</Label>
-          <Input name="email" placeholder="you@example.com" required />
-          <SubmitButton formAction={forgotPasswordAction}>
-            Reset Password
-          </SubmitButton>
-          <FormMessage message={searchParams} />
-        </div>
-      </form>
-      <SmtpMessage />
+          </div>
+        </CardFooter>
+      </Card>
+      
+      <div className="mt-6 max-w-md mx-auto">
+        <SmtpMessage />
+      </div>
     </>
   );
 }

@@ -1,8 +1,11 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export const createClient = async () => {
   const cookieStore = await cookies();
+
+  // Debug logging for troubleshooting timezone/clock issues
+  console.log('Server timestamp:', new Date().toISOString());
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,9 +24,13 @@ export const createClient = async () => {
             // The `set` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
+            console.warn(
+              'Cookie set error (can be ignored if using middleware):',
+              error
+            );
           }
         },
       },
-    },
+    }
   );
 };

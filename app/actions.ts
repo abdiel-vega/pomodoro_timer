@@ -58,38 +58,40 @@ export const forgotPasswordAction = async (formData: FormData) => {
   const supabase = await createClient();
   const origin = (await headers()).get('origin');
 
+  console.log('Local server time:', new Date().toISOString());
+  console.log('Local server timezone offset:', new Date().getTimezoneOffset());
+
   if (!email) {
-    return encodedRedirect('error', '/forgot-password', 'Email is required');
+    // Return an object instead of redirecting
+    return { error: 'Email is required' };
   }
 
   try {
-    // Use a longer expiration time for the reset link and set the correct type
+    // Log the timestamp for debugging the time discrepancy
+    console.log(
+      'Server time when sending reset email:',
+      new Date().toISOString()
+    );
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${origin}/auth/callback`,
-      // Don't include query parameters here - they might be causing issues
+      redirectTo: `${origin}/auth/callback?type=recovery`,
     });
 
     if (error) {
       console.error('Password reset error:', error.message);
-      return encodedRedirect(
-        'error',
-        '/forgot-password',
-        'Could not reset password: ' + error.message
-      );
+      // Return an object instead of redirecting
+      return { error: 'Could not reset password: ' + error.message };
     }
 
-    return encodedRedirect(
-      'success',
-      '/forgot-password',
-      'Check your email for a password reset link. The link will be valid for 1 hour.'
-    );
+    // Return success message instead of redirecting
+    return {
+      success:
+        'Check your email for a password reset link. Please check both inbox and spam folders.',
+    };
   } catch (err: any) {
     console.error('Exception in password reset:', err);
-    return encodedRedirect(
-      'error',
-      '/forgot-password',
-      'An unexpected error occurred: ' + err.message
-    );
+    // Return an object instead of redirecting
+    return { error: 'An unexpected error occurred: ' + err.message };
   }
 };
 
