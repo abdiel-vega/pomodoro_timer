@@ -57,27 +57,23 @@ export const forgotPasswordAction = async (formData: FormData) => {
   const email = formData.get('email')?.toString();
   const supabase = await createClient();
   const origin = (await headers()).get('origin');
-  const callbackUrl = formData.get('callbackUrl')?.toString();
 
   if (!email) {
     return encodedRedirect('error', '/forgot-password', 'Email is required');
   }
 
+  // Set the recovery type explicitly to help our callback route
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?redirect_to=/protected/reset-password`,
+    redirectTo: `${origin}/auth/callback?type=recovery`,
   });
 
   if (error) {
-    console.error(error.message);
+    console.error('Password reset error:', error.message);
     return encodedRedirect(
       'error',
       '/forgot-password',
       'Could not reset password'
     );
-  }
-
-  if (callbackUrl) {
-    return redirect(callbackUrl);
   }
 
   return encodedRedirect(
