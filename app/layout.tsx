@@ -5,6 +5,7 @@ root layout
 - this layout will display across the whole application
 
 */
+// app/layout.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -18,11 +19,7 @@ import { Button } from '@/components/ui/button';
 import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import './globals.css';
-import { signOutAction } from './actions';
-
-const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-const supabase = createClient();
-const [user, setUser] = useState<any>(null);
+import { SignOutButton } from '@/components/sign-out-button';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -35,50 +32,82 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [user, setUser] = useState<any>(null);
   const supabase = createClient();
 
-  // Check if user is authenticated
 useEffect(() => {
+  // Define function to check auth status
   const checkAuth = async () => {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) console.error("Auth check error:", error);
-      setIsAuthenticated(!!user);
-      setUser(user);
-      console.log("Auth state:", !!user ? "Authenticated" : "Not authenticated");
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Session error:", error);
+        setIsAuthenticated(false);
+        setUser(null);
+        return;
+      }
+      
+      if (data && data.session) {
+        console.log("Initial auth check: User is signed in", data.session.user.email);
+        setIsAuthenticated(true);
+        setUser(data.session.user);
+      } else {
+        console.log("Initial auth check: No active session");
+        setIsAuthenticated(false);
+        setUser(null);
+      }
     } catch (err) {
-      console.error("Error checking authentication:", err);
+      console.error("Auth check failed:", err);
       setIsAuthenticated(false);
+      setUser(null);
     }
   };
   
+  // Check auth status immediately
   checkAuth();
-    
-    // Set up auth state change listener
+  
+  // Set up auth state listener with improved handling
   const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    (event, session) => {
-      console.log("Auth state changed:", event);
-      setIsAuthenticated(!!session);
+    async (event, session) => {
+      console.log("Auth state changed:", event, session?.user?.email);
+      
+      // Handle specific auth events
+      if (event === 'SIGNED_IN') {
+        console.log("Sign-in detected, updating UI");
+        setIsAuthenticated(true);
+        setUser(session?.user || null);
+      } 
+      else if (event === 'SIGNED_OUT') {
+        console.log("Sign-out detected, updating UI");
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+      else if (event === 'TOKEN_REFRESHED') {
+        // Session was refreshed, make sure our UI reflects current state
+        if (session) {
+          setIsAuthenticated(true);
+          setUser(session.user);
+        }
+      }
+      else if (event === 'USER_UPDATED') {
+        // User data was updated, refresh our state
+        if (session) {
+          setIsAuthenticated(true);
+          setUser(session.user);
+        }
+      }
     }
   );
-    
-  return () => {
-    subscription.unsubscribe();
-  };
+  
+  // Clean up listener
+  return () => subscription.unsubscribe();
 }, []);
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(
-        'min-h-screen bg-background font-sans antialiased',
-        fontSans.variable
-      )}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+      <body className={cn('min-h-screen bg-background font-sans antialiased', fontSans.variable)}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <PomodoroProvider>
             <div className="flex min-h-screen flex-col">
               <header className="sticky top-0 z-10 w-full border-b bg-background">
@@ -110,11 +139,7 @@ useEffect(() => {
                         <span className="text-sm text-muted-foreground hidden md:inline">
                           {user?.email}
                         </span>
-                        <form action={signOutAction}>
-                          <Button type="submit" variant="outline" size="sm">
-                            <LogOutIcon className="mr-2 h-4 w-4" /> Sign Out
-                          </Button>
-                        </form>
+                        <SignOutButton />
                       </div>
                     ) : (
                       // User is not authenticated
@@ -122,8 +147,8 @@ useEffect(() => {
                         <Link href="/sign-in" className="flex items-center">
                           <LogInIcon className="mr-2 h-4 w-4" /> Sign In
                         </Link>
-                        </Button>
-                      )}
+                      </Button>
+                    )}
                   </nav>
                 </div>
               </header>
