@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
     // For password reset (recovery) flow
     if (type === 'recovery') {
-      return NextResponse.redirect(`${origin}/protected/reset-password`);
+      return NextResponse.redirect(`${origin}/auth/reset-password`);
     }
 
     // Otherwise go to protected page
