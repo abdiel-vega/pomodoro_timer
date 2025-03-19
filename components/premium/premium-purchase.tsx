@@ -16,10 +16,7 @@ export default function PremiumPurchase() {
     setIsProcessing(true);
     
     try {
-      // In a real app, you would integrate with Stripe or another payment processor here
-      // For now, we'll simulate a successful purchase
-      
-      // Update the user's premium status in Supabase
+      // The existing code to update the premium status
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -40,10 +37,15 @@ export default function PremiumPurchase() {
         throw error;
       }
       
-      // Refresh user settings to get the premium status
+      // Refresh user settings
       await refreshUserSettings();
       
-      toast.success('Premium features unlocked! Enjoy your enhanced Pomodoro experience.');
+      toast.success('Premium features unlocked! Refreshing the page...');
+      
+      // Force a page refresh to ensure all components re-render with the updated state
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (error) {
       console.error('Purchase error:', error);
       toast.error('Failed to process purchase. Please try again.');
