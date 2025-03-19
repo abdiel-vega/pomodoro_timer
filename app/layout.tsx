@@ -16,7 +16,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon } from 'lucide-react';
+import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon, Sparkles } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import './globals.css';
 import { SignOutButton } from '@/components/sign-out-button';
@@ -34,6 +34,7 @@ export default function RootLayout({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [user, setUser] = useState<any>(null);
   const supabase = createClient();
+  const [isPremium, setIsPremium] = useState(false);
 
 useEffect(() => {
   // Define function to check auth status
@@ -131,24 +132,28 @@ useEffect(() => {
                     </Button>
                     
                     {isAuthenticated === null ? (
-                      // Loading state
-                      <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
-                    ) : isAuthenticated ? (
-                      // User is authenticated
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground hidden md:inline">
-                          {user?.email}
-                        </span>
-                        <SignOutButton />
-                      </div>
-                    ) : (
-                      // User is not authenticated
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href="/sign-in" className="flex items-center">
-                          <LogInIcon className="mr-2 h-4 w-4" /> Sign In
-                        </Link>
-                      </Button>
-                    )}
+  // Loading state
+  <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
+) : isAuthenticated ? (
+  // User is authenticated
+  <div className="flex items-center gap-2">
+    {/* Premium link goes here */}
+    <Link href="/premium" className={`flex items-center gap-1 text-sm mx-2 ${isPremium ? 'text-yellow-500' : 'text-muted-foreground hover:text-primary'}`}>
+      <Sparkles size={14} /> {isPremium ? 'Premium' : 'Upgrade'}
+    </Link>
+    <span className="text-sm text-muted-foreground hidden md:inline">
+      {user?.email}
+    </span>
+    <SignOutButton />
+  </div>
+) : (
+  // User is not authenticated
+  <Button variant="outline" size="sm" asChild>
+    <Link href="/sign-in" className="flex items-center">
+      <LogInIcon className="mr-2 h-4 w-4" /> Sign In
+    </Link>
+  </Button>
+)}
                   </nav>
                 </div>
               </header>

@@ -19,6 +19,7 @@ import {
   getTasks
 } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { createClient } from '@/utils/supabase/client';
 
 // Default settings in case we can't load from database
 const DEFAULT_SETTINGS: UserSettings = {
@@ -60,6 +61,16 @@ interface PomodoroContextType {
   // Task update listener for UI synchronization
   refreshTasks: () => Promise<void>;
   tasksVersion: number; // A counter that increments whenever tasks are updated
+  
+  // Premium features
+  isPremium: boolean;
+  refreshUserSettings: () => Promise<void>;
+  soundEnabled: boolean;
+  setSoundEnabled: (enabled: boolean) => void;
+  currentSound: string | null;
+  setCurrentSound: (sound: string | null) => void;
+  deepFocusMode: boolean;
+  setDeepFocusMode: (enabled: boolean) => void;
 }
 
 const PomodoroContext = createContext<PomodoroContextType | undefined>(undefined);
@@ -75,9 +86,40 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [tasksVersion, setTasksVersion] = useState<number>(0); // For triggering re-renders
   
+  // Premium features state
+  const [isPremium, setIsPremium] = useState<boolean>(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
+  const [currentSound, setCurrentSound] = useState<string | null>(null);
+  const [deepFocusMode, setDeepFocusMode] = useState<boolean>(false);
+  
   // References
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const currentSessionId = useRef<string | null>(null);
+  const supabase = createClient();
+  
+  // Function to refresh user settings, including premium status
+  const refreshUserSettings = useCallback(async () => {
+    try {
+      const userSettings = await getUserSettings();
+      if (userSettings) {
+        setSettings(userSettings);
+        
+        // Access the extended user data
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('users')
+            .select('is_premium')
+            .eq('id', user.id)
+            .single();
+            
+          setIsPremium(!!data?.is_premium);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh user settings:', error);
+    }
+  }, []);
   
   // Function to refresh tasks - can be called by any component to get the latest task data
   const refreshTasks = useCallback(async () => {
@@ -122,6 +164,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     
     loadSettings();
   }, []);
+  
+  // Load premium status on initialization
+  useEffect(() => {
+    refreshUserSettings();
+  }, [refreshUserSettings]);
   
   // Timer countdown effect
   useEffect(() => {
@@ -204,6 +251,16 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         currentSessionId.current = null;
       } catch (error) {
         console.error('Failed to complete session:', error);
+      }
+    }
+    
+    // Play sound if sound is enabled (premium feature)
+    if (soundEnabled && currentSound && isPremium) {
+      try {
+        const audio = new Audio(currentSound);
+        await audio.play();
+      } catch (error) {
+        console.error('Error playing sound:', error);
       }
     }
     
@@ -399,7 +456,17 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     setCurrentTask,
     updateSettings,
     refreshTasks,
-    tasksVersion
+    tasksVersion,
+    
+    // Premium features
+    isPremium,
+    refreshUserSettings,
+    soundEnabled,
+    setSoundEnabled,
+    currentSound,
+    setCurrentSound,
+    deepFocusMode,
+    setDeepFocusMode,
   };
   
   return (
