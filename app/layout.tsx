@@ -46,6 +46,7 @@ useEffect(() => {
         console.error("Session error:", error);
         setIsAuthenticated(false);
         setUser(null);
+        setIsPremium(false);
         return;
       }
       
@@ -53,17 +54,30 @@ useEffect(() => {
         console.log("Initial auth check: User is signed in", data.session.user.email);
         setIsAuthenticated(true);
         setUser(data.session.user);
+        
+        // Fetch premium status from database
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('is_premium')
+          .eq('id', data.session.user.id)
+          .single();
+          
+        if (!userError && userData) {
+          setIsPremium(userData.is_premium || false);
+        }
       } else {
         console.log("Initial auth check: No active session");
         setIsAuthenticated(false);
         setUser(null);
+        setIsPremium(false);
       }
     } catch (err) {
       console.error("Auth check failed:", err);
       setIsAuthenticated(false);
       setUser(null);
+      setIsPremium(false);
     }
-  };
+  };  
   
   // Check auth status immediately
   checkAuth();
@@ -78,7 +92,18 @@ useEffect(() => {
         console.log("Sign-in detected, updating UI");
         setIsAuthenticated(true);
         setUser(session?.user || null);
-      } 
+        
+        // Check premium status on sign in
+        if (session?.user) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('is_premium')
+            .eq('id', session.user.id)
+            .single();
+            
+          setIsPremium(userData?.is_premium || false);
+        }
+      }      
       else if (event === 'SIGNED_OUT') {
         console.log("Sign-out detected, updating UI");
         setIsAuthenticated(false);
@@ -108,7 +133,7 @@ useEffect(() => {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn('min-h-screen bg-background font-sans antialiased', fontSans.variable)}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <PomodoroProvider>
             <div className="flex min-h-screen flex-col">
               <header className="sticky top-0 z-10 w-full border-b bg-background">
