@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Volume2, VolumeX, Music, CloudRain, Wind, Users } from 'lucide-react';
+import { playSound, stopSound, setVolume } from '@/lib/audio.helper';
 
 // Sound categories and sources
 const SOUNDS = {
@@ -34,39 +35,17 @@ export default function SoundControls() {
 
   // Initialize audio on component mount
   useEffect(() => {
-    if (typeof Audio !== 'undefined') {
-      audioRef.current = new Audio();
-      audioRef.current.loop = true;
-      
-      // Clean up audio when component unmounts
-      return () => {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current = null;
-        }
-      };
-    }
-  }, []);
-
-  // Handle sound changes
-  useEffect(() => {
-    if (!audioRef.current) return;
-    
     // If sound is enabled and we have a current sound, play it
     if (soundEnabled && currentSound) {
       const soundItem = [...SOUNDS.nature, ...SOUNDS.ambient, ...SOUNDS.music]
         .find(sound => sound.id === currentSound);
       
       if (soundItem) {
-        audioRef.current.src = soundItem.url;
-        audioRef.current.volume = volume / 100;
-        audioRef.current.play().catch(err => {
-          console.error('Error playing audio:', err);
-        });
+        playSound(soundItem.url, volume / 100);
       }
     } else {
       // Otherwise pause the audio
-      audioRef.current.pause();
+      stopSound();
     }
   }, [soundEnabled, currentSound, volume]);
 
@@ -89,11 +68,9 @@ export default function SoundControls() {
   const handleVolumeChange = (values: number[]) => {
     const newVolume = values[0];
     setVolume(newVolume);
-    
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume / 100;
-    }
+    setVolume(newVolume / 100);
   };
+  
 
   // Select a sound
   const selectSound = (soundId: string) => {

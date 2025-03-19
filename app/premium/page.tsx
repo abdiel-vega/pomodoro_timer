@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PremiumPurchase from '@/components/premium/premium-purchase';
-import EnhancedTimer from '@/components/pomodoro/enhanced-timer';
 import SoundControls from '@/components/premium/sound-controls';
 import DeepFocusMode from '@/components/premium/deep-focus-mode';
 import ProductivityHeatmap from '@/components/premium/productivity-heatmap';
@@ -16,8 +15,7 @@ import Link from 'next/link';
 
 export default function PremiumPage() {
   const { isPremium, refreshUserSettings } = usePomodoroTimer();
-  const [activeTab, setActiveTab] = useState('overview');
-
+  
   useEffect(() => {
     // Refresh premium status when the component mounts
     refreshUserSettings();
@@ -35,6 +33,7 @@ export default function PremiumPage() {
       </div>
 
       {!isPremium ? (
+        // For non-premium users, just show the purchase component
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <PremiumPurchase />
           
@@ -115,6 +114,7 @@ export default function PremiumPage() {
           </div>
         </div>
       ) : (
+        // For premium users, focus on settings and analytics
         <div className="space-y-6">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-4">
             <div className="bg-green-100 p-2 rounded-full">
@@ -124,46 +124,19 @@ export default function PremiumPage() {
             </div>
             <div>
               <h2 className="font-bold text-lg">Premium Features Activated</h2>
-              <p className="text-sm">Enjoy all premium features and boost your productivity</p>
+              <p className="text-sm">Manage your premium settings and view productivity analytics</p>
             </div>
           </div>
           
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs defaultValue="settings">
             <TabsList className="w-full border-b pb-0">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="timer">Enhanced Timer</TabsTrigger>
-              <TabsTrigger value="sounds">Ambient Sounds</TabsTrigger>
-              <TabsTrigger value="focus">Deep Focus</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="overview" className="mt-6">
+            <TabsContent value="settings" className="mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-6">
-                  <EnhancedTimer />
-                  <SoundControls />
-                </div>
-                <div className="space-y-6">
-                  <DeepFocusMode />
-                  <ProductivityHeatmap />
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="timer" className="mt-6">
-              <div className="max-w-md mx-auto">
-                <EnhancedTimer />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="sounds" className="mt-6">
-              <div className="max-w-2xl mx-auto">
                 <SoundControls />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="focus" className="mt-6">
-              <div className="max-w-2xl mx-auto">
                 <DeepFocusMode />
               </div>
             </TabsContent>

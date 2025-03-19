@@ -71,6 +71,10 @@ interface PomodoroContextType {
   setCurrentSound: (sound: string | null) => void;
   deepFocusMode: boolean;
   setDeepFocusMode: (enabled: boolean) => void;
+
+  // Animation type for premium timer
+  animationType: string;
+  setAnimationType: (type: string) => void;
 }
 
 const PomodoroContext = createContext<PomodoroContextType | undefined>(undefined);
@@ -91,6 +95,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
   const [currentSound, setCurrentSound] = useState<string | null>(null);
   const [deepFocusMode, setDeepFocusMode] = useState<boolean>(false);
+  const [animationType, setAnimationType] = useState<string>('pulse');
   
   // References
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -467,6 +472,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     setCurrentSound,
     deepFocusMode,
     setDeepFocusMode,
+    animationType,
+    setAnimationType,
   };
   
   return (

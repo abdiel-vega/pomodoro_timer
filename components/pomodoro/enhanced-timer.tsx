@@ -35,10 +35,11 @@ export default function EnhancedTimer() {
     currentTask,
     isPremium,
     deepFocusMode,
+    animationType,
+    setAnimationType,
   } = usePomodoroTimer();
 
   // Animation state
-  const [animationType, setAnimationType] = React.useState(ANIMATIONS.pulse);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
 
@@ -395,24 +396,6 @@ export default function EnhancedTimer() {
   return (
     <Card className={`w-full max-w-md mx-auto shadow-lg ${timerType === 'work' ? 'bg-gray-100' : timerType === 'short_break' ? 'bg-violet-50' : 'bg-blue-50'}`}>
       <CardContent className="pt-6 relative">
-        {isPremium && (
-          <div className="absolute top-0 right-0 m-2 z-10 flex gap-2">
-            <div className="flex flex-wrap gap-1">
-              {Object.values(ANIMATIONS).map((animation) => (
-                <Button
-                  key={animation}
-                  size="sm"
-                  variant={animationType === animation ? "default" : "outline"}
-                  className="h-8 text-xs px-2"
-                  onClick={() => setAnimationType(animation)}
-                >
-                  {animation}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-        
         <div className="flex flex-col items-center space-y-8">
           {/* Timer Title */}
           <div className="text-center">
