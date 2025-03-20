@@ -5,7 +5,6 @@ root layout
 - this layout will display across the whole application
 
 */
-// app/layout.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -157,28 +156,32 @@ useEffect(() => {
                     </Button>
                     
                     {isAuthenticated === null ? (
-  // Loading state
-  <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
-) : isAuthenticated ? (
-  // User is authenticated
-  <div className="flex items-center gap-2">
-    {/* Premium link goes here */}
-    <Link href="/premium" className={`flex items-center gap-1 text-sm mx-2 ${isPremium ? 'text-yellow-500' : 'text-muted-foreground hover:text-primary'}`}>
-      <Sparkles size={14} /> {isPremium ? 'Premium' : 'Upgrade'}
-    </Link>
-    <span className="text-sm text-muted-foreground hidden md:inline">
-      {user?.email}
-    </span>
-    <SignOutButton />
-  </div>
-) : (
-  // User is not authenticated
-  <Button variant="outline" size="sm" asChild>
-    <Link href="/sign-in" className="flex items-center">
-      <LogInIcon className="mr-2 h-4 w-4" /> Sign In
-    </Link>
-  </Button>
-)}
+                      // Loading state
+                      <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
+                    ) : isAuthenticated ? (
+                      // User is authenticated
+                      <div className="flex items-center gap-2">
+                        {/* Small premium indicator only - removed the Upgrade link */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm text-muted-foreground hidden md:inline">
+                            {user?.email}
+                          </span>
+                          {isPremium && (
+                            <span title="Premium User">
+                              <Sparkles size={14} className="text-yellow-500" />
+                            </span>
+                          )}
+                        </div>
+                        <SignOutButton />
+                      </div>
+                    ) : (
+                      // User is not authenticated
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/sign-in" className="flex items-center">
+                          <LogInIcon className="mr-2 h-4 w-4" /> Sign In
+                        </Link>
+                      </Button>
+                    )}
                   </nav>
                 </div>
               </header>

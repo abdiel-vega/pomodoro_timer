@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { PlayIcon, PauseIcon, RotateCcwIcon, BrainIcon, CoffeeIcon, CupSodaIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
 
 export default function Timer() {
   const {
@@ -29,6 +30,9 @@ export default function Timer() {
     changeTimerType,
     currentTask
   } = usePomodoroTimer();
+  
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
   // Calculate total time based on timer type
   const totalTime = timerType === 'work'
@@ -61,17 +65,30 @@ export default function Timer() {
     }
   };
 
-  // Get background color based on timer type
+  // Get background color based on timer type and theme
   const getBackgroundColor = () => {
-    switch (timerType) {
-      case 'work':
-        return 'bg-gray-100';
-      case 'short_break':
-        return 'bg-violet-50';
-      case 'long_break':
-        return 'bg-blue-50';
-      default:
-        return 'bg-background';
+    if (isDarkMode) {
+      switch (timerType) {
+        case 'work':
+          return 'bg-zinc-800';
+        case 'short_break':
+          return 'bg-violet-900/30';
+        case 'long_break':
+          return 'bg-blue-900/30';
+        default:
+          return 'bg-background';
+      }
+    } else {
+      switch (timerType) {
+        case 'work':
+          return 'bg-gray-100';
+        case 'short_break':
+          return 'bg-violet-50';
+        case 'long_break':
+          return 'bg-blue-50';
+        default:
+          return 'bg-background';
+      }
     }
   };
 
@@ -79,7 +96,7 @@ export default function Timer() {
   const getCircleColor = () => {
     switch (timerType) {
       case 'work':
-        return '#000000';
+        return isDarkMode ? '#ffffff' : '#000000';
       case 'short_break':
         return '#8b5cf6'; // violet-500
       case 'long_break':
@@ -88,6 +105,28 @@ export default function Timer() {
         return 'hsl(var(--primary))';
     }
   };
+
+  // Get progress bar colors
+  const getProgressBarColors = () => {
+    if (timerType === 'work') {
+      return {
+        bg: isDarkMode ? 'bg-gray-700' : 'bg-gray-200',
+        fg: isDarkMode ? 'bg-white' : 'bg-black'
+      };
+    } else if (timerType === 'short_break') {
+      return {
+        bg: isDarkMode ? 'bg-violet-800/50' : 'bg-violet-300',
+        fg: 'bg-violet-500'
+      };
+    } else {
+      return {
+        bg: isDarkMode ? 'bg-blue-800/50' : 'bg-blue-300',
+        fg: 'bg-blue-500'
+      };
+    }
+  };
+
+  const progressColors = getProgressBarColors();
 
   return (
     <Card className={`w-full max-w-md mx-auto shadow-lg ${getBackgroundColor()}`}>
@@ -207,32 +246,14 @@ export default function Timer() {
             </Button>
           </div>
           
-          {/* Progress Bar - We'll use an inline style for overriding the colors */}
+          {/* Progress Bar - Using theme-aware colors */}
           <div className="w-full">
-            {timerType === 'work' && (
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-black h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-            )}
-            {timerType === 'short_break' && (
-              <div className="w-full bg-violet-300 rounded-full h-2">
-                <div 
-                  className="bg-violet-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-            )}
-            {timerType === 'long_break' && (
-              <div className="w-full bg-blue-300 rounded-full h-2">
-                <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-            )}
+            <div className={`w-full ${progressColors.bg} rounded-full h-2`}>
+              <div 
+                className={`${progressColors.fg} h-2 rounded-full transition-all duration-300`}
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
           </div>
         </div>
       </CardContent>

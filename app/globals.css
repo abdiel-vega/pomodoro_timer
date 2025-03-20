@@ -31,12 +31,53 @@
     --chart-5: 27 87% 67%;
   }
 
+  /* Light Theme Variants */
+  [data-theme="light-blue"] {
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 214 32% 91%;
+    --accent: 221 83% 90%;
+    --ring: 221 83% 53%;
+  }
+  
+  [data-theme="light-green"] {
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 138 55% 90%;
+    --accent: 142 76% 90%;
+    --ring: 142 76% 36%;
+  }
+  
+  [data-theme="light-purple"] {
+    --primary: 267 85% 40%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 267 85% 90%;
+    --accent: 267 85% 95%;
+    --ring: 267 85% 40%;
+  }
+  
+  [data-theme="light-orange"] {
+    --primary: 28 100% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 28 100% 90%;
+    --accent: 28 100% 95%;
+    --ring: 28 100% 50%;
+  }
+  
+  [data-theme="light-red"] {
+    --primary: 0 100% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 100% 90%;
+    --accent: 0 100% 95%;
+    --ring: 0 100% 50%;
+  }
+
   .dark {
-    --background: 0 0% 3.9%;
+    --background: 0 0% 0.14%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 0 0% 0.14%; 
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 0 0% 0.14%; 
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
     --primary-foreground: 0 0% 9%;
@@ -44,7 +85,7 @@
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
+    --accent: 0 0% 0.20%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -57,64 +98,45 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
-}
 
-@layer base {
-  * {
-    @apply border-border;
+  /* Dark Theme Variants */
+  .dark[data-theme="dark-blue"] {
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 217 91% 20%;
+    --accent: 217 91% 15%;
+    --ring: 217 91% 60%;
   }
-  body {
-    @apply bg-background text-foreground;
+  
+  .dark[data-theme="dark-green"] {
+    --primary: 142 76% 45%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 142 76% 20%;
+    --accent: 142 76% 15%;
+    --ring: 142 76% 45%;
   }
-}
-
-
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+  
+  .dark[data-theme="dark-purple"] {
+    --primary: 267 85% 60%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 267 85% 25%;
+    --accent: 267 85% 15%;
+    --ring: 267 85% 60%;
   }
-  body {
-    @apply bg-background text-foreground;
+  
+  .dark[data-theme="dark-orange"] {
+    --primary: 28 100% 55%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 28 100% 25%;
+    --accent: 28 100% 15%;
+    --ring: 28 100% 55%;
   }
-}
-
-/* CSS variables for deep focus mode */
-:root {
-  --focus-dim-amount: 0.1;
-}
-
-/* Deep focus mode styles */
-body.deep-focus-mode {
-  transition: all 0.5s ease;
-}
-
-body.deep-focus-mode header,
-body.deep-focus-mode footer,
-body.deep-focus-mode .hide-during-focus {
-  opacity: var(--focus-dim-amount);
-  transition: opacity 0.5s ease;
-}
-
-body.deep-focus-mode header:hover,
-body.deep-focus-mode footer:hover,
-body.deep-focus-mode .hide-during-focus:hover {
-  opacity: 1;
-}
-
-/* Make sure timer and task list stay prominent */
-body.deep-focus-mode .timer-container {
-  opacity: 1;
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
-  transform: scale(1.02);
-  transition: all 0.5s ease;
-}
-
-body.deep-focus-mode .task-list-container {
-  opacity: 0.85;
-  transition: opacity 0.5s ease;
-}
-
-body.deep-focus-mode .task-list-container:hover {
-  opacity: 1;
+  
+  .dark[data-theme="dark-red"] {
+    --primary: 0 100% 55%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 100% 25%;
+    --accent: 0 100% 15%;
+    --ring: 0 100% 55%;
+  }
 }

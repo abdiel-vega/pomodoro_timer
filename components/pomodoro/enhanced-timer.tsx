@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles } from 'lucide-react';
 import { PlayIcon, PauseIcon, RotateCcwIcon, BrainIcon, CoffeeIcon, CupSodaIcon } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import Lottie from 'lottie-react';
 import zenAnimationData from '../../public/animations/zen-animation.json';
 import pulseAnimationData from '../../public/animations/pulse-animation.json';
@@ -39,6 +40,9 @@ export default function EnhancedTimer() {
     deepFocusMode,
     animationType
   } = usePomodoroTimer();
+
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
   // Animation references
   const lottieRef = useRef(null);
@@ -76,17 +80,64 @@ export default function EnhancedTimer() {
     }
   };
 
+  // Get background color based on timer type and theme
+  const getBackgroundColor = () => {
+    if (isDarkMode) {
+      switch (timerType) {
+        case 'work':
+          return 'bg-zinc-800';
+        case 'short_break':
+          return 'bg-violet-900/30';
+        case 'long_break':
+          return 'bg-blue-900/30';
+        default:
+          return 'bg-background';
+      }
+    } else {
+      switch (timerType) {
+        case 'work':
+          return 'bg-gray-100';
+        case 'short_break':
+          return 'bg-violet-50';
+        case 'long_break':
+          return 'bg-blue-50';
+        default:
+          return 'bg-background';
+      }
+    }
+  };
+
   // Get circle stroke color for the timer
   const getCircleColor = () => {
     switch (timerType) {
       case 'work':
-        return '#000000';
+        return isDarkMode ? '#ffffff' : '#000000';
       case 'short_break':
         return '#8b5cf6'; // violet-500
       case 'long_break':
         return '#3b82f6'; // blue-500
       default:
         return 'hsl(var(--primary))';
+    }
+  };
+
+  // Get progress bar colors
+  const getProgressBarColors = () => {
+    if (timerType === 'work') {
+      return {
+        bg: isDarkMode ? 'bg-gray-700' : 'bg-gray-200',
+        fg: isDarkMode ? 'bg-white' : 'bg-black'
+      };
+    } else if (timerType === 'short_break') {
+      return {
+        bg: isDarkMode ? 'bg-violet-800/50' : 'bg-violet-300',
+        fg: 'bg-violet-500'
+      };
+    } else {
+      return {
+        bg: isDarkMode ? 'bg-blue-800/50' : 'bg-blue-300',
+        fg: 'bg-blue-500'
+      };
     }
   };
 
@@ -341,8 +392,10 @@ export default function EnhancedTimer() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const progressColors = getProgressBarColors();
+
   return (
-    <Card className={`w-full max-w-md mx-auto shadow-lg timer-container ${timerType === 'work' ? 'bg-gray-100' : timerType === 'short_break' ? 'bg-violet-50' : 'bg-blue-50'}`}>
+    <Card className={`w-full max-w-md mx-auto shadow-lg timer-container ${getBackgroundColor()}`}>
       <CardContent className="pt-6 relative">
         <div className="flex flex-col items-center space-y-8">
           {/* Timer Title */}
@@ -462,34 +515,16 @@ export default function EnhancedTimer() {
           
           {/* Progress Bar */}
           <div className="w-full">
-            {timerType === 'work' && (
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-black h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-            )}
-            {timerType === 'short_break' && (
-              <div className="w-full bg-violet-300 rounded-full h-2">
-                <div 
-                  className="bg-violet-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-            )}
-            {timerType === 'long_break' && (
-              <div className="w-full bg-blue-300 rounded-full h-2">
-                <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-            )}
+            <div className={`w-full ${progressColors.bg} rounded-full h-2`}>
+              <div 
+                className={`${progressColors.fg} h-2 rounded-full transition-all duration-300`}
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
           </div>
           
           {!isPremium && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-700">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-300">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-yellow-500" />
                 <p className="font-medium">Unlock animations and more premium features</p>
