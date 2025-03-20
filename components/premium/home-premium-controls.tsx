@@ -34,6 +34,15 @@ const SOUNDS = {
   ],
 };
 
+// Animation display names - maps technical names to user-friendly display names
+const ANIMATION_NAMES = {
+  zenCircles: 'Zen Circles',
+  wave: 'Wave',
+  pulse: 'Pulse',
+  particles: 'Particles',
+  breathing: 'Breathing',
+};
+
 export default function HomePremiumControls() {
   const {
     isPremium,
@@ -102,15 +111,15 @@ export default function HomePremiumControls() {
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Timer Animation</h4>
               <div className="flex flex-wrap gap-1">
-                {['bubbles', 'wave', 'pulse', 'particles', 'spiral'].map((animation) => (
+                {Object.entries(ANIMATION_NAMES).map(([key, displayName]) => (
                   <Button
-                    key={animation}
+                    key={key}
                     size="sm"
-                    variant={animationType === animation ? "default" : "outline"}
+                    variant={animationType === key ? "default" : "outline"}
                     className="h-8 text-xs px-2"
-                    onClick={() => setAnimationType(animation)}
+                    onClick={() => setAnimationType(key)}
                   >
-                    {animation}
+                    {displayName}
                   </Button>
                 ))}
               </div>

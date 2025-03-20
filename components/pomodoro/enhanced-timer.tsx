@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles } from 'lucide-react';
 import { PlayIcon, PauseIcon, RotateCcwIcon, BrainIcon, CoffeeIcon, CupSodaIcon } from 'lucide-react';
 
-// Animation variants - replaced forest and space with particles and spiral
+// Animation variants - replaced spiral with breathing
 const ANIMATIONS = {
-  bubbles: 'bubbles',
+  zenCircles: 'zenCircles',
   wave: 'wave',
   pulse: 'pulse',
   particles: 'particles',
-  spiral: 'spiral',
+  breathing: 'breathing',
 };
 
 export default function EnhancedTimer() {
@@ -85,21 +85,47 @@ export default function EnhancedTimer() {
     }
   };
 
-  // Bubble animation
-  const drawBubbles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  //  Zen Circles animation
+  const drawZenCircles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.clearRect(0, 0, width, height);
-    const bubbles = Math.floor(width / 20); // Number of bubbles based on width
     
-    for (let i = 0; i < bubbles; i++) {
-      const x = Math.random() * width;
-      const y = height - (timeRemaining % 60) * (height / 60);
-      const radius = Math.random() * 10 + 5;
-      const opacity = Math.random() * 0.5 + 0.2;
+    // Get color based on timer type
+    let circleColor;
+    if (timerType === 'work') {
+      circleColor = "rgba(0, 0, 0, 0.2)"; // Black for work
+    } else if (timerType === 'short_break') {
+      circleColor = "rgba(139, 92, 246, 0.2)"; // Violet for short break
+    } else {
+      circleColor = "rgba(59, 130, 246, 0.2)"; // Blue for long break
+    }
+    
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Current time for animation
+    const time = Date.now() * 0.001;
+    
+    // Draw multiple expanding circles
+    const circleCount = 8; // Increased from 5 to 8 for smoother effect
+    for (let i = 0; i < circleCount; i++) {
+      // Calculate radius based on time
+      // This creates circles that expand outward and repeat
+      const phase = (time * 0.4 + i / circleCount) % 1;
+      const radius = phase * Math.min(width, height) * 0.45;
       
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(66, 135, 245, ${opacity})`;
-      ctx.fill();
+      // Calculate opacity with a smoother fade-out curve
+      // Using a more gradual fade with a cubic curve
+      const opacity = 0.6 * Math.pow(1 - phase, 2);
+      
+      // Only draw if still somewhat visible
+      if (opacity > 0.02) {
+        // Draw the circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = circleColor.replace(')', `, ${opacity})`).replace('rgba', 'rgba');
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
   };
 
@@ -179,7 +205,7 @@ export default function EnhancedTimer() {
     ctx.fill();
   };
 
-  // Particles animation (new - replacing forest)
+  // Particles animation
   const drawParticles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.clearRect(0, 0, width, height);
     
@@ -213,43 +239,56 @@ export default function EnhancedTimer() {
     }
   };
 
-  // Spiral animation (new - replacing space)
-  const drawSpiral = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  // Breathing animation
+  const drawBreathing = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.clearRect(0, 0, width, height);
     
     const centerX = width / 2;
     const centerY = height / 2;
     const now = Date.now() * 0.001;
     
+    // Create a breathing pattern with a slower, more natural rhythm
+    // Full cycle takes about 6 seconds (inhale 3s, exhale 3s)
+    const breathCycle = (Math.sin(now * 0.5) + 1) / 2; // 0 to 1 range
+    
+    // Size oscillates between 40% and 75% of container
+    const minSize = Math.min(width, height) * 0.4;
+    const maxSize = Math.min(width, height) * 0.75;
+    const currentSize = minSize + breathCycle * (maxSize - minSize);
+    
     // Get color based on timer type
-    let spiralColor;
+    let primaryColor, secondaryColor;
     if (timerType === 'work') {
-      spiralColor = '#000000';
+      primaryColor = 'rgba(0, 0, 0, 0.3)';
+      secondaryColor = 'rgba(0, 0, 0, 0.05)';
     } else if (timerType === 'short_break') {
-      spiralColor = '#8b5cf6'; // violet
+      primaryColor = 'rgba(139, 92, 246, 0.3)'; // violet
+      secondaryColor = 'rgba(139, 92, 246, 0.05)';
     } else {
-      spiralColor = '#3b82f6'; // blue
+      primaryColor = 'rgba(59, 130, 246, 0.3)'; // blue
+      secondaryColor = 'rgba(59, 130, 246, 0.05)';
     }
     
-    ctx.beginPath();
-    
-    // Draw spiral
-    for (let i = 0; i < 200; i++) {
-      const angle = (i * 0.05) + now;
-      const radius = i * 0.3; 
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
+    // Draw multiple concentric circles for breathing visualization
+    const circleCount = 4;
+    for (let i = 0; i < circleCount; i++) {
+      const ratio = 1 - (i / circleCount);
+      const radius = currentSize * ratio;
       
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      
+      // Alternate between primary and secondary colors
+      ctx.fillStyle = i % 2 === 0 ? primaryColor : secondaryColor;
+      ctx.fill();
     }
     
-    ctx.strokeStyle = spiralColor;
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    // Add text hint about breathing if timer is running
+    if (timerState === 'running') {
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = primaryColor;
+    }
   };
 
   // Handle animation frames
@@ -267,8 +306,8 @@ export default function EnhancedTimer() {
     // Animation function
     const animate = () => {
       switch (animationType) {
-        case ANIMATIONS.bubbles:
-          drawBubbles(ctx, canvas.width, canvas.height);
+        case ANIMATIONS.zenCircles:
+          drawZenCircles(ctx, canvas.width, canvas.height);
           break;
         case ANIMATIONS.wave:
           drawWave(ctx, canvas.width, canvas.height);
@@ -279,8 +318,8 @@ export default function EnhancedTimer() {
         case ANIMATIONS.particles:
           drawParticles(ctx, canvas.width, canvas.height);
           break;
-        case ANIMATIONS.spiral:
-          drawSpiral(ctx, canvas.width, canvas.height);
+        case ANIMATIONS.breathing:
+          drawBreathing(ctx, canvas.width, canvas.height);
           break;
       }
       
