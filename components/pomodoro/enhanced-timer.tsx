@@ -15,8 +15,8 @@ const ANIMATIONS = {
   bubbles: 'bubbles',
   wave: 'wave',
   pulse: 'pulse',
-  forest: 'forest',
-  space: 'space',
+  particles: 'particles',
+  spiral: 'spiral',        
 };
 
 export default function EnhancedTimer() {
@@ -182,157 +182,79 @@ export default function EnhancedTimer() {
     ctx.fill();
   };
 
-  // Forest animation (trees growing with time)
-  const drawForest = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.clearRect(0, 0, width, height);
+  // Particles animation (simple dots moving around)
+const drawParticles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  ctx.clearRect(0, 0, width, height);
+  
+  const now = Date.now() * 0.001;
+  const particleCount = 40;
+  
+  // Get color based on timer type
+  let particleColor;
+  if (timerType === 'work') {
+    particleColor = '#000000';
+  } else if (timerType === 'short_break') {
+    particleColor = '#8b5cf6'; // violet
+  } else {
+    particleColor = '#3b82f6'; // blue
+  }
+  
+  for (let i = 0; i < particleCount; i++) {
+    // Use sine functions to create flowing movement
+    const angle = (i / particleCount) * Math.PI * 2;
+    const speed = 0.5 + Math.sin(i * 5) * 0.3;
+    const x = width/2 + Math.cos(angle + now * speed) * (width * 0.4);
+    const y = height/2 + Math.sin(angle + now * speed) * (height * 0.4);
+    const size = 1 + Math.sin(now * 2 + i) * 1;
     
-    const groundY = height * 0.8;
-    const progress = progressPercentage / 100;
-    
-    // Draw sky gradient
-    const skyGradient = ctx.createLinearGradient(0, 0, 0, groundY);
-    skyGradient.addColorStop(0, '#87CEEB'); // Sky blue
-    skyGradient.addColorStop(1, '#E0F7FA'); // Light blue
-    ctx.fillStyle = skyGradient;
-    ctx.fillRect(0, 0, width, groundY);
-    
-    // Draw ground
-    ctx.fillStyle = '#8B4513'; // Brown
-    ctx.fillRect(0, groundY, width, height - groundY);
-    
-    // Draw grass
-    ctx.fillStyle = '#228B22'; // Forest green
-    ctx.fillRect(0, groundY - 5, width, 10);
-    
-    // Number of trees based on canvas width
-    const numTrees = Math.floor(width / 40);
-    const treeHeight = height * 0.3 * progress; // Trees grow with progress
-    
-    for (let i = 0; i < numTrees; i++) {
-      const x = (i + 0.5) * (width / numTrees);
-      
-      // Draw trunk
-      ctx.fillStyle = '#8B4513'; // Brown
-      ctx.fillRect(x - 5, groundY - treeHeight, 10, treeHeight);
-      
-      // Draw foliage (triangles)
-      ctx.beginPath();
-      ctx.moveTo(x, groundY - treeHeight - 40 * progress);
-      ctx.lineTo(x - 20 * progress, groundY - treeHeight);
-      ctx.lineTo(x + 20 * progress, groundY - treeHeight);
-      ctx.closePath();
-      ctx.fillStyle = '#006400'; // Dark green
-      ctx.fill();
-      
-      // Draw second layer of foliage
-      ctx.beginPath();
-      ctx.moveTo(x, groundY - treeHeight - 70 * progress);
-      ctx.lineTo(x - 15 * progress, groundY - treeHeight - 30 * progress);
-      ctx.lineTo(x + 15 * progress, groundY - treeHeight - 30 * progress);
-      ctx.closePath();
-      ctx.fillStyle = '#228B22'; // Forest green
-      ctx.fill();
-    }
-    
-    // Draw sun
-    const sunRadius = 30;
     ctx.beginPath();
-    ctx.arc(width - 50, 50, sunRadius, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFD700'; // Gold
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fillStyle = particleColor;
+    ctx.globalAlpha = 0.6 + Math.sin(now + i) * 0.2;
     ctx.fill();
-    
-    // Draw sun rays
-    ctx.beginPath();
-    for (let i = 0; i < 12; i++) {
-      const angle = (i / 12) * Math.PI * 2;
-      const x1 = width - 50 + Math.cos(angle) * sunRadius;
-      const y1 = 50 + Math.sin(angle) * sunRadius;
-      const x2 = width - 50 + Math.cos(angle) * (sunRadius + 15);
-      const y2 = 50 + Math.sin(angle) * (sunRadius + 15);
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-    }
-    ctx.strokeStyle = '#FFD700';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  };
+    ctx.globalAlpha = 1;
+  }
+};
 
-  // Space animation
-  const drawSpace = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.clearRect(0, 0, width, height);
+
+// Spiral animation
+const drawSpiral = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  ctx.clearRect(0, 0, width, height);
+  
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const now = Date.now() * 0.001;
+  
+  // Get color based on timer type
+  let spiralColor;
+  if (timerType === 'work') {
+    spiralColor = '#000000';
+  } else if (timerType === 'short_break') {
+    spiralColor = '#8b5cf6'; // violet
+  } else {
+    spiralColor = '#3b82f6'; // blue
+  }
+  
+  ctx.beginPath();
+  
+  // Draw spiral
+  for (let i = 0; i < 200; i++) {
+    const angle = (i * 0.05) + now;
+    const radius = i * 0.3; 
+    const x = centerX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius;
     
-    // Draw space background
-    ctx.fillStyle = '#000033'; // Dark blue
-    ctx.fillRect(0, 0, width, height);
-    
-    // Draw stars
-    const numStars = 100;
-    const timeOffset = Date.now() * 0.001;
-    
-    for (let i = 0; i < numStars; i++) {
-      const x = (i * 17) % width;
-      const y = (i * 23) % height;
-      const size = Math.sin(timeOffset + i * 0.1) * 1 + 2;
-      const opacity = Math.sin(timeOffset + i * 0.1) * 0.3 + 0.7;
-      
-      ctx.beginPath();
-      ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-      ctx.fill();
-    }
-    
-    // Draw planet (changes size based on progress)
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const planetRadius = Math.min(width, height) * 0.2 * (1 - progressPercentage / 100);
-    
-    // Planet body
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, planetRadius, 0, Math.PI * 2);
-    
-    // Planet color based on timer type
-    let planetColor;
-    if (timerType === 'work') {
-      planetColor = '#4A2C40'; // Deep purple
-    } else if (timerType === 'short_break') {
-      planetColor = '#4682B4'; // Steel blue
+    if (i === 0) {
+      ctx.moveTo(x, y);
     } else {
-      planetColor = '#228B22'; // Forest green
+      ctx.lineTo(x, y);
     }
-    
-    ctx.fillStyle = planetColor;
-    ctx.fill();
-    
-    // Draw planet details (rings or craters)
-    if (timerType === 'work') {
-      // Draw craters for work timer
-      for (let i = 0; i < 5; i++) {
-        const craterX = centerX + Math.cos(i * 1.5) * planetRadius * 0.6;
-        const craterY = centerY + Math.sin(i * 1.5) * planetRadius * 0.6;
-        const craterSize = planetRadius * 0.2;
-        
-        ctx.beginPath();
-        ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
-        ctx.fillStyle = '#3A1F30';
-        ctx.fill();
-      }
-    } else {
-      // Draw rings for break timers
-      ctx.beginPath();
-      ctx.ellipse(
-        centerX, 
-        centerY, 
-        planetRadius * 1.5, 
-        planetRadius * 0.5, 
-        Math.PI / 4, 
-        0, 
-        Math.PI * 2
-      );
-      ctx.strokeStyle = timerType === 'short_break' ? '#ADD8E6' : '#90EE90';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
-  };
+  }
+  
+  ctx.strokeStyle = spiralColor;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+};
 
   // Handle animation frames
   useEffect(() => {
@@ -358,16 +280,16 @@ export default function EnhancedTimer() {
         case ANIMATIONS.pulse:
           drawPulse(ctx, canvas.width, canvas.height);
           break;
-        case ANIMATIONS.forest:
-          drawForest(ctx, canvas.width, canvas.height);
+        case ANIMATIONS.particles:
+          drawParticles(ctx, canvas.width, canvas.height);
           break;
-        case ANIMATIONS.space:
-          drawSpace(ctx, canvas.width, canvas.height);
+        case ANIMATIONS.spiral:
+          drawSpiral(ctx, canvas.width, canvas.height);
           break;
       }
       
       animationRef.current = requestAnimationFrame(animate);
-    };
+    };    
     
     // Start animation
     animate();

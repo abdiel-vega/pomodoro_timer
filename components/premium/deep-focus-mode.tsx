@@ -62,19 +62,6 @@ export default function DeepFocusMode() {
     }
   }, [deepFocusMode, settings, isPremium]);
 
-  // Toggle deep focus mode
-  const toggleDeepFocus = () => {
-    if (!isPremium) return;
-    
-    if (!deepFocusMode) {
-      setDeepFocusMode(true);
-      toast.success("Deep Focus Mode activated. Stay focused!");
-    } else {
-      setDeepFocusMode(false);
-      toast.info("Deep Focus Mode deactivated");
-    }
-  };
-
   // Handle settings changes
   const updateSettings = (key: keyof typeof settings, value: boolean) => {
     setSettings(prev => ({
@@ -120,19 +107,6 @@ export default function DeepFocusMode() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">Enable Deep Focus</h3>
-                <p className="text-sm text-muted-foreground">
-                  Minimize distractions and maximize concentration
-                </p>
-              </div>
-              <Switch
-                checked={deepFocusMode}
-                onCheckedChange={toggleDeepFocus}
-                disabled={timerState === 'running' && !deepFocusMode}
-              />
-            </div>
             
             <div className="space-y-4 border-t mt-2 pt-4">
               <h4 className="text-sm font-medium">Focus Settings</h4>

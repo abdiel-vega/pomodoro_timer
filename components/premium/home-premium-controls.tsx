@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
+import { toast } from 'sonner';
 
 // Timer animation types from enhanced-timer.tsx
 const ANIMATIONS = {
@@ -82,20 +83,19 @@ export default function HomePremiumControls() {
 
   return (
     <div className="w-full max-w-md mx-auto bg-card/50 rounded-lg p-3 border mb-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 text-sm">
-          <Sparkles className="h-4 w-4 text-yellow-500" />
-          <span>Premium Features</span>
-        </div>
+      <div className="flex items-center gap-1 text-sm mb-3 justify-center">
+        <Sparkles className="h-4 w-4 text-yellow-500" />
+        <span>Premium Features</span>
+      </div>
         
-        <div className="flex items-center space-x-2">
-          {/* Timer Effects */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8">
-                <Sparkles className="h-4 w-4 mr-1" /> Effects
-              </Button>
-            </PopoverTrigger>
+      <div className="flex items-center justify-center space-x-2">
+        {/* Timer Effects */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8">
+              <Sparkles className="h-4 w-4 mr-1" /> Effects
+            </Button>
+          </PopoverTrigger>
             <PopoverContent className="w-full p-2">
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Timer Animation</h4>
@@ -117,16 +117,16 @@ export default function HomePremiumControls() {
           </Popover>
 
           {/* Ambient Sounds */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className={`h-8 ${soundEnabled ? 'bg-muted' : ''}`}
-              >
-                <Music className="h-4 w-4 mr-1" /> Sounds
-              </Button>
-            </PopoverTrigger>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={`h-8 ${soundEnabled ? 'bg-muted' : ''}`}
+            >
+              <Music className="h-4 w-4 mr-1" /> Sounds
+            </Button>
+          </PopoverTrigger>
             <PopoverContent className="w-64 p-2">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -186,14 +186,21 @@ export default function HomePremiumControls() {
 
           {/* Deep Focus Mode */}
           <Button
-            variant={deepFocusMode ? "default" : "outline"}
-            size="sm"
-            className="h-8"
-            onClick={() => setDeepFocusMode(!deepFocusMode)}
-          >
-            <EyeIcon className="h-4 w-4 mr-1" /> Focus Mode
-          </Button>
-        </div>
+  variant={deepFocusMode ? "default" : "outline"}
+  size="sm"
+  className="h-8"
+  onClick={() => {
+    setDeepFocusMode(!deepFocusMode);
+    // Add a toast notification to confirm the change
+    if (!deepFocusMode) {
+      toast.success("Deep Focus Mode activated");
+    } else {
+      toast.info("Deep Focus Mode deactivated");
+    }
+  }}
+>
+  <EyeIcon className="h-4 w-4 mr-1" /> Focus Mode
+</Button>
       </div>
     </div>
   );
