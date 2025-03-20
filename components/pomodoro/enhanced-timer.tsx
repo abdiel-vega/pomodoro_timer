@@ -7,8 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles } from 'lucide-react';
 import { PlayIcon, PauseIcon, RotateCcwIcon, BrainIcon, CoffeeIcon, CupSodaIcon } from 'lucide-react';
+import Lottie from 'lottie-react';
+import zenAnimationData from '../../public/animations/zen-animation.json';
+import pulseAnimationData from '../../public/animations/pulse-animation.json';
+import particlesAnimationData from '../../public/animations/particles-animation.json';
 
-// Animation variants - replaced spiral with breathing
+// Animation variants
 const ANIMATIONS = {
   zenCircles: 'zenCircles',
   wave: 'wave',
@@ -36,7 +40,8 @@ export default function EnhancedTimer() {
     animationType
   } = usePomodoroTimer();
 
-  // Animation state
+  // Animation references
+  const lottieRef = useRef(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
 
@@ -85,215 +90,101 @@ export default function EnhancedTimer() {
     }
   };
 
-  //  Zen Circles animation
-  const drawZenCircles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.clearRect(0, 0, width, height);
+  // Determine which animation to render and its properties
+  const getLottieAnimation = () => {
+    // Enhanced styling for the animation container to make animations larger
+    const baseStyles = {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      zIndex: 0,
+      opacity: timerState === 'running' ? 0.8 : 0.4,
+      transition: 'opacity 0.5s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      borderRadius: '50%',
+    } as React.CSSProperties;
     
-    // Get color based on timer type
-    let circleColor;
-    if (timerType === 'work') {
-      circleColor = "rgba(0, 0, 0, 0.2)"; // Black for work
-    } else if (timerType === 'short_break') {
-      circleColor = "rgba(139, 92, 246, 0.2)"; // Violet for short break
-    } else {
-      circleColor = "rgba(59, 130, 246, 0.2)"; // Blue for long break
+    // Enhanced styling for Lottie component to make it larger than container
+    const lottieStyles = {
+      width: '125%',
+      height: '125%',
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)', // Center the enlarged animation
+      overflow: 'hidden',
+    } as React.CSSProperties;
+    
+    // For canvas-based animations that we're still keeping (wave and breathing)
+    if (animationType === 'wave' || animationType === 'breathing') {
+      return (
+        <canvas 
+          ref={canvasRef} 
+          className="absolute inset-0 w-full h-full rounded-full"
+          style={{ zIndex: 0 }}
+        />
+      );
     }
     
-    const centerX = width / 2;
-    const centerY = height / 2;
-    
-    // Current time for animation
-    const time = Date.now() * 0.001;
-    
-    // Draw multiple expanding circles
-    const circleCount = 8; // Increased from 5 to 8 for smoother effect
-    for (let i = 0; i < circleCount; i++) {
-      // Calculate radius based on time
-      // This creates circles that expand outward and repeat
-      const phase = (time * 0.4 + i / circleCount) % 1;
-      const radius = phase * Math.min(width, height) * 0.45;
-      
-      // Calculate opacity with a smoother fade-out curve
-      // Using a more gradual fade with a cubic curve
-      const opacity = 0.6 * Math.pow(1 - phase, 2);
-      
-      // Only draw if still somewhat visible
-      if (opacity > 0.02) {
-        // Draw the circle
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = circleColor.replace(')', `, ${opacity})`).replace('rgba', 'rgba');
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
+    // Handle the Lottie animations
+    if (animationType === 'zenCircles') {
+      return (
+        <div style={baseStyles}>
+          <Lottie
+            animationData={zenAnimationData}
+            loop={true}
+            autoplay={true}
+            style={lottieStyles}
+            rendererSettings={{
+              preserveAspectRatio: 'xMidYMid slice',
+            }}
+          />
+        </div>
+      );
+    } else if (animationType === 'pulse') {
+      return (
+        <div style={baseStyles}>
+          <Lottie
+            animationData={pulseAnimationData}
+            loop={true}
+            autoplay={true}
+            style={lottieStyles}
+            rendererSettings={{
+              preserveAspectRatio: 'xMidYMid slice',
+            }}
+          />
+        </div>
+      );
+    } else if (animationType === 'particles') {
+      return (
+        <div style={baseStyles}>
+          <Lottie
+            animationData={particlesAnimationData}
+            loop={true}
+            autoplay={true}
+            style={lottieStyles}
+            rendererSettings={{
+              preserveAspectRatio: 'xMidYMid slice',
+            }}
+          />
+        </div>
+      );
     }
+    
+    // Default to no animation
+    return null;
   };
 
-  // Wave animation
-  const drawWave = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.clearRect(0, 0, width, height);
-    
-    const amplitude = 20; // Wave height
-    const frequency = 0.02; // Wave density
-    const timeOffset = Date.now() * 0.001; // Time-based animation
-    
-    ctx.beginPath();
-    ctx.moveTo(0, height / 2);
-    
-    for (let x = 0; x < width; x++) {
-      const y = Math.sin(x * frequency + timeOffset) * amplitude + height / 2;
-      ctx.lineTo(x, y);
-    }
-    
-    // Complete the wave by drawing to bottom corners
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, height);
-    ctx.closePath();
-    
-    // Fill with gradient based on timer type
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    if (timerType === 'work') {
-      gradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
-    } else if (timerType === 'short_break') {
-      gradient.addColorStop(0, 'rgba(139, 92, 246, 0.7)'); // violet
-      gradient.addColorStop(1, 'rgba(139, 92, 246, 0.3)');
-    } else {
-      gradient.addColorStop(0, 'rgba(59, 130, 246, 0.7)'); // blue
-      gradient.addColorStop(1, 'rgba(59, 130, 246, 0.3)');
-    }
-    
-    ctx.fillStyle = gradient;
-    ctx.fill();
-  };
-
-  // Pulse animation
-  const drawPulse = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.clearRect(0, 0, width, height);
-    
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const maxRadius = Math.min(width, height) * 0.4;
-    
-    // Calculate pulse radius based on timer state
-    const pulseBase = Math.sin(Date.now() * 0.002) * 0.1 + 0.9;
-    const pulseRadius = timerState === 'running' 
-      ? maxRadius * pulseBase 
-      : maxRadius * 0.9;
-    
-    // Draw outer circle
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(200, 200, 200, 0.1)';
-    ctx.fill();
-    
-    // Draw pulse circle
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
-    
-    // Color based on timer type
-    let color;
-    if (timerType === 'work') {
-      color = 'rgba(0, 0, 0, 0.2)';
-    } else if (timerType === 'short_break') {
-      color = 'rgba(139, 92, 246, 0.2)'; // violet
-    } else {
-      color = 'rgba(59, 130, 246, 0.2)'; // blue
-    }
-    
-    ctx.fillStyle = color;
-    ctx.fill();
-  };
-
-  // Particles animation
-  const drawParticles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.clearRect(0, 0, width, height);
-    
-    const now = Date.now() * 0.001;
-    const particleCount = 40;
-    
-    // Get color based on timer type
-    let particleColor;
-    if (timerType === 'work') {
-      particleColor = '#000000';
-    } else if (timerType === 'short_break') {
-      particleColor = '#8b5cf6'; // violet
-    } else {
-      particleColor = '#3b82f6'; // blue
-    }
-    
-    for (let i = 0; i < particleCount; i++) {
-      // Use sine functions to create flowing movement
-      const angle = (i / particleCount) * Math.PI * 2;
-      const speed = 0.5 + Math.sin(i * 5) * 0.3;
-      const x = width/2 + Math.cos(angle + now * speed) * (width * 0.4);
-      const y = height/2 + Math.sin(angle + now * speed) * (height * 0.4);
-      const size = 1 + Math.sin(now * 2 + i) * 1;
-      
-      ctx.beginPath();
-      ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fillStyle = particleColor;
-      ctx.globalAlpha = 0.6 + Math.sin(now + i) * 0.2;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-  };
-
-  // Breathing animation
-  const drawBreathing = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    ctx.clearRect(0, 0, width, height);
-    
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const now = Date.now() * 0.001;
-    
-    // Create a breathing pattern with a slower, more natural rhythm
-    // Full cycle takes about 6 seconds (inhale 3s, exhale 3s)
-    const breathCycle = (Math.sin(now * 0.5) + 1) / 2; // 0 to 1 range
-    
-    // Size oscillates between 40% and 75% of container
-    const minSize = Math.min(width, height) * 0.4;
-    const maxSize = Math.min(width, height) * 0.75;
-    const currentSize = minSize + breathCycle * (maxSize - minSize);
-    
-    // Get color based on timer type
-    let primaryColor, secondaryColor;
-    if (timerType === 'work') {
-      primaryColor = 'rgba(0, 0, 0, 0.3)';
-      secondaryColor = 'rgba(0, 0, 0, 0.05)';
-    } else if (timerType === 'short_break') {
-      primaryColor = 'rgba(139, 92, 246, 0.3)'; // violet
-      secondaryColor = 'rgba(139, 92, 246, 0.05)';
-    } else {
-      primaryColor = 'rgba(59, 130, 246, 0.3)'; // blue
-      secondaryColor = 'rgba(59, 130, 246, 0.05)';
-    }
-    
-    // Draw multiple concentric circles for breathing visualization
-    const circleCount = 4;
-    for (let i = 0; i < circleCount; i++) {
-      const ratio = 1 - (i / circleCount);
-      const radius = currentSize * ratio;
-      
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-      
-      // Alternate between primary and secondary colors
-      ctx.fillStyle = i % 2 === 0 ? primaryColor : secondaryColor;
-      ctx.fill();
-    }
-    
-    // Add text hint about breathing if timer is running
-    if (timerState === 'running') {
-      ctx.font = '12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = primaryColor;
-    }
-  };
-
-  // Handle animation frames
+  // Handle canvas-based animations for wave and breathing animations
+  // (keeping these two since they weren't included in the Lottie replacements)
   useEffect(() => {
-    if (!canvasRef.current || !isPremium) return;
+    if (!canvasRef.current || !isPremium || 
+        (animationType !== 'wave' && animationType !== 'breathing')) return;
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -305,25 +196,103 @@ export default function EnhancedTimer() {
     
     // Animation function
     const animate = () => {
-      switch (animationType) {
-        case ANIMATIONS.zenCircles:
-          drawZenCircles(ctx, canvas.width, canvas.height);
-          break;
-        case ANIMATIONS.wave:
-          drawWave(ctx, canvas.width, canvas.height);
-          break;
-        case ANIMATIONS.pulse:
-          drawPulse(ctx, canvas.width, canvas.height);
-          break;
-        case ANIMATIONS.particles:
-          drawParticles(ctx, canvas.width, canvas.height);
-          break;
-        case ANIMATIONS.breathing:
-          drawBreathing(ctx, canvas.width, canvas.height);
-          break;
+      if (animationType === 'wave') {
+        drawWave(ctx, canvas.width, canvas.height);
+      } else if (animationType === 'breathing') {
+        drawBreathing(ctx, canvas.width, canvas.height);
       }
       
       animationRef.current = requestAnimationFrame(animate);
+    };
+    
+    // Wave animation
+    const drawWave = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+      ctx.clearRect(0, 0, width, height);
+      
+      const amplitude = 20; // Wave height
+      const frequency = 0.02; // Wave density
+      const timeOffset = Date.now() * 0.001; // Time-based animation
+      
+      ctx.beginPath();
+      ctx.moveTo(0, height / 2);
+      
+      for (let x = 0; x < width; x++) {
+        const y = Math.sin(x * frequency + timeOffset) * amplitude + height / 2;
+        ctx.lineTo(x, y);
+      }
+      
+      // Complete the wave by drawing to bottom corners
+      ctx.lineTo(width, height);
+      ctx.lineTo(0, height);
+      ctx.closePath();
+      
+      // Fill with gradient based on timer type
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      if (timerType === 'work') {
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+      } else if (timerType === 'short_break') {
+        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.7)'); // violet
+        gradient.addColorStop(1, 'rgba(139, 92, 246, 0.3)');
+      } else {
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.7)'); // blue
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.3)');
+      }
+      
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    };
+
+    // Breathing animation
+    const drawBreathing = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+      ctx.clearRect(0, 0, width, height);
+      
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const now = Date.now() * 0.001;
+      
+      // Create a breathing pattern with a slower, more natural rhythm
+      // Full cycle takes about 6 seconds (inhale 3s, exhale 3s)
+      const breathCycle = (Math.sin(now * 0.5) + 1) / 2; // 0 to 1 range
+      
+      // Size oscillates between 40% and 75% of container
+      const minSize = Math.min(width, height) * 0.4;
+      const maxSize = Math.min(width, height) * 0.75;
+      const currentSize = minSize + breathCycle * (maxSize - minSize);
+      
+      // Get color based on timer type
+      let primaryColor, secondaryColor;
+      if (timerType === 'work') {
+        primaryColor = 'rgba(0, 0, 0, 0.3)';
+        secondaryColor = 'rgba(0, 0, 0, 0.05)';
+      } else if (timerType === 'short_break') {
+        primaryColor = 'rgba(139, 92, 246, 0.3)'; // violet
+        secondaryColor = 'rgba(139, 92, 246, 0.05)';
+      } else {
+        primaryColor = 'rgba(59, 130, 246, 0.3)'; // blue
+        secondaryColor = 'rgba(59, 130, 246, 0.05)';
+      }
+      
+      // Draw multiple concentric circles for breathing visualization
+      const circleCount = 4;
+      for (let i = 0; i < circleCount; i++) {
+        const ratio = 1 - (i / circleCount);
+        const radius = currentSize * ratio;
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        
+        // Alternate between primary and secondary colors
+        ctx.fillStyle = i % 2 === 0 ? primaryColor : secondaryColor;
+        ctx.fill();
+      }
+      
+      // Add text hint about breathing if timer is running
+      if (timerState === 'running') {
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = primaryColor;
+      }
     };
     
     // Start animation
@@ -335,7 +304,7 @@ export default function EnhancedTimer() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [animationType, isPremium, progressPercentage, timerState, timerType]);
+  }, [animationType, isPremium, timerState, timerType]);
 
   // Handle window resize
   useEffect(() => {
@@ -351,7 +320,7 @@ export default function EnhancedTimer() {
   }, []);
 
   return (
-    <Card className={`w-full max-w-md mx-auto shadow-lg ${timerType === 'work' ? 'bg-gray-100' : timerType === 'short_break' ? 'bg-violet-50' : 'bg-blue-50'}`}>
+    <Card className={`w-full max-w-md mx-auto shadow-lg timer-container ${timerType === 'work' ? 'bg-gray-100' : timerType === 'short_break' ? 'bg-violet-50' : 'bg-blue-50'}`}>
       <CardContent className="pt-6 relative">
         <div className="flex flex-col items-center space-y-8">
           {/* Timer Title */}
@@ -379,13 +348,7 @@ export default function EnhancedTimer() {
           
           {/* Timer Display */}
           <div className="w-48 h-48 rounded-full border-8 border-muted flex items-center justify-center relative">
-            {isPremium && (
-              <canvas 
-                ref={canvasRef} 
-                className="absolute inset-0 w-full h-full rounded-full"
-                style={{ zIndex: 0 }}
-              />
-            )}
+            {isPremium && getLottieAnimation()}
             <span className="text-4xl font-bold z-10">{formatTime(timeRemaining)}</span>
             <div className="absolute -top-2 -right-2 -bottom-2 -left-2 z-5">
               <svg width="100%" height="100%" viewBox="0 0 100 100" className="rotate-[-90deg]">
