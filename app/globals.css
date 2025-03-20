@@ -78,3 +78,43 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* CSS variables for deep focus mode */
+:root {
+  --focus-dim-amount: 0.1;
+}
+
+/* Deep focus mode styles */
+body.deep-focus-mode {
+  transition: all 0.5s ease;
+}
+
+body.deep-focus-mode header,
+body.deep-focus-mode footer,
+body.deep-focus-mode .hide-during-focus {
+  opacity: var(--focus-dim-amount);
+  transition: opacity 0.5s ease;
+}
+
+body.deep-focus-mode header:hover,
+body.deep-focus-mode footer:hover,
+body.deep-focus-mode .hide-during-focus:hover {
+  opacity: 1;
+}
+
+/* Make sure timer and task list stay prominent */
+body.deep-focus-mode .timer-container {
+  opacity: 1;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+  transition: all 0.5s ease;
+}
+
+body.deep-focus-mode .task-list-container {
+  opacity: 0.85;
+  transition: opacity 0.5s ease;
+}
+
+body.deep-focus-mode .task-list-container:hover {
+  opacity: 1;
+}

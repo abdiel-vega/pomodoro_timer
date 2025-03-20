@@ -1,4 +1,3 @@
-// components/pomodoro/enhanced-timer.tsx
 'use client';
 
 import React, { useEffect, useRef } from 'react';
@@ -8,15 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles } from 'lucide-react';
 import { PlayIcon, PauseIcon, RotateCcwIcon, BrainIcon, CoffeeIcon, CupSodaIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-// Animation variants
+// Animation variants - replaced forest and space with particles and spiral
 const ANIMATIONS = {
   bubbles: 'bubbles',
   wave: 'wave',
   pulse: 'pulse',
   particles: 'particles',
-  spiral: 'spiral',        
+  spiral: 'spiral',
 };
 
 export default function EnhancedTimer() {
@@ -35,8 +33,7 @@ export default function EnhancedTimer() {
     currentTask,
     isPremium,
     deepFocusMode,
-    animationType,
-    setAnimationType,
+    animationType
   } = usePomodoroTimer();
 
   // Animation state
@@ -182,79 +179,78 @@ export default function EnhancedTimer() {
     ctx.fill();
   };
 
-  // Particles animation (simple dots moving around)
-const drawParticles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-  ctx.clearRect(0, 0, width, height);
-  
-  const now = Date.now() * 0.001;
-  const particleCount = 40;
-  
-  // Get color based on timer type
-  let particleColor;
-  if (timerType === 'work') {
-    particleColor = '#000000';
-  } else if (timerType === 'short_break') {
-    particleColor = '#8b5cf6'; // violet
-  } else {
-    particleColor = '#3b82f6'; // blue
-  }
-  
-  for (let i = 0; i < particleCount; i++) {
-    // Use sine functions to create flowing movement
-    const angle = (i / particleCount) * Math.PI * 2;
-    const speed = 0.5 + Math.sin(i * 5) * 0.3;
-    const x = width/2 + Math.cos(angle + now * speed) * (width * 0.4);
-    const y = height/2 + Math.sin(angle + now * speed) * (height * 0.4);
-    const size = 1 + Math.sin(now * 2 + i) * 1;
+  // Particles animation (new - replacing forest)
+  const drawParticles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.clearRect(0, 0, width, height);
+    
+    const now = Date.now() * 0.001;
+    const particleCount = 40;
+    
+    // Get color based on timer type
+    let particleColor;
+    if (timerType === 'work') {
+      particleColor = '#000000';
+    } else if (timerType === 'short_break') {
+      particleColor = '#8b5cf6'; // violet
+    } else {
+      particleColor = '#3b82f6'; // blue
+    }
+    
+    for (let i = 0; i < particleCount; i++) {
+      // Use sine functions to create flowing movement
+      const angle = (i / particleCount) * Math.PI * 2;
+      const speed = 0.5 + Math.sin(i * 5) * 0.3;
+      const x = width/2 + Math.cos(angle + now * speed) * (width * 0.4);
+      const y = height/2 + Math.sin(angle + now * speed) * (height * 0.4);
+      const size = 1 + Math.sin(now * 2 + i) * 1;
+      
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fillStyle = particleColor;
+      ctx.globalAlpha = 0.6 + Math.sin(now + i) * 0.2;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  // Spiral animation (new - replacing space)
+  const drawSpiral = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.clearRect(0, 0, width, height);
+    
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const now = Date.now() * 0.001;
+    
+    // Get color based on timer type
+    let spiralColor;
+    if (timerType === 'work') {
+      spiralColor = '#000000';
+    } else if (timerType === 'short_break') {
+      spiralColor = '#8b5cf6'; // violet
+    } else {
+      spiralColor = '#3b82f6'; // blue
+    }
     
     ctx.beginPath();
-    ctx.arc(x, y, size, 0, Math.PI * 2);
-    ctx.fillStyle = particleColor;
-    ctx.globalAlpha = 0.6 + Math.sin(now + i) * 0.2;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-};
-
-
-// Spiral animation
-const drawSpiral = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-  ctx.clearRect(0, 0, width, height);
-  
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const now = Date.now() * 0.001;
-  
-  // Get color based on timer type
-  let spiralColor;
-  if (timerType === 'work') {
-    spiralColor = '#000000';
-  } else if (timerType === 'short_break') {
-    spiralColor = '#8b5cf6'; // violet
-  } else {
-    spiralColor = '#3b82f6'; // blue
-  }
-  
-  ctx.beginPath();
-  
-  // Draw spiral
-  for (let i = 0; i < 200; i++) {
-    const angle = (i * 0.05) + now;
-    const radius = i * 0.3; 
-    const x = centerX + Math.cos(angle) * radius;
-    const y = centerY + Math.sin(angle) * radius;
     
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
+    // Draw spiral
+    for (let i = 0; i < 200; i++) {
+      const angle = (i * 0.05) + now;
+      const radius = i * 0.3; 
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
+      
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
     }
-  }
-  
-  ctx.strokeStyle = spiralColor;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-};
+    
+    ctx.strokeStyle = spiralColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  };
 
   // Handle animation frames
   useEffect(() => {
@@ -289,7 +285,7 @@ const drawSpiral = (ctx: CanvasRenderingContext2D, width: number, height: number
       }
       
       animationRef.current = requestAnimationFrame(animate);
-    };    
+    };
     
     // Start animation
     animate();

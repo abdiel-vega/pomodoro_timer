@@ -15,16 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 
-// Timer animation types from enhanced-timer.tsx
-const ANIMATIONS = {
-  bubbles: 'bubbles',
-  wave: 'wave',
-  pulse: 'pulse',
-  forest: 'forest',
-  space: 'space',
-};
-
-// Sound categories from sound-controls.tsx
+// Sound categories
 const SOUNDS = {
   nature: [
     { id: 'rain', name: 'Rainfall', url: '/sounds/rain.mp3' },
@@ -81,14 +72,25 @@ export default function HomePremiumControls() {
     setSoundEnabled(true);
   };
 
+  // Toggle deep focus mode
+  const toggleDeepFocusMode = (enabled: boolean) => {
+    setDeepFocusMode(enabled);
+    
+    if (enabled) {
+      toast.success("Deep Focus Mode activated. Stay focused!");
+    } else {
+      toast.info("Deep Focus Mode deactivated");
+    }
+  };
+
   return (
     <div className="w-full max-w-md mx-auto bg-card/50 rounded-lg p-3 border mb-4">
       <div className="flex items-center gap-1 text-sm mb-3 justify-center">
         <Sparkles className="h-4 w-4 text-yellow-500" />
-        <span>Premium Features</span>
+        <span className="font-medium">Premium Features</span>
       </div>
-        
-      <div className="flex items-center justify-center space-x-2">
+      
+      <div className="flex items-center justify-between px-2">
         {/* Timer Effects */}
         <Popover>
           <PopoverTrigger asChild>
@@ -96,27 +98,27 @@ export default function HomePremiumControls() {
               <Sparkles className="h-4 w-4 mr-1" /> Effects
             </Button>
           </PopoverTrigger>
-            <PopoverContent className="w-full p-2">
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Timer Animation</h4>
-                <div className="flex flex-wrap gap-1">
-                  {Object.values(ANIMATIONS).map((animation) => (
-                    <Button
-                      key={animation}
-                      size="sm"
-                      variant={animationType === animation ? "default" : "outline"}
-                      className="h-8 text-xs px-2"
-                      onClick={() => setAnimationType(animation)}
-                    >
-                      {animation}
-                    </Button>
-                  ))}
-                </div>
+          <PopoverContent className="w-full p-2">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Timer Animation</h4>
+              <div className="flex flex-wrap gap-1">
+                {['bubbles', 'wave', 'pulse', 'particles', 'spiral'].map((animation) => (
+                  <Button
+                    key={animation}
+                    size="sm"
+                    variant={animationType === animation ? "default" : "outline"}
+                    className="h-8 text-xs px-2"
+                    onClick={() => setAnimationType(animation)}
+                  >
+                    {animation}
+                  </Button>
+                ))}
               </div>
-            </PopoverContent>
-          </Popover>
+            </div>
+          </PopoverContent>
+        </Popover>
 
-          {/* Ambient Sounds */}
+        {/* Ambient Sounds */}
         <Popover>
           <PopoverTrigger asChild>
             <Button 
@@ -127,80 +129,74 @@ export default function HomePremiumControls() {
               <Music className="h-4 w-4 mr-1" /> Sounds
             </Button>
           </PopoverTrigger>
-            <PopoverContent className="w-64 p-2">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="sound-enabled" className="text-sm font-medium">
-                    Enable Sounds
-                  </Label>
-                  <Switch
-                    id="sound-enabled"
-                    checked={soundEnabled}
-                    onCheckedChange={setSoundEnabled}
-                  />
-                </div>
-                
-                {soundEnabled && (
-                  <>
-                    <div className="space-y-1">
-                      <Label htmlFor="volume" className="text-sm">Volume: {volume}%</Label>
-                      <Slider
-                        id="volume"
-                        value={[volume]}
-                        onValueChange={handleVolumeChange}
-                        max={100}
-                        step={1}
-                      />
-                    </div>
-                    
-                    <Tabs defaultValue="nature" value={soundCategory} onValueChange={setSoundCategory}>
-                      <TabsList className="w-full">
-                        <TabsTrigger value="nature" className="flex-1">Nature</TabsTrigger>
-                        <TabsTrigger value="ambient" className="flex-1">Ambient</TabsTrigger>
-                        <TabsTrigger value="music" className="flex-1">Music</TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    
-                    <div className="grid grid-cols-2 gap-1 pt-1">
-                      {SOUNDS[soundCategory as keyof typeof SOUNDS].map((sound) => {
-                        const isActive = currentSound === sound.id && soundEnabled;
-                        
-                        return (
-                          <Button
-                            key={sound.id}
-                            variant={isActive ? "default" : "outline"}
-                            size="sm"
-                            className="text-xs h-8"
-                            onClick={() => selectSound(sound.id)}
-                          >
-                            {sound.name}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
+          <PopoverContent className="w-64 p-2">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="sound-enabled" className="text-sm font-medium">
+                  Enable Sounds
+                </Label>
+                <Switch
+                  id="sound-enabled"
+                  checked={soundEnabled}
+                  onCheckedChange={setSoundEnabled}
+                />
               </div>
-            </PopoverContent>
-          </Popover>
+              
+              {soundEnabled && (
+                <>
+                  <div className="space-y-1">
+                    <Label htmlFor="volume" className="text-sm">Volume: {volume}%</Label>
+                    <Slider
+                      id="volume"
+                      value={[volume]}
+                      onValueChange={handleVolumeChange}
+                      max={100}
+                      step={1}
+                    />
+                  </div>
+                  
+                  <Tabs defaultValue="nature" value={soundCategory} onValueChange={setSoundCategory}>
+                    <TabsList className="w-full">
+                      <TabsTrigger value="nature" className="flex-1">Nature</TabsTrigger>
+                      <TabsTrigger value="ambient" className="flex-1">Ambient</TabsTrigger>
+                      <TabsTrigger value="music" className="flex-1">Music</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  
+                  <div className="grid grid-cols-2 gap-1 pt-1">
+                    {SOUNDS[soundCategory as keyof typeof SOUNDS].map((sound) => {
+                      const isActive = currentSound === sound.id && soundEnabled;
+                      
+                      return (
+                        <Button
+                          key={sound.id}
+                          variant={isActive ? "default" : "outline"}
+                          size="sm"
+                          className="text-xs h-8"
+                          onClick={() => selectSound(sound.id)}
+                        >
+                          {sound.name}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
 
-          {/* Deep Focus Mode */}
-          <Button
-  variant={deepFocusMode ? "default" : "outline"}
-  size="sm"
-  className="h-8"
-  onClick={() => {
-    setDeepFocusMode(!deepFocusMode);
-    // Add a toast notification to confirm the change
-    if (!deepFocusMode) {
-      toast.success("Deep Focus Mode activated");
-    } else {
-      toast.info("Deep Focus Mode deactivated");
-    }
-  }}
->
-  <EyeIcon className="h-4 w-4 mr-1" /> Focus Mode
-</Button>
+        {/* Deep Focus Mode - Changed to Switch */}
+        <div className="flex items-center gap-2">
+          <Label htmlFor="focus-mode" className="cursor-pointer text-sm flex items-center gap-1">
+            <EyeIcon className="h-4 w-4" /> Focus Mode
+          </Label>
+          <Switch
+            id="focus-mode"
+            checked={deepFocusMode}
+            onCheckedChange={toggleDeepFocusMode}
+          />
+        </div>
       </div>
     </div>
   );

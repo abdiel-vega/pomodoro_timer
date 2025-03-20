@@ -157,14 +157,14 @@ const handleUnselectTask = () => {
 
   return (
     <>
-      <Card className="w-full">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Tasks</CardTitle>
-          <Button onClick={handleNewTask} size="sm">
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Add Task
-          </Button>
-        </CardHeader>
+      <Card className="w-full task-list-container">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Tasks</CardTitle>
+        <Button onClick={handleNewTask} size="sm">
+          <PlusIcon className="h-4 w-4 mr-2" />
+          Add Task
+        </Button>
+      </CardHeader>
         <CardContent>
           <Tabs defaultValue="pending" onValueChange={setActiveTab}>
             <TabsList className="mb-4">

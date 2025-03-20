@@ -444,6 +444,38 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [settings.notifications]);
+
+  // Global Deep Focus Mode effect
+  useEffect(() => {
+    if (!isPremium) return;
+  
+    if (deepFocusMode) {
+    // Apply deep focus class to body
+    document.body.classList.add('deep-focus-mode');
+    
+    // Add specific class for timer and task list
+    const timer = document.querySelector('.timer-container');
+    if (timer) timer.classList.add('timer-focus');
+    
+    const taskList = document.querySelector('.task-list-container');
+    if (taskList) taskList.classList.add('task-list-focus');
+    
+    // Save original title
+    const originalTitle = document.title;
+    document.title = "🧠 Focus Mode - " + originalTitle;
+    
+    return () => {
+      // Clean up
+      document.body.classList.remove('deep-focus-mode');
+      
+      if (timer) timer.classList.remove('timer-focus');
+      if (taskList) taskList.classList.remove('task-list-focus');
+      
+      document.title = originalTitle;
+    };
+  }
+}, [deepFocusMode, isPremium]);
+
   
   const value = {
     timerState,
