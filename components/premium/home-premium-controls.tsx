@@ -37,9 +37,9 @@ const SOUNDS = {
 // Animation display names - maps technical names to user-friendly display names
 const ANIMATION_NAMES = {
   zenCircles: 'Zen',
-  wave: 'Wave',
   pulse: 'Pulse',
   particles: 'Particles',
+  wave: 'Wave',
   breathing: 'Breathing',
 };
 

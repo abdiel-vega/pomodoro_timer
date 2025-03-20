@@ -92,7 +92,7 @@ export default function EnhancedTimer() {
 
   // Determine which animation to render and its properties
   const getLottieAnimation = () => {
-    // Enhanced styling for the animation container to make animations larger
+    // Base container styles shared by all animations
     const baseStyles = {
       position: 'absolute',
       top: 0,
@@ -109,17 +109,6 @@ export default function EnhancedTimer() {
       borderRadius: '50%',
     } as React.CSSProperties;
     
-    // Enhanced styling for Lottie component to make it larger than container
-    const lottieStyles = {
-      width: '125%',
-      height: '125%',
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)', // Center the enlarged animation
-      overflow: 'hidden',
-    } as React.CSSProperties;
-    
     // For canvas-based animations that we're still keeping (wave and breathing)
     if (animationType === 'wave' || animationType === 'breathing') {
       return (
@@ -133,13 +122,24 @@ export default function EnhancedTimer() {
     
     // Handle the Lottie animations
     if (animationType === 'zenCircles') {
+      // Zen animation - keep at 150%
+      const zenStyles = {
+        width: '90%',
+        height: '90%',
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        overflow: 'hidden',
+      } as React.CSSProperties;
+      
       return (
         <div style={baseStyles}>
           <Lottie
             animationData={zenAnimationData}
             loop={true}
             autoplay={true}
-            style={lottieStyles}
+            style={zenStyles}
             rendererSettings={{
               preserveAspectRatio: 'xMidYMid slice',
             }}
@@ -147,13 +147,24 @@ export default function EnhancedTimer() {
         </div>
       );
     } else if (animationType === 'pulse') {
+      // Pulse animation - make larger at 200%
+      const pulseStyles = {
+        width: '148%',
+        height: '148%',
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        overflow: 'hidden',
+      } as React.CSSProperties;
+      
       return (
         <div style={baseStyles}>
           <Lottie
             animationData={pulseAnimationData}
             loop={true}
             autoplay={true}
-            style={lottieStyles}
+            style={pulseStyles}
             rendererSettings={{
               preserveAspectRatio: 'xMidYMid slice',
             }}
@@ -161,13 +172,24 @@ export default function EnhancedTimer() {
         </div>
       );
     } else if (animationType === 'particles') {
+      // Particles animation - make smaller at 125%
+      const particlesStyles = {
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        overflow: 'hidden',
+      } as React.CSSProperties;
+      
       return (
         <div style={baseStyles}>
           <Lottie
             animationData={particlesAnimationData}
             loop={true}
             autoplay={true}
-            style={lottieStyles}
+            style={particlesStyles}
             rendererSettings={{
               preserveAspectRatio: 'xMidYMid slice',
             }}
