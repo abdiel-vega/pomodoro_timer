@@ -72,71 +72,184 @@
     --ring: 0 100% 50%;
   }
 
+  /* Updated Dark Theme with specified colors */
   .dark {
-    --background: 0 0% 0.14%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 0.14%; 
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 0.14%; 
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 0.20%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Main colors */
+    --background: 0 0% 7%; /* #121212 */
+    --foreground: 0 0% 79%; /* #C9C9C9 */
+    --card: 0 0% 7%; /* #121212 */
+    --card-foreground: 0 0% 100%; /* #FFFFFF */
+    --popover: 0 0% 7%; /* #121212 */
+    --popover-foreground: 0 0% 100%; /* #FFFFFF */
+    
+    /* UI Elements */
+    --primary: 0 0% 100%; /* #FFFFFF */
+    --primary-foreground: 0 0% 7%; /* #121212 */
+    --secondary: 0 0% 22%; /* #383838 */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+    --muted: 0 0% 15%; /* Slightly lighter than #121212 */
+    --muted-foreground: 0 0% 79%; /* #C9C9C9 */
+    --accent: 0 0% 22%; /* #383838 */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    
+    /* Utility colors */
+    --destructive: 0 62.8% 40.6%;
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
+    --border: 0 0% 22%; /* #383838 */
+    --input: 0 0% 22%; /* #383838 */
+    --ring: 0 0% 79%; /* #C9C9C9 */
+    
+    /* Chart colors - brightened for dark mode visibility */
+    --chart-1: 220 70% 60%;
+    --chart-2: 160 60% 55%;
+    --chart-3: 30 80% 65%;
+    --chart-4: 280 65% 70%;
+    --chart-5: 340 75% 65%;
   }
 
   /* Dark Theme Variants */
   .dark[data-theme="dark-blue"] {
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 217 91% 70%; /* Brightened for visibility */
+    --primary-foreground: 0 0% 7%; /* #121212 */
     --secondary: 217 91% 20%;
     --accent: 217 91% 15%;
     --ring: 217 91% 60%;
   }
   
   .dark[data-theme="dark-green"] {
-    --primary: 142 76% 45%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 142 76% 55%; /* Brightened for visibility */
+    --primary-foreground: 0 0% 7%; /* #121212 */
     --secondary: 142 76% 20%;
     --accent: 142 76% 15%;
     --ring: 142 76% 45%;
   }
   
   .dark[data-theme="dark-purple"] {
-    --primary: 267 85% 60%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 267 85% 70%; /* Brightened for visibility */
+    --primary-foreground: 0 0% 7%; /* #121212 */
     --secondary: 267 85% 25%;
     --accent: 267 85% 15%;
     --ring: 267 85% 60%;
   }
   
   .dark[data-theme="dark-orange"] {
-    --primary: 28 100% 55%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 28 100% 65%; /* Brightened for visibility */
+    --primary-foreground: 0 0% 7%; /* #121212 */
     --secondary: 28 100% 25%;
     --accent: 28 100% 15%;
     --ring: 28 100% 55%;
   }
   
   .dark[data-theme="dark-red"] {
-    --primary: 0 100% 55%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 0 100% 65%; /* Brightened for visibility */
+    --primary-foreground: 0 0% 7%; /* #121212 */
     --secondary: 0 100% 25%;
     --accent: 0 100% 15%;
     --ring: 0 100% 55%;
   }
+}
+
+/* Additional dark mode utility classes */
+.dark .dark-improved-visibility {
+  background-color: #383838;
+  color: #FFFFFF;
+}
+
+.dark .dark-card-highlight {
+  background-color: #262626;
+  border-color: #383838;
+}
+
+/* Deep focus mode */
+.dark .deep-focus-mode {
+  --focus-dim-amount: 0.15;
+  background-color: rgba(18, 18, 18, 0.95);
+}
+
+.dark .timer-focus {
+  filter: brightness(1.2);
+}
+
+/* Fix for sliders in dark mode */
+.dark .SliderRoot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 20px;
+}
+
+.dark .SliderTrack {
+  background-color: #383838;
+  position: relative;
+  flex-grow: 1;
+  border-radius: 9999px;
+  height: 4px;
+}
+
+.dark .SliderRange {
+  position: absolute;
+  background-color: #FFFFFF;
+  border-radius: 9999px;
+  height: 100%;
+}
+
+.dark .SliderThumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background-color: #FFFFFF;
+  border-radius: 9999px;
+}
+
+/* Deep Focus Mode Styles */
+.deep-focus-mode {
+  --focus-dim-amount: 0.5;
+  background-color: rgba(255, 255, 255, 0.95);
+  transition: all 0.3s ease;
+}
+
+.dark .deep-focus-mode {
+  --focus-dim-amount: 0.2; /* Less dim in dark mode for better visibility */
+  background-color: rgba(18, 18, 18, 0.95);
+}
+
+.deep-focus-mode * {
+  transition: opacity 0.3s ease;
+}
+
+.deep-focus-mode .header,
+.deep-focus-mode .navigation,
+.deep-focus-mode footer {
+  opacity: var(--focus-dim-amount);
+}
+
+.deep-focus-mode .header:hover,
+.deep-focus-mode .navigation:hover,
+.deep-focus-mode footer:hover {
+  opacity: 0.8;
+}
+
+.timer-focus {
+  filter: brightness(1.1);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.dark .timer-focus {
+  filter: brightness(1.2);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.task-list-focus {
+  opacity: 0.8;
+}
+
+.dark .task-list-focus {
+  opacity: 0.7;
+}
+
+.deep-focus-mode .non-essential {
+  opacity: var(--focus-dim-amount);
+  transition: opacity 0.3s ease;
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Volume2, VolumeX, Music, CloudRain, Wind, Users } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { playSound, stopSound, setVolume } from '@/lib/audio.helper';
 
 // Sound categories and sources
@@ -32,6 +33,8 @@ export default function SoundControls() {
   const [volume, setVolume] = useState(70);
   const [activeCategory, setActiveCategory] = useState('nature');
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
   // Initialize audio on component mount
   useEffect(() => {
@@ -167,11 +170,11 @@ export default function SoundControls() {
                 key={sound.id}
                 variant={isActive ? "default" : "outline"}
                 size="sm"
-                className="flex flex-col h-auto py-3 gap-1"
+                className={`flex flex-col h-auto py-3 gap-1 ${isDarkMode && !isActive ? 'border-gray-700 hover:bg-gray-800' : ''}`}
                 onClick={() => selectSound(sound.id)}
               >
-                <Icon size={18} />
-                <span className="text-xs">{sound.name}</span>
+                <Icon size={18} className={isDarkMode && !isActive ? 'text-gray-300' : ''} />
+                <span className={`text-xs ${isDarkMode && !isActive ? 'text-gray-300' : ''}`}>{sound.name}</span>
               </Button>
             );
           })}

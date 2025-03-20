@@ -8,6 +8,7 @@ import { getSessions } from '@/lib/supabase';
 import { Session } from '@/types/database';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, startOfMonth, addMonths, subMonths } from 'date-fns';
 import { Sparkles, ArrowLeft, ArrowRight, CalendarRange } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 export default function ProductivityHeatmap() {
   const { isPremium } = usePomodoroTimer();
@@ -15,6 +16,8 @@ export default function ProductivityHeatmap() {
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
   useEffect(() => {
     if (isPremium) {
@@ -144,15 +147,26 @@ export default function ProductivityHeatmap() {
 
   // Get color for heatmap cell based on productivity score
   const getHeatmapColor = (score: number) => {
-    switch (score) {
-      case 0: return 'bg-gray-100';
-      case 1: return 'bg-green-100';
-      case 2: return 'bg-green-300';
-      case 3: return 'bg-green-500';
-      case 4: return 'bg-green-700';
-      default: return 'bg-gray-100';
+    if (isDarkMode) {
+      switch (score) {
+        case 0: return 'bg-gray-800';
+        case 1: return 'bg-green-900';
+        case 2: return 'bg-green-700';
+        case 3: return 'bg-green-500';
+        case 4: return 'bg-green-400';
+        default: return 'bg-gray-800';
+      }
+    } else {
+      switch (score) {
+        case 0: return 'bg-gray-100';
+        case 1: return 'bg-green-100';
+        case 2: return 'bg-green-300';
+        case 3: return 'bg-green-500';
+        case 4: return 'bg-green-700';
+        default: return 'bg-gray-100';
+      }
     }
-  };
+  };  
 
   // Render heatmap based on view mode
   const renderHeatmap = () => {
@@ -229,15 +243,27 @@ export default function ProductivityHeatmap() {
     return (
       <div className="flex items-center justify-center gap-2 mt-4">
         <span className="text-xs">Less</span>
-        <div className="bg-gray-100 w-4 h-4 rounded"></div>
-        <div className="bg-green-100 w-4 h-4 rounded"></div>
-        <div className="bg-green-300 w-4 h-4 rounded"></div>
-        <div className="bg-green-500 w-4 h-4 rounded"></div>
-        <div className="bg-green-700 w-4 h-4 rounded"></div>
+        {isDarkMode ? (
+          <>
+            <div className="bg-gray-800 w-4 h-4 rounded"></div>
+            <div className="bg-green-900 w-4 h-4 rounded"></div>
+            <div className="bg-green-700 w-4 h-4 rounded"></div>
+            <div className="bg-green-500 w-4 h-4 rounded"></div>
+            <div className="bg-green-400 w-4 h-4 rounded"></div>
+          </>
+        ) : (
+          <>
+            <div className="bg-gray-100 w-4 h-4 rounded"></div>
+            <div className="bg-green-100 w-4 h-4 rounded"></div>
+            <div className="bg-green-300 w-4 h-4 rounded"></div>
+            <div className="bg-green-500 w-4 h-4 rounded"></div>
+            <div className="bg-green-700 w-4 h-4 rounded"></div>
+          </>
+        )}
         <span className="text-xs">More</span>
       </div>
     );
-  };
+  };  
 
   if (!isPremium) {
     return (

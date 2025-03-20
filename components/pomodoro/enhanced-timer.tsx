@@ -111,15 +111,16 @@ export default function EnhancedTimer() {
   const getCircleColor = () => {
     switch (timerType) {
       case 'work':
-        return isDarkMode ? '#ffffff' : '#000000';
+        return isDarkMode ? '#FFFFFF' : '#000000';
       case 'short_break':
-        return '#8b5cf6'; // violet-500
+        return isDarkMode ? '#a78bfa' : '#8b5cf6'; // Brightened violet in dark mode
       case 'long_break':
-        return '#3b82f6'; // blue-500
+        return isDarkMode ? '#93c5fd' : '#3b82f6'; // Brightened blue in dark mode
       default:
-        return 'hsl(var(--primary))';
+        return isDarkMode ? '#FFFFFF' : '#000000';
     }
   };
+  
 
   // Get progress bar colors
   const getProgressBarColors = () => {
@@ -158,6 +159,7 @@ export default function EnhancedTimer() {
       justifyContent: 'center',
       overflow: 'hidden',
       borderRadius: '50%',
+      filter: isDarkMode ? 'invert(1) brightness(1.5)' : 'none', // Invert colors in dark mode
     } as React.CSSProperties;
     
     // For canvas-based animations that we're still keeping (wave and breathing)
@@ -173,7 +175,7 @@ export default function EnhancedTimer() {
     
     // Handle the Lottie animations
     if (animationType === 'zenCircles') {
-      // Zen animation - keep at 150%
+      // Zen animation
       const zenStyles = {
         width: '90%',
         height: '90%',
@@ -198,7 +200,7 @@ export default function EnhancedTimer() {
         </div>
       );
     } else if (animationType === 'pulse') {
-      // Pulse animation - make larger at 200%
+      // Pulse animation
       const pulseStyles = {
         width: '148%',
         height: '148%',
@@ -223,7 +225,7 @@ export default function EnhancedTimer() {
         </div>
       );
     } else if (animationType === 'particles') {
-      // Particles animation - make smaller at 125%
+      // Particles animation
       const particlesStyles = {
         width: '100%',
         height: '100%',
@@ -254,7 +256,6 @@ export default function EnhancedTimer() {
   };
 
   // Handle canvas-based animations for wave and breathing animations
-  // (keeping these two since they weren't included in the Lottie replacements)
   useEffect(() => {
     if (!canvasRef.current || !isPremium || 
         (animationType !== 'wave' && animationType !== 'breathing')) return;
@@ -299,22 +300,28 @@ export default function EnhancedTimer() {
       ctx.lineTo(0, height);
       ctx.closePath();
       
-      // Fill with gradient based on timer type
+      // Fill with gradient based on timer type and theme
       const gradient = ctx.createLinearGradient(0, 0, 0, height);
       if (timerType === 'work') {
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+        if (isDarkMode) {
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+          gradient.addColorStop(1, 'rgba(255, 255, 255, 0.3)');
+        } else {
+          gradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+        }
       } else if (timerType === 'short_break') {
-        gradient.addColorStop(0, 'rgba(139, 92, 246, 0.7)'); // violet
-        gradient.addColorStop(1, 'rgba(139, 92, 246, 0.3)');
+        gradient.addColorStop(0, isDarkMode ? 'rgba(167, 139, 250, 0.7)' : 'rgba(139, 92, 246, 0.7)'); // violet
+        gradient.addColorStop(1, isDarkMode ? 'rgba(167, 139, 250, 0.3)' : 'rgba(139, 92, 246, 0.3)');
       } else {
-        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.7)'); // blue
-        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.3)');
+        gradient.addColorStop(0, isDarkMode ? 'rgba(147, 197, 253, 0.7)' : 'rgba(59, 130, 246, 0.7)'); // blue
+        gradient.addColorStop(1, isDarkMode ? 'rgba(147, 197, 253, 0.3)' : 'rgba(59, 130, 246, 0.3)');
       }
       
       ctx.fillStyle = gradient;
       ctx.fill();
     };
+    
 
     // Breathing animation
     const drawBreathing = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -333,17 +340,22 @@ export default function EnhancedTimer() {
       const maxSize = Math.min(width, height) * 0.75;
       const currentSize = minSize + breathCycle * (maxSize - minSize);
       
-      // Get color based on timer type
+      // Get color based on timer type and theme
       let primaryColor, secondaryColor;
       if (timerType === 'work') {
-        primaryColor = 'rgba(0, 0, 0, 0.3)';
-        secondaryColor = 'rgba(0, 0, 0, 0.05)';
+        if (isDarkMode) {
+          primaryColor = 'rgba(255, 255, 255, 0.3)';
+          secondaryColor = 'rgba(255, 255, 255, 0.05)';
+        } else {
+          primaryColor = 'rgba(0, 0, 0, 0.3)';
+          secondaryColor = 'rgba(0, 0, 0, 0.05)';
+        }
       } else if (timerType === 'short_break') {
-        primaryColor = 'rgba(139, 92, 246, 0.3)'; // violet
-        secondaryColor = 'rgba(139, 92, 246, 0.05)';
+        primaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.3)' : 'rgba(139, 92, 246, 0.3)'; // violet
+        secondaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.05)' : 'rgba(139, 92, 246, 0.05)';
       } else {
-        primaryColor = 'rgba(59, 130, 246, 0.3)'; // blue
-        secondaryColor = 'rgba(59, 130, 246, 0.05)';
+        primaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.3)' : 'rgba(59, 130, 246, 0.3)'; // blue
+        secondaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.05)' : 'rgba(59, 130, 246, 0.05)';
       }
       
       // Draw multiple concentric circles for breathing visualization

@@ -116,17 +116,17 @@ export default function PremiumPage() {
       ) : (
         // For premium users, focus on settings and analytics
         <div className="space-y-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-4">
-            <div className="bg-green-100 p-2 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-green-800/30 dark:bg-green-950/50 border border-green-700 dark:border-green-800 rounded-lg p-4 flex items-center gap-4">
+            <div className="bg-green-700/50 dark:bg-green-800/50 p-2 rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-300 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <div>
-              <h2 className="font-bold text-lg">Premium Features Activated</h2>
-              <p className="text-sm">Manage your premium settings and view productivity analytics</p>
-            </div>
+          <div>
+            <h2 className="font-bold text-lg text-green-200">Premium Features Activated</h2>
+              <p className="text-sm text-green-300/80">Manage your premium settings and view productivity analytics</p>
           </div>
+        </div>
           
           <Tabs defaultValue="settings">
             <TabsList className="w-full border-b pb-0">
