@@ -206,7 +206,7 @@ export default function TaskInsights() {
           <div className="space-y-6">
             {/* Task Summary */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+              <div className="flex-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <CheckCircle2 size={16} className="text-green-500" />
                   <h3 className="text-sm font-medium">Task Completion</h3>
@@ -223,7 +223,7 @@ export default function TaskInsights() {
                 </div>
               </div>
               
-              <div className="flex-1 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+              <div className="flex-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <AlertCircle size={16} className="text-orange-500" />
                   <h3 className="text-sm font-medium">Important Tasks</h3>
@@ -239,7 +239,7 @@ export default function TaskInsights() {
             </div>
             
             {/* Pomodoro Accuracy */}
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+            <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Clock size={16} className="text-blue-500" />
                 <h3 className="text-sm font-medium">Pomodoro Estimation Accuracy</h3>
@@ -276,7 +276,7 @@ export default function TaskInsights() {
             
             {/* Productivity Insights */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <BarChart4 size={16} className="text-purple-500" />
                   <h3 className="text-sm font-medium">Most Productive Day</h3>
@@ -287,7 +287,7 @@ export default function TaskInsights() {
                 </p>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Award size={16} className="text-yellow-500" />
                   <h3 className="text-sm font-medium">Task Efficiency</h3>

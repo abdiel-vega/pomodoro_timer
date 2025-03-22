@@ -149,21 +149,21 @@ export default function ProductivityHeatmap() {
   const getHeatmapColor = (score: number) => {
     if (isDarkMode) {
       switch (score) {
-        case 0: return 'bg-gray-800';
+        case 0: return 'bg-zinc-800';
         case 1: return 'bg-green-900';
         case 2: return 'bg-green-700';
         case 3: return 'bg-green-500';
         case 4: return 'bg-green-400';
-        default: return 'bg-gray-800';
+        default: return 'bg-zinc-800';
       }
     } else {
       switch (score) {
-        case 0: return 'bg-gray-100';
+        case 0: return 'bg-zinc-100';
         case 1: return 'bg-green-100';
         case 2: return 'bg-green-300';
         case 3: return 'bg-green-500';
         case 4: return 'bg-green-700';
-        default: return 'bg-gray-100';
+        default: return 'bg-zinc-100';
       }
     }
   };  
@@ -177,7 +177,7 @@ export default function ProductivityHeatmap() {
         <div className="mt-4">
           <div className="grid grid-cols-7 gap-2">
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-              <div key={day} className="text-xs text-center font-medium">
+              <div key={day} className="text-xs text-center font-bold">
                 {day}
               </div>
             ))}
@@ -245,7 +245,7 @@ export default function ProductivityHeatmap() {
         <span className="text-xs">Less</span>
         {isDarkMode ? (
           <>
-            <div className="bg-gray-800 w-4 h-4 rounded"></div>
+            <div className="bg-zinc-800 w-4 h-4 rounded"></div>
             <div className="bg-green-900 w-4 h-4 rounded"></div>
             <div className="bg-green-700 w-4 h-4 rounded"></div>
             <div className="bg-green-500 w-4 h-4 rounded"></div>
@@ -253,7 +253,7 @@ export default function ProductivityHeatmap() {
           </>
         ) : (
           <>
-            <div className="bg-gray-100 w-4 h-4 rounded"></div>
+            <div className="bg-zinc-100 w-4 h-4 rounded"></div>
             <div className="bg-green-100 w-4 h-4 rounded"></div>
             <div className="bg-green-300 w-4 h-4 rounded"></div>
             <div className="bg-green-500 w-4 h-4 rounded"></div>

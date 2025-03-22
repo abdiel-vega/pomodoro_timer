@@ -239,7 +239,7 @@ export default function FocusAnalytics() {
         ) : (
           <div className="space-y-6">
             {/* Focus Score */}
-            <div className="bg-gradient-to-br from-indigo-50 to-teal-50 dark:from-indigo-950/40 dark:to-teal-950/40 rounded-lg p-4">
+            <div className="bg-gradient-to-br from-indigo-100 to-teal-50 dark:from-indigo-950/40 dark:to-teal-950/40 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Focus Score</h3>
@@ -263,7 +263,7 @@ export default function FocusAnalytics() {
             
             {/* Key Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Clock size={16} className="text-primary" />
                   <h3 className="text-sm font-medium">Focus Time</h3>
@@ -274,7 +274,7 @@ export default function FocusAnalytics() {
                 </p>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <CalendarCheck2 size={16} className="text-primary" />
                   <h3 className="text-sm font-medium">Tasks</h3>
@@ -285,7 +285,7 @@ export default function FocusAnalytics() {
                 </p>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <TrendingUp size={16} className="text-primary" />
                   <h3 className="text-sm font-medium">Daily Average</h3>
@@ -296,7 +296,7 @@ export default function FocusAnalytics() {
                 </p>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <BrainCircuit size={16} className="text-primary" />
                   <h3 className="text-sm font-medium">Best Day</h3>
@@ -311,7 +311,7 @@ export default function FocusAnalytics() {
             </div>
             
             {/* Chart */}
-            <div className="mt-4 rounded border p-4">
+            <div className="mt-4 rounded border p-6">
               <h3 className="text-sm font-medium mb-4">Daily Focus Time (minutes)</h3>
               <div className="h-40 relative">
                 {data.map((value, index) => {

@@ -96,7 +96,7 @@ export default function EnhancedTimer() {
     } else {
       switch (timerType) {
         case 'work':
-          return 'bg-gray-100';
+          return 'bg-zinc-100';
         case 'short_break':
           return 'bg-violet-50';
         case 'long_break':
@@ -126,7 +126,7 @@ export default function EnhancedTimer() {
   const getProgressBarColors = () => {
     if (timerType === 'work') {
       return {
-        bg: isDarkMode ? 'bg-gray-700' : 'bg-gray-200',
+        bg: isDarkMode ? 'bg-zinc-700' : 'bg-zinc-200',
         fg: isDarkMode ? 'bg-white' : 'bg-black'
       };
     } else if (timerType === 'short_break') {
