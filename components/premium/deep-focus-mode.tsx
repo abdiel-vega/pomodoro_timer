@@ -6,10 +6,13 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { EyeIcon, PhoneOff, BellOff, Sparkles } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 
 export default function DeepFocusMode() {
   const { isPremium, deepFocusMode } = usePomodoroTimer();
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';  
   
   // Settings for deep focus mode (these would ideally be part of the context)
   const [settings, setSettings] = useState({
@@ -20,16 +23,46 @@ export default function DeepFocusMode() {
 
   // Handle settings changes
   const updateSettings = (key: keyof typeof settings, value: boolean) => {
+    // Update the local state
     setSettings(prev => ({
       ...prev,
       [key]: value
     }));
     
-    // Apply settings immediately through CSS variables
-    if (key === 'dimInterface') {
-      document.documentElement.style.setProperty('--focus-dim-amount', value ? '0.1' : '0.5');
+    // If deep focus mode is active, apply settings immediately
+    if (deepFocusMode) {
+      applyFocusSettings({...settings, [key]: value});
     }
   };
+  
+  // Add a helper function to apply focus settings
+  const applyFocusSettings = (currentSettings: typeof settings) => {
+    // Dim Interface setting
+    if (currentSettings.dimInterface) {
+      document.documentElement.style.setProperty('--focus-dim-amount', isDarkMode ? '0.1' : '0.3');
+    } else {
+      document.documentElement.style.setProperty('--focus-dim-amount', isDarkMode ? '0.5' : '0.7');
+    }
+    
+    // Hide Elements setting
+    const nonEssentials = document.querySelectorAll('.non-essential');
+    nonEssentials.forEach(el => {
+      if (currentSettings.hideElements) {
+        (el as HTMLElement).style.display = 'none';
+      } else {
+        (el as HTMLElement).style.display = '';
+      }
+    });
+    
+    // Mute Notifications setting
+    if (currentSettings.muteNotifications) {
+      document.body.classList.add('mute-notifications');
+    } else {
+      document.body.classList.remove('mute-notifications');
+    }
+  };
+  
+
 
   if (!isPremium) {
     return (

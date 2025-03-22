@@ -79,33 +79,33 @@ export default function PremiumPage() {
               </ul>
             </div>
             
-            <div className="bg-slate-50 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-2">Customer Reviews</h2>
+            <div className="bg-slate-50 dark:bg-gray-800 dark:text-gray-100 rounded-lg p-6">
+              <h2 className="text-xl font-bold mb-2 dark:text-white">Customer Reviews</h2>
               <div className="space-y-4">
-                <div className="border-b pb-3">
+                <div className="border-b dark:border-gray-700 pb-3">
                   <div className="flex items-center gap-1 text-yellow-500 mb-1">
                     ★★★★★
-                    <span className="text-gray-700 text-sm ml-1">Sarah T.</span>
+                    <span className="text-gray-700 dark:text-gray-300 text-sm ml-1">Sarah T.</span>
                   </div>
-                  <p className="text-sm">
+                  <p className="text-sm dark:text-gray-300">
                     "The premium features transformed how I study. The ambient sounds help me get in the zone instantly!"
                   </p>
                 </div>
-                <div className="border-b pb-3">
+                <div className="border-b dark:border-gray-700 pb-3">
                   <div className="flex items-center gap-1 text-yellow-500 mb-1">
                     ★★★★★
-                    <span className="text-gray-700 text-sm ml-1">Mark J.</span>
+                    <span className="text-gray-700 dark:text-gray-300 text-sm ml-1">Mark J.</span>
                   </div>
-                  <p className="text-sm">
+                  <p className="text-sm dark:text-gray-300">
                     "Deep focus mode and the productivity analytics have helped me identify when I work best. Worth every penny."
                   </p>
                 </div>
                 <div>
                   <div className="flex items-center gap-1 text-yellow-500 mb-1">
                     ★★★★★
-                    <span className="text-gray-700 text-sm ml-1">Aisha K.</span>
+                    <span className="text-gray-700 dark:text-gray-300 text-sm ml-1">Aisha K.</span>
                   </div>
-                  <p className="text-sm">
+                  <p className="text-sm dark:text-gray-300">
                     "I love seeing my productivity trends in the heatmap. It's so satisfying watching those green squares fill up!"
                   </p>
                 </div>
@@ -116,17 +116,17 @@ export default function PremiumPage() {
       ) : (
         // For premium users, focus on settings and analytics
         <div className="space-y-6">
-          <div className="bg-green-800/30 dark:bg-green-950/50 border border-green-700 dark:border-green-800 rounded-lg p-4 flex items-center gap-4">
-            <div className="bg-green-700/50 dark:bg-green-800/50 p-2 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-300 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-green-100 dark:bg-green-950/50 border border-green-300 dark:border-green-800 rounded-lg p-4 flex items-center gap-4">
+            <div className="bg-green-200 dark:bg-green-800/50 p-2 rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-          <div>
-            <h2 className="font-bold text-lg text-green-200">Premium Features Activated</h2>
-              <p className="text-sm text-green-300/80">Manage your premium settings and view productivity analytics</p>
+            <div>
+              <h2 className="font-bold text-lg text-green-800 dark:text-green-200">Premium Features Activated</h2>
+              <p className="text-sm text-green-700/80 dark:text-green-300/80">Manage your premium settings and view productivity analytics</p>
+            </div>
           </div>
-        </div>
           
           <Tabs defaultValue="settings">
             <TabsList className="w-full border-b pb-0">

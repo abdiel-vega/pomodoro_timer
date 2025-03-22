@@ -198,7 +198,7 @@ export default function HomePremiumControls() {
         {/* Deep Focus Mode - Changed to Switch */}
         <div className="flex items-center gap-2">
           <Label htmlFor="focus-mode" className="cursor-pointer text-sm flex items-center gap-1">
-            <EyeIcon className="h-4 w-4" /> Focus Mode
+            <EyeIcon className="h-4 w-4" /> Deep Focus
           </Label>
           <Switch
             id="focus-mode"

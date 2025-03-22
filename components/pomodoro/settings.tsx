@@ -327,10 +327,10 @@ export default function Settings() {
                 Get access to animated timers, ambient sounds, focus analytics, and more with a one-time purchase.
               </p>
               <Button 
-                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                className="w-full bg-gradient-to-r from-amber-300 to-yellow-500 hover:from-amber-400 hover:to-yellow-600"
                 onClick={() => window.location.href = '/premium'}
               >
-                <CreditCard className="mr-2 h-4 w-4" />
+                <Sparkles className="mr-2 h-4 w-4" />
                 Purchase Premium
               </Button>
             </>

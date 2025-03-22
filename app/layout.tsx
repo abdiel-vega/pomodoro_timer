@@ -135,7 +135,7 @@ useEffect(() => {
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <PomodoroProvider>
             <div className="flex min-h-screen flex-col">
-              <header className="sticky top-0 z-10 w-full border-b bg-background">
+              <header className="sticky top-0 z-10 w-full border-b bg-background non-essential">
                 <div className="container flex h-16 items-center justify-between py-4">
                   <div className="flex items-center gap-2">
                     <Link href="/" className="font-bold text-xl flex items-center">
@@ -188,7 +188,7 @@ useEffect(() => {
               <main className="flex-1 container py-8">
                 {children}
               </main>
-              <footer className="border-t py-6">
+              <footer className="border-t py-6 non-essential">
                 <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
                   <p className="text-sm text-muted-foreground text-center md:text-left">
                     &copy; {new Date().getFullYear()} pomodoro. all rights reserved.

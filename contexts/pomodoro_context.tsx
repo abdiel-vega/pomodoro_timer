@@ -19,6 +19,7 @@ import {
   getTasks
 } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { useTheme } from 'next-themes';
 import { createClient } from '@/utils/supabase/client';
 
 // Default settings in case we can't load from database
@@ -96,6 +97,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const [currentSound, setCurrentSound] = useState<string | null>(null);
   const [deepFocusMode, setDeepFocusMode] = useState<boolean>(false);
   const [animationType, setAnimationType] = useState<string>('pulse');
+
+  const { theme } = useTheme();
   
   // References
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -445,11 +448,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.notifications]);
 
-  // Global Deep Focus Mode effect
-  useEffect(() => {
-    if (!isPremium) return;
-  
-    if (deepFocusMode) {
+  // Add to the useEffect that handles deep focus mode:
+useEffect(() => {
+  if (!isPremium) return;
+
+  if (deepFocusMode) {
     // Apply deep focus class to body
     document.body.classList.add('deep-focus-mode');
     
@@ -464,17 +467,46 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     const originalTitle = document.title;
     document.title = "🧠 Focus Mode - " + originalTitle;
     
+    // Apply deep focus settings - getting settings from the DeepFocusMode component
+    const dimInterface = true;  // Default value
+    const hideElements = true;  // Default value
+    const muteNotifications = true;  // Default value
+    
+    // Apply dim interface
+    document.documentElement.style.setProperty('--focus-dim-amount', 
+      theme === 'dark' ? '0.1' : '0.3'
+    );
+    
+    // Apply hide elements
+    const nonEssentialElements = document.querySelectorAll('.non-essential');
+    nonEssentialElements.forEach(el => {
+      if (hideElements) {
+        (el as HTMLElement).style.display = 'none';
+      }
+    });
+    
+    // Apply mute notifications
+    if (muteNotifications) {
+      document.body.classList.add('mute-notifications');
+    }
+    
     return () => {
       // Clean up
       document.body.classList.remove('deep-focus-mode');
+      document.body.classList.remove('mute-notifications');
       
       if (timer) timer.classList.remove('timer-focus');
       if (taskList) taskList.classList.remove('task-list-focus');
       
       document.title = originalTitle;
+      
+      // Reset non-essential elements display
+      nonEssentialElements.forEach(el => {
+        (el as HTMLElement).style.display = '';
+      });
     };
   }
-}, [deepFocusMode, isPremium]);
+}, [deepFocusMode, isPremium, theme]);
 
   
   const value = {

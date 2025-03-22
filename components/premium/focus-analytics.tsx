@@ -255,7 +255,7 @@ export default function FocusAnalytics() {
                     </div>
                   </div>
                 </div>
-                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-white">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-white dark:bg-gray-800">
                   <BrainCircuit size={28} className="text-primary" />
                 </div>
               </div>

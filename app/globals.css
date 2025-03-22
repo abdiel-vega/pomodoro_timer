@@ -202,54 +202,37 @@
   border-radius: 9999px;
 }
 
-/* Deep Focus Mode Styles */
+/* Deep focus mode styles */
+.mute-notifications .notification-element {
+  display: none !important;
+}
+
 .deep-focus-mode {
-  --focus-dim-amount: 0.5;
+  --focus-dim-amount: 0.3;
   background-color: rgba(255, 255, 255, 0.95);
   transition: all 0.3s ease;
 }
 
 .dark .deep-focus-mode {
-  --focus-dim-amount: 0.2; /* Less dim in dark mode for better visibility */
+  --focus-dim-amount: 0.1;
   background-color: rgba(18, 18, 18, 0.95);
 }
 
 .deep-focus-mode * {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, display 0.3s ease;
 }
 
 .deep-focus-mode .header,
 .deep-focus-mode .navigation,
-.deep-focus-mode footer {
+.deep-focus-mode footer,
+.deep-focus-mode .non-essential {
   opacity: var(--focus-dim-amount);
+  transition: opacity 0.3s ease;
 }
 
 .deep-focus-mode .header:hover,
 .deep-focus-mode .navigation:hover,
-.deep-focus-mode footer:hover {
+.deep-focus-mode footer:hover,
+.deep-focus-mode .non-essential:hover {
   opacity: 0.8;
-}
-
-.timer-focus {
-  filter: brightness(1.1);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-}
-
-.dark .timer-focus {
-  filter: brightness(1.2);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-}
-
-.task-list-focus {
-  opacity: 0.8;
-}
-
-.dark .task-list-focus {
-  opacity: 0.7;
-}
-
-.deep-focus-mode .non-essential {
-  opacity: var(--focus-dim-amount);
-  transition: opacity 0.3s ease;
 }
