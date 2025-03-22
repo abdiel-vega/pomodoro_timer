@@ -407,7 +407,7 @@ export default function EnhancedTimer() {
   const progressColors = getProgressBarColors();
 
   return (
-    <Card className={`w-full max-w-md mx-auto shadow-lg timer-container ${getBackgroundColor()}`}>
+    <Card className={`w-full max-w-md mx-auto shadow-lg border-0 timer-container ${getBackgroundColor()}`}>
       <CardContent className="pt-6 relative">
         <div className="flex flex-col items-center space-y-8">
           {/* Timer Title */}

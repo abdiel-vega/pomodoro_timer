@@ -129,7 +129,7 @@ export default function Timer() {
   const progressColors = getProgressBarColors();
 
   return (
-    <Card className={`w-full max-w-md mx-auto shadow-lg ${getBackgroundColor()}`}>
+    <Card className={`w-full max-w-md mx-auto shadow-lg border-0 ${getBackgroundColor()}`}>
       <CardContent className="pt-6">
         <div className="flex flex-col items-center space-y-8">
           {/* Timer Title */}

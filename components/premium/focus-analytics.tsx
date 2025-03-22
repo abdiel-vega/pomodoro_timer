@@ -311,7 +311,7 @@ export default function FocusAnalytics() {
             </div>
             
             {/* Chart */}
-            <div className="mt-4 rounded border p-6">
+            <div className="mt-4 rounded border border-zinc-200 dark:border-zinc-500 p-6">
               <h3 className="text-sm font-medium mb-4">Daily Focus Time (minutes)</h3>
               <div className="h-40 relative">
                 {data.map((value, index) => {

@@ -322,7 +322,7 @@ export default function TaskInsights() {
                   .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
                   .slice(0, 5)
                   .map(task => (
-                    <div key={task.id} className="flex items-center gap-2 p-2 border rounded-md">
+                    <div key={task.id} className="flex items-center gap-2 p-2 border border-zinc-200 dark:border-zinc-500 rounded-md">
                       {task.is_completed ? (
                         <CheckCircle2 size={16} className="text-green-500 flex-shrink-0" />
                       ) : (

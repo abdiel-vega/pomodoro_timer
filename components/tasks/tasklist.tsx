@@ -191,7 +191,7 @@ const handleUnselectTask = () => {
                   {filteredTasks.map(task => (
                     <div 
                       key={task.id}
-                      className={`border rounded-lg p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors ${
+                      className={`border border-zinc-200 dark:border-zinc-500 rounded-lg p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors ${
                         isCurrentTask(task.id) ? 'border-primary bg-primary/5' : 
                         task.is_important ? 'border-orange-500' : ''
                       }`}

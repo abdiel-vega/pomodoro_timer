@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PremiumPurchase from '@/components/premium/premium-purchase';
@@ -15,11 +15,36 @@ import Link from 'next/link';
 
 export default function PremiumPage() {
   const { isPremium, refreshUserSettings } = usePomodoroTimer();
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     // Refresh premium status when the component mounts
-    refreshUserSettings();
+    const loadPremiumStatus = async () => {
+      setIsLoading(true);
+      await refreshUserSettings();
+      setIsLoading(false);
+    };
+    
+    loadPremiumStatus();
   }, [refreshUserSettings]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto max-w-6xl">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Premium Features</h1>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/">
+              <HomeIcon className="mr-2 h-4 w-4" /> Return to Timer
+            </Link>
+          </Button>
+        </div>
+        <div className="flex justify-center items-center py-20">
+          <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-6xl">
@@ -128,10 +153,10 @@ export default function PremiumPage() {
           </div>
           
           <Tabs defaultValue="settings">
-            <TabsList className="size-14 w-full p-1">
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            </TabsList>
+          <TabsList className="grid w-full grid-cols-2 h-14 font-extrabold">
+            <TabsTrigger value="settings" className="h-12 text-lg">Settings</TabsTrigger>
+            <TabsTrigger value="analytics" className="h-12 text-lg">Analytics</TabsTrigger>
+          </TabsList>
             
             <TabsContent value="settings" className="m-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
