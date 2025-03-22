@@ -93,7 +93,7 @@ export default function HomePremiumControls() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-card/50 rounded-lg p-3 border mb-4">
+    <div className="w-full max-w-md mx-auto bg-card/50 rounded-lg p-3 border border-zinc-100 dark:border-zinc-600 mb-4">
       <div className="flex items-center gap-1 text-sm mb-3 justify-center">
         <Sparkles className="h-4 w-4 text-yellow-500" />
         <span className="font-medium">Premium Features</span>

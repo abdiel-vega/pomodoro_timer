@@ -157,7 +157,7 @@ const handleUnselectTask = () => {
 
   return (
     <>
-      <Card className="w-full task-list-container">
+      <Card className="w-full task-list-container border-zinc-400 dark:border-zinc-300">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Tasks</CardTitle>
         <Button onClick={handleNewTask} size="sm">
