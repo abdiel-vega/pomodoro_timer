@@ -66,11 +66,11 @@ export default function PremiumPurchase() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-2">
           <p className="text-2xl font-bold">$7.99</p>
           <p className="text-sm text-muted-foreground">One-time payment, no subscriptions</p>
           
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-start gap-2">
               <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
               <p>Animated focus visualizations</p>

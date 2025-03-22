@@ -36,10 +36,9 @@ export default function PremiumPage() {
         // For non-premium users, just show the purchase component
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <PremiumPurchase />
-          
           <div className="space-y-6">
-            <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Enhanced Productivity Tools</h2>
+            <div className="bg-zinc-50 dark:bg-zinc-800 dark:text-gray-100 rounded-lg p-6">
+              <h2 className="text-xl font-bold mb-2 dark:text-white">Enhanced Productivity Tools</h2>
               <p className="mb-4">
                 Unlock premium features to transform your productivity experience with a single purchase. No subscriptions, yours forever.
               </p>
@@ -79,7 +78,7 @@ export default function PremiumPage() {
               </ul>
             </div>
             
-            <div className="bg-slate-50 dark:bg-gray-800 dark:text-gray-100 rounded-lg p-6">
+            <div className="bg-zinc-50 dark:bg-zinc-800 dark:text-gray-100 rounded-lg p-6">
               <h2 className="text-xl font-bold mb-2 dark:text-white">Customer Reviews</h2>
               <div className="space-y-4">
                 <div className="border-b dark:border-gray-700 pb-3">
@@ -129,19 +128,19 @@ export default function PremiumPage() {
           </div>
           
           <Tabs defaultValue="settings">
-            <TabsList className="w-full border-b pb-0">
+            <TabsList className="size-14 w-full p-1">
               <TabsTrigger value="settings">Settings</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="settings" className="mt-6">
+            <TabsContent value="settings" className="m-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SoundControls />
                 <DeepFocusMode />
               </div>
             </TabsContent>
             
-            <TabsContent value="analytics" className="mt-6">
+            <TabsContent value="analytics" className="m-3">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-6">
                   <ProductivityHeatmap />
