@@ -159,7 +159,7 @@ export default function EnhancedTimer() {
       justifyContent: 'center',
       overflow: 'hidden',
       borderRadius: '50%',
-      filter: `${isDarkMode ? 'brightness(1.5)' : ''} ${animationType === 'pulse' ? 'grayscale(100%)' : ''}`,
+      filter: `${isDarkMode ? 'brightness(1.5)' : ''}`,
     } as React.CSSProperties;
     
     // For canvas-based animations that we're still keeping (wave and breathing)
@@ -185,17 +185,6 @@ export default function EnhancedTimer() {
         transform: 'translate(-50%, -50%)',
         overflow: 'hidden',
       } as React.CSSProperties;
-
-      const styleOverride = document.createElement('style');
-    styleOverride.textContent = `
-      .lottie-pulse svg path {
-        fill: var(--animation-primary) !important;
-      }
-      .lottie-pulse svg rect {
-        fill: var(--animation-secondary) !important;
-      }
-    `;
-    document.head.appendChild(styleOverride);
       
       return (
         <div style={baseStyles}>
@@ -221,19 +210,7 @@ export default function EnhancedTimer() {
         left: '50%',
         transform: 'translate(-50%, -50%)',
         overflow: 'hidden',
-        filter: 'grayscale(100%)',
       } as React.CSSProperties;
-
-      const styleOverride = document.createElement('style');
-    styleOverride.textContent = `
-      .lottie-pulse svg path {
-        fill: var(--animation-primary) !important;
-      }
-      .lottie-pulse svg rect {
-        fill: var(--animation-secondary) !important;
-      }
-    `;
-    document.head.appendChild(styleOverride);
       
       return (
         <div style={baseStyles}>
@@ -260,17 +237,6 @@ export default function EnhancedTimer() {
         transform: 'translate(-50%, -50%)',
         overflow: 'hidden',
       } as React.CSSProperties;
-
-      const styleOverride = document.createElement('style');
-    styleOverride.textContent = `
-      .lottie-pulse svg path {
-        fill: var(--animation-primary) !important;
-      }
-      .lottie-pulse svg rect {
-        fill: var(--animation-secondary) !important;
-      }
-    `;
-    document.head.appendChild(styleOverride);
       
       return (
         <div style={baseStyles}>
@@ -440,6 +406,43 @@ export default function EnhancedTimer() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+// create a global style element once
+useEffect(() => {
+  // Create a style element for animation colors if it doesn't exist
+  if (!document.getElementById('animation-colors-style')) {
+    const styleElement = document.createElement('style');
+    styleElement.id = 'animation-colors-style';
+    document.head.appendChild(styleElement);
+  }
+  
+  // Update the style content based on the current animation
+  const styleElement = document.getElementById('animation-colors-style');
+  if (styleElement) {
+    styleElement.textContent = `
+      .lottie-zen svg path, .lottie-zen svg circle {
+        fill: var(--animation-primary) !important;
+        stroke: var(--animation-secondary) !important;
+      }
+      .lottie-pulse svg path, .lottie-pulse svg circle {
+        fill: var(--animation-primary) !important;
+        stroke: var(--animation-secondary) !important;
+      }
+      .lottie-particles svg path, .lottie-particles svg circle {
+        fill: var(--animation-primary) !important;
+        stroke: var(--animation-secondary) !important;
+      }
+    `;
+  }
+  
+  return () => {
+    // Clean up the style element when the component unmounts
+    const styleElement = document.getElementById('animation-colors-style');
+    if (styleElement) {
+      styleElement.textContent = '';
+    }
+  };
+}, [animationType, theme]); // Re-run when animation type or theme changes
 
   const progressColors = getProgressBarColors();
 

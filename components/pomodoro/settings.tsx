@@ -68,6 +68,56 @@ const PremiumColorThemes = ({ isPremium }: { isPremium: boolean }) => {
   const [colorPickerVisible, setColorPickerVisible] = useState(false);
   const [customColor, setCustomColor] = useState('#3b82f6'); // Default blue
   const [customTheme, setCustomTheme] = useState('');
+
+  const hexToHSL = (hex: string): string => {
+    // Remove # if present
+    hex = hex.replace(/^#/, '');
+    
+    // Parse the hex values
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+    
+    // Find min and max
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    
+    // Initialize variables
+    let h = 0;
+    let s = 0;
+    const l = (max + min) / 2;
+    
+    if (max === min) {
+      // achromatic (gray)
+      h = 0;
+      s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      
+      switch (max) {
+        case r:
+          h = (g - b) / d + (g < b ? 6 : 0);
+          break;
+        case g:
+          h = (b - r) / d + 2;
+          break;
+        case b:
+          h = (r - g) / d + 4;
+          break;
+      }
+      
+      h = h * 60;
+    }
+    
+    // Round the values
+    const hRounded = Math.round(h);
+    const sRounded = Math.round(s * 100);
+    const lRounded = Math.round(l * 100);
+    
+    return `${hRounded} ${sRounded}% ${lRounded}%`;
+  };
+  
   
   // Function to create and apply a custom theme
   const applyCustomTheme = () => {
@@ -76,31 +126,60 @@ const PremiumColorThemes = ({ isPremium }: { isPremium: boolean }) => {
     const isDark = theme === 'dark';
     const uniqueId = `custom-${new Date().getTime()}`;
     
+    // Convert hex colors to HSL format
+    const primaryHSL = hexToHSL(customColor);
+    const secondaryHSL = hexToHSL(adjustColorBrightness(customColor, isDark ? -40 : 60));
+    const accentHSL = hexToHSL(adjustColorBrightness(customColor, isDark ? -60 : 80));
+    
     // Create CSS variables for the custom theme
     let style = document.createElement('style');
     
     if (isDark) {
       style.textContent = `
         .dark[data-theme="${uniqueId}"] {
-          --primary: ${customColor};
+          --primary: ${primaryHSL};
           --primary-foreground: 0 0% 7%;
-          --secondary: ${adjustColorBrightness(customColor, -40)};
+          --secondary: ${secondaryHSL};
           --secondary-foreground: 0 0% 100%;
-          --accent: ${adjustColorBrightness(customColor, -60)};
+          --accent: ${accentHSL};
           --accent-foreground: 0 0% 100%;
-          --ring: ${customColor};
+          --ring: ${primaryHSL};
+          
+          /* Preserve other important variables */
+          --background: 0 0% 7%;
+          --foreground: 0 0% 79%;
+          --card: 0 0% 7%;
+          --card-foreground: 0 0% 100%;
+          --popover: 0 0% 7%;
+          --popover-foreground: 0 0% 100%;
+          --muted: 0 0% 15%;
+          --muted-foreground: 0 0% 79%;
+          --border: 0 0% 22%;
+          --input: 0 0% 22%;
         }
       `;
     } else {
       style.textContent = `
         [data-theme="${uniqueId}"] {
-          --primary: ${customColor};
+          --primary: ${primaryHSL};
           --primary-foreground: 0 0% 98%;
-          --secondary: ${adjustColorBrightness(customColor, 60)};
+          --secondary: ${secondaryHSL};
           --secondary-foreground: 0 0% 9%;
-          --accent: ${adjustColorBrightness(customColor, 80)};
+          --accent: ${accentHSL};
           --accent-foreground: 0 0% 9%;
-          --ring: ${customColor};
+          --ring: ${primaryHSL};
+          
+          /* Preserve other important variables */
+          --background: 0 0% 100%;
+          --foreground: 0 0% 3.9%;
+          --card: 0 0% 100%;
+          --card-foreground: 0 0% 3.9%;
+          --popover: 0 0% 100%;
+          --popover-foreground: 0 0% 3.9%;
+          --muted: 0 0% 96.1%;
+          --muted-foreground: 0 0% 45.1%;
+          --border: 0 0% 89.8%;
+          --input: 0 0% 89.8%;
         }
       `;
     }
