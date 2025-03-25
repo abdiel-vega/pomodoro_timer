@@ -223,20 +223,6 @@ export default function AnimationSettings() {
       <CardContent>
         <div className="space-y-6">
           {/* Animation Type Selection */}
-          <div>
-            <h3 className="text-sm font-medium mb-3">Animation Type</h3>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(ANIMATION_NAMES).map(([key, name]) => (
-                <Button
-                  key={key}
-                  variant={animationType === key ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleAnimationChange(key)}
-                >
-                  {name}
-                </Button>
-              ))}
-            </div>
           </div>
           
           {/* Color Mode Selection */}
@@ -284,7 +270,7 @@ export default function AnimationSettings() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="primaryColor" className="text-sm">
-                      Primary Color
+                      Color Picker
                     </Label>
                     <div className="flex gap-2 items-center">
                       <input
@@ -302,57 +288,6 @@ export default function AnimationSettings() {
                       />
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="secondaryColor" className="text-sm">
-                      Secondary Color
-                    </Label>
-                    <div className="flex gap-2 items-center">
-                      <input
-                        id="secondaryColor"
-                        type="color"
-                        value={customColors.secondary}
-                        onChange={(e) => handleCustomColorChange('secondary', e.target.value)}
-                        className="h-8 w-10 rounded cursor-pointer"
-                      />
-                      <Input
-                        type="text"
-                        value={customColors.secondary}
-                        onChange={(e) => handleCustomColorChange('secondary', e.target.value)}
-                        className="w-24 h-8"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="backgroundColor" className="text-sm">
-                      Background Color
-                    </Label>
-                    <div className="flex gap-2 items-center">
-                      <input
-                        id="backgroundColor"
-                        type="color"
-                        value={customColors.background}
-                        onChange={(e) => handleCustomColorChange('background', e.target.value)}
-                        className="h-8 w-10 rounded cursor-pointer"
-                      />
-                      <Input
-                        type="text"
-                        value={customColors.background}
-                        onChange={(e) => handleCustomColorChange('background', e.target.value)}
-                        className="w-24 h-8"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 p-3 bg-muted rounded-md">
-                    <h4 className="text-sm font-medium mb-2">Preview</h4>
-                    <div className="flex space-x-2">
-                      <div className="w-10 h-10 rounded-full" style={{ backgroundColor: customColors.primary }}></div>
-                      <div className="w-10 h-10 rounded-full" style={{ backgroundColor: customColors.secondary }}></div>
-                      <div className="w-full h-10 rounded-md" style={{ backgroundColor: customColors.background }}></div>
-                    </div>
-                  </div>
                 </div>
               )}
             </Tabs>
@@ -364,7 +299,6 @@ export default function AnimationSettings() {
               Animation colors will be applied the next time you start a timer.
             </span>
           </div>
-        </div>
       </CardContent>
     </Card>
   );
