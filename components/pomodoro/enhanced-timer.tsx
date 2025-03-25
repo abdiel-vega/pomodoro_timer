@@ -347,12 +347,14 @@ export default function EnhancedTimer() {
         primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
         secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
       } else if (timerType === 'short_break') {
-        primaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.3)' : 'rgba(139, 92, 246, 0.3)';
-        secondaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.05)' : 'rgba(139, 92, 246, 0.05)';
+        // Change from 0.3/0.05 to 0.2/0.03 for less opacity
+        primaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.2)' : 'rgba(139, 92, 246, 0.2)';
+        secondaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.03)' : 'rgba(139, 92, 246, 0.03)';
       } else {
-        primaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.3)' : 'rgba(59, 130, 246, 0.3)';
-        secondaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.05)' : 'rgba(59, 130, 246, 0.05)';
-      }
+        // Change from 0.3/0.05 to 0.2/0.03 for less opacity
+        primaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.2)' : 'rgba(59, 130, 246, 0.2)';
+        secondaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.03)' : 'rgba(59, 130, 246, 0.03)';
+      }      
       
       // Draw multiple concentric circles for breathing visualization
       const circleCount = 4;

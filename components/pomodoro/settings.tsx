@@ -118,24 +118,20 @@ const PremiumColorThemes = ({ isPremium }: { isPremium: boolean }) => {
     const isDark = theme === 'dark';
     const uniqueId = `custom-${new Date().getTime()}`;
     
-    // Convert hex colors to HSL format
-    const primaryHSL = hexToHSL(customColor);
-    const secondaryHSL = hexToHSL(adjustColorBrightness(customColor, isDark ? -40 : 60));
-    const accentHSL = hexToHSL(adjustColorBrightness(customColor, isDark ? -60 : 80));
-    
-    // Create CSS variables for the custom theme
+    // Create CSS variables directly with hex colors
+    // This avoids the problematic conversion to HSL
     let style = document.createElement('style');
     
     if (isDark) {
       style.textContent = `
         .dark[data-theme="${uniqueId}"] {
-          --primary: ${primaryHSL};
-          --primary-foreground: 0 0% 98%;
-          --secondary: ${secondaryHSL};
-          --secondary-foreground: 0 0% 10%;
-          --accent: ${accentHSL};
-          --accent-foreground: 0 0% 10%;
-          --ring: ${primaryHSL};
+          --primary: ${customColor};
+          --primary-foreground: #ffffff;
+          --secondary: ${adjustColorBrightness(customColor, -40)};
+          --secondary-foreground: #ffffff;
+          --accent: ${adjustColorBrightness(customColor, -60)};
+          --accent-foreground: #ffffff;
+          --ring: ${customColor};
           
           /* Preserve other important variables */
           --background: 0 0% 7%;
@@ -153,13 +149,13 @@ const PremiumColorThemes = ({ isPremium }: { isPremium: boolean }) => {
     } else {
       style.textContent = `
         [data-theme="${uniqueId}"] {
-          --primary: ${primaryHSL};
-          --primary-foreground: 0 0% 98%;
-          --secondary: ${secondaryHSL};
-          --secondary-foreground: 0 0% 10%;
-          --accent: ${accentHSL};
-          --accent-foreground: 0 0% 10%;
-          --ring: ${primaryHSL};
+          --primary: ${customColor};
+          --primary-foreground: #ffffff;
+          --secondary: ${adjustColorBrightness(customColor, 60)};
+          --secondary-foreground: #000000;
+          --accent: ${adjustColorBrightness(customColor, 80)};
+          --accent-foreground: #000000;
+          --ring: ${customColor};
           
           /* Preserve other important variables */
           --background: 0 0% 100%;
