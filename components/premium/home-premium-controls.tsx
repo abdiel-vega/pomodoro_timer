@@ -107,7 +107,7 @@ export default function HomePremiumControls() {
               <Sparkles className="h-4 w-4 mr-1" /> Effects
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-2">
+          <PopoverContent className="w-full p-3">
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Timer Animation</h4>
               <div className="flex flex-wrap gap-1">
