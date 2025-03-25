@@ -270,7 +270,7 @@ export default function AnimationSettings() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="primaryColor" className="text-sm">
-                      Color Picker
+                      Custom Color
                     </Label>
                     <div className="flex gap-2 items-center">
                       <input

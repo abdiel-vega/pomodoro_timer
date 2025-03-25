@@ -304,23 +304,21 @@ export default function EnhancedTimer() {
       ctx.closePath();
       
       // Fill with gradient based on timer type and theme
-      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      let primaryColor, secondaryColor;
       if (timerType === 'work') {
-        if (isDarkMode) {
-          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
-          gradient.addColorStop(1, 'rgba(255, 255, 255, 0.3)');
-        } else {
-          gradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
-          gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
-        }
+        primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
+        secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
       } else if (timerType === 'short_break') {
-        gradient.addColorStop(0, isDarkMode ? 'rgba(167, 139, 250, 0.7)' : 'rgba(139, 92, 246, 0.7)'); // violet
-        gradient.addColorStop(1, isDarkMode ? 'rgba(167, 139, 250, 0.3)' : 'rgba(139, 92, 246, 0.3)');
+        primaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.3)' : 'rgba(139, 92, 246, 0.3)';
+        secondaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.05)' : 'rgba(139, 92, 246, 0.05)';
       } else {
-        gradient.addColorStop(0, isDarkMode ? 'rgba(147, 197, 253, 0.7)' : 'rgba(59, 130, 246, 0.7)'); // blue
-        gradient.addColorStop(1, isDarkMode ? 'rgba(147, 197, 253, 0.3)' : 'rgba(59, 130, 246, 0.3)');
+        primaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.3)' : 'rgba(59, 130, 246, 0.3)';
+        secondaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.05)' : 'rgba(59, 130, 246, 0.05)';
       }
-      
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, primaryColor);
+      gradient.addColorStop(1, secondaryColor);
       ctx.fillStyle = gradient;
       ctx.fill();
     };
@@ -346,18 +344,13 @@ export default function EnhancedTimer() {
       // Get color based on timer type and theme
       let primaryColor, secondaryColor;
       if (timerType === 'work') {
-        if (isDarkMode) {
-          primaryColor = 'rgba(255, 255, 255, 0.3)';
-          secondaryColor = 'rgba(255, 255, 255, 0.05)';
-        } else {
-          primaryColor = 'rgba(0, 0, 0, 0.3)';
-          secondaryColor = 'rgba(0, 0, 0, 0.05)';
-        }
+        primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
+        secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
       } else if (timerType === 'short_break') {
-        primaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.3)' : 'rgba(139, 92, 246, 0.3)'; // violet
+        primaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.3)' : 'rgba(139, 92, 246, 0.3)';
         secondaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.05)' : 'rgba(139, 92, 246, 0.05)';
       } else {
-        primaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.3)' : 'rgba(59, 130, 246, 0.3)'; // blue
+        primaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.3)' : 'rgba(59, 130, 246, 0.3)';
         secondaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.05)' : 'rgba(59, 130, 246, 0.05)';
       }
       

@@ -87,24 +87,16 @@ const PremiumColorThemes = ({ isPremium }: { isPremium: boolean }) => {
     let s = 0;
     const l = (max + min) / 2;
     
-    if (max === min) {
-      // achromatic (gray)
-      h = 0;
-      s = 0;
-    } else {
+    if (max !== min) {
       const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
       
-      switch (max) {
-        case r:
-          h = (g - b) / d + (g < b ? 6 : 0);
-          break;
-        case g:
-          h = (b - r) / d + 2;
-          break;
-        case b:
-          h = (r - g) / d + 4;
-          break;
+      if (max === r) {
+        h = (g - b) / d + (g < b ? 6 : 0);
+      } else if (max === g) {
+        h = (b - r) / d + 2;
+      } else if (max === b) {
+        h = (r - g) / d + 4;
       }
       
       h = h * 60;
@@ -116,7 +108,7 @@ const PremiumColorThemes = ({ isPremium }: { isPremium: boolean }) => {
     const lRounded = Math.round(l * 100);
     
     return `${hRounded} ${sRounded}% ${lRounded}%`;
-  };
+  };  
   
   
   // Function to create and apply a custom theme
@@ -138,22 +130,22 @@ const PremiumColorThemes = ({ isPremium }: { isPremium: boolean }) => {
       style.textContent = `
         .dark[data-theme="${uniqueId}"] {
           --primary: ${primaryHSL};
-          --primary-foreground: 0 0% 7%;
+          --primary-foreground: 0 0% 98%;
           --secondary: ${secondaryHSL};
-          --secondary-foreground: 0 0% 100%;
+          --secondary-foreground: 0 0% 10%;
           --accent: ${accentHSL};
-          --accent-foreground: 0 0% 100%;
+          --accent-foreground: 0 0% 10%;
           --ring: ${primaryHSL};
           
           /* Preserve other important variables */
           --background: 0 0% 7%;
-          --foreground: 0 0% 79%;
+          --foreground: 0 0% 98%;
           --card: 0 0% 7%;
-          --card-foreground: 0 0% 100%;
+          --card-foreground: 0 0% 98%;
           --popover: 0 0% 7%;
-          --popover-foreground: 0 0% 100%;
+          --popover-foreground: 0 0% 98%;
           --muted: 0 0% 15%;
-          --muted-foreground: 0 0% 79%;
+          --muted-foreground: 0 0% 63%;
           --border: 0 0% 22%;
           --input: 0 0% 22%;
         }
@@ -164,22 +156,22 @@ const PremiumColorThemes = ({ isPremium }: { isPremium: boolean }) => {
           --primary: ${primaryHSL};
           --primary-foreground: 0 0% 98%;
           --secondary: ${secondaryHSL};
-          --secondary-foreground: 0 0% 9%;
+          --secondary-foreground: 0 0% 10%;
           --accent: ${accentHSL};
-          --accent-foreground: 0 0% 9%;
+          --accent-foreground: 0 0% 10%;
           --ring: ${primaryHSL};
           
           /* Preserve other important variables */
           --background: 0 0% 100%;
-          --foreground: 0 0% 3.9%;
+          --foreground: 0 0% 10%;
           --card: 0 0% 100%;
-          --card-foreground: 0 0% 3.9%;
+          --card-foreground: 0 0% 10%;
           --popover: 0 0% 100%;
-          --popover-foreground: 0 0% 3.9%;
-          --muted: 0 0% 96.1%;
-          --muted-foreground: 0 0% 45.1%;
-          --border: 0 0% 89.8%;
-          --input: 0 0% 89.8%;
+          --popover-foreground: 0 0% 10%;
+          --muted: 0 0% 96%;
+          --muted-foreground: 0 0% 45%;
+          --border: 0 0% 90%;
+          --input: 0 0% 90%;
         }
       `;
     }
