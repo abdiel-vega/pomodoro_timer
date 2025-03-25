@@ -70,7 +70,7 @@ export default function Timer() {
     if (isDarkMode) {
       switch (timerType) {
         case 'work':
-          return 'bg-zinc-800';
+          return 'bg-zinc-500';
         case 'short_break':
           return 'bg-violet-900/30';
         case 'long_break':
@@ -81,7 +81,7 @@ export default function Timer() {
     } else {
       switch (timerType) {
         case 'work':
-          return 'bg-zinc-100';
+          return 'bg-zinc-200';
         case 'short_break':
           return 'bg-violet-50';
         case 'long_break':
