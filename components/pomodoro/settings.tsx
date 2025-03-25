@@ -29,11 +29,10 @@ import { Input } from '@/components/ui/input';
 // Define theme presets
 const LIGHT_THEMES = [
   { id: '', name: 'Default', color: '#000000' },
-  { id: 'light-blue', name: 'Blue', color: '#3b82f6' },
-  { id: 'light-green', name: 'Green', color: '#10b981' },
-  { id: 'light-purple', name: 'Purple', color: '#8b5cf6' },
-  { id: 'light-orange', name: 'Orange', color: '#f97316' },
-  { id: 'light-red', name: 'Red', color: '#ef4444' },
+  { id: 'light-unicorn', name: 'Unicorn', color: '#cdb4db' },
+  { id: 'light-pastel', name: 'Pastel', color: '#e5989b' },
+  { id: 'light-nature', name: 'Nature', color: '#52b69a' },
+  { id: 'light-pomodoro', name: 'Pomodoro', color: '#7ddf64' },
 ];
 
 const DARK_THEMES = [
@@ -545,33 +544,6 @@ export default function Settings() {
                   </div>
                 ))}
               </div>
-              
-              {/* Premium custom color theme component */}
-              <PremiumColorThemes isPremium={isPremium} />
-            </TabsContent>
-
-            <TabsContent value="dark" className="space-y-4">
-              <h3 className="text-sm font-medium mb-2">Color Theme</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {DARK_THEMES.map((theme) => (
-                  <div
-                    key={theme.id}
-                    className={`flex flex-col items-center p-3 cursor-pointer rounded-md border transition-all hover:shadow-md ${
-                      themeVariant === theme.id ? 'ring-2 ring-primary' : ''
-                    }`}
-                    onClick={() => handleThemeVariantChange(theme.id)}
-                  >
-                    <div 
-                      className="w-8 h-8 rounded-full mb-2" 
-                      style={{ backgroundColor: theme.color }}
-                    />
-                    <span className="text-xs">{theme.name}</span>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Premium custom color theme component */}
-              <PremiumColorThemes isPremium={isPremium} />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -587,10 +559,10 @@ export default function Settings() {
                 Manage all your premium features including sounds, animations, and analytics.
               </p>
               <Button 
-                className="w-full"
+                className="w-full bg-foreground hover:bg-muted-foreground text-muted"
                 onClick={() => window.location.href = '/premium'}
               >
-                <Sparkles className="mr-2 h-4 w-4 text-yellow-400" />
+                <Sparkles className="mr-2 h-4 w-4 text-muted" />
                 Premium Settings
               </Button>
             </>

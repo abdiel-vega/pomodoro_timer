@@ -9,7 +9,6 @@ import DeepFocusMode from '@/components/premium/deep-focus-mode';
 import ProductivityHeatmap from '@/components/premium/productivity-heatmap';
 import FocusAnalytics from '@/components/premium/focus-analytics';
 import TaskInsights from '@/components/premium/task-insights';
-import AnimationSettings from '@/components/premium/animation-settings';
 import { Button } from '@/components/ui/button';
 import { HomeIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -163,7 +162,6 @@ export default function PremiumPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SoundControls />
                 <DeepFocusMode />
-                <AnimationSettings />
               </div>
             </TabsContent>
             
