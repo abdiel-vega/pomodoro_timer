@@ -85,7 +85,7 @@ export default function EnhancedTimer() {
     if (isDarkMode) {
       switch (timerType) {
         case 'work':
-          return 'bg-zinc-800';
+          return 'bg-zinc-900';
         case 'short_break':
           return 'bg-violet-900/30';
         case 'long_break':
@@ -96,7 +96,7 @@ export default function EnhancedTimer() {
     } else {
       switch (timerType) {
         case 'work':
-          return 'bg-zinc-100';
+          return 'bg-zinc-50';
         case 'short_break':
           return 'bg-violet-50';
         case 'long_break':
@@ -113,9 +113,9 @@ export default function EnhancedTimer() {
       case 'work':
         return isDarkMode ? '#FFFFFF' : '#000000';
       case 'short_break':
-        return isDarkMode ? '#a78bfa' : '#8b5cf6'; // Brightened violet in dark mode
+        return isDarkMode ? '#a78bfa' : '#8b5cf6'; 
       case 'long_break':
-        return isDarkMode ? '#93c5fd' : '#3b82f6'; // Brightened blue in dark mode
+        return isDarkMode ? '#93c5fd' : '#3b82f6';
       default:
         return isDarkMode ? '#FFFFFF' : '#000000';
     }
@@ -159,7 +159,7 @@ export default function EnhancedTimer() {
       justifyContent: 'center',
       overflow: 'hidden',
       borderRadius: '50%',
-      filter: isDarkMode ? 'invert(1) brightness(1.5)' : 'none', // Invert colors in dark mode
+      filter: `${isDarkMode ? 'brightness(1.5)' : ''} ${animationType === 'pulse' ? 'grayscale(100%)' : ''}`,
     } as React.CSSProperties;
     
     // For canvas-based animations that we're still keeping (wave and breathing)
@@ -185,6 +185,17 @@ export default function EnhancedTimer() {
         transform: 'translate(-50%, -50%)',
         overflow: 'hidden',
       } as React.CSSProperties;
+
+      const styleOverride = document.createElement('style');
+    styleOverride.textContent = `
+      .lottie-pulse svg path {
+        fill: var(--animation-primary) !important;
+      }
+      .lottie-pulse svg rect {
+        fill: var(--animation-secondary) !important;
+      }
+    `;
+    document.head.appendChild(styleOverride);
       
       return (
         <div style={baseStyles}>
@@ -193,6 +204,7 @@ export default function EnhancedTimer() {
             loop={true}
             autoplay={true}
             style={zenStyles}
+            className='lottie-zen'
             rendererSettings={{
               preserveAspectRatio: 'xMidYMid slice',
             }}
@@ -209,7 +221,19 @@ export default function EnhancedTimer() {
         left: '50%',
         transform: 'translate(-50%, -50%)',
         overflow: 'hidden',
+        filter: 'grayscale(100%)',
       } as React.CSSProperties;
+
+      const styleOverride = document.createElement('style');
+    styleOverride.textContent = `
+      .lottie-pulse svg path {
+        fill: var(--animation-primary) !important;
+      }
+      .lottie-pulse svg rect {
+        fill: var(--animation-secondary) !important;
+      }
+    `;
+    document.head.appendChild(styleOverride);
       
       return (
         <div style={baseStyles}>
@@ -218,6 +242,7 @@ export default function EnhancedTimer() {
             loop={true}
             autoplay={true}
             style={pulseStyles}
+            className="lottie-pulse"
             rendererSettings={{
               preserveAspectRatio: 'xMidYMid slice',
             }}
@@ -235,6 +260,17 @@ export default function EnhancedTimer() {
         transform: 'translate(-50%, -50%)',
         overflow: 'hidden',
       } as React.CSSProperties;
+
+      const styleOverride = document.createElement('style');
+    styleOverride.textContent = `
+      .lottie-pulse svg path {
+        fill: var(--animation-primary) !important;
+      }
+      .lottie-pulse svg rect {
+        fill: var(--animation-secondary) !important;
+      }
+    `;
+    document.head.appendChild(styleOverride);
       
       return (
         <div style={baseStyles}>
@@ -243,6 +279,7 @@ export default function EnhancedTimer() {
             loop={true}
             autoplay={true}
             style={particlesStyles}
+            className='lottie-particles'
             rendererSettings={{
               preserveAspectRatio: 'xMidYMid slice',
             }}

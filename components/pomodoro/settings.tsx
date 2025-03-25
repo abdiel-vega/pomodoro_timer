@@ -5,7 +5,7 @@ settings component
 */
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -20,9 +20,11 @@ import {
   Moon, 
   Sun, 
   Sparkles,
-  CreditCard
+  CreditCard,
+  PaintBucket
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 
 // Define theme presets
 const LIGHT_THEMES = [
@@ -42,6 +44,205 @@ const DARK_THEMES = [
   { id: 'dark-orange', name: 'Orange', color: '#f97316' },
   { id: 'dark-red', name: 'Red', color: '#ef4444' },
 ];
+
+// Helper function to adjust color brightness
+const adjustColorBrightness = (hex: string, percent: number) => {
+  // Convert hex to RGB
+  let r = parseInt(hex.slice(1, 3), 16);
+  let g = parseInt(hex.slice(3, 5), 16);
+  let b = parseInt(hex.slice(5, 7), 16);
+  
+  // Adjust brightness
+  r = Math.min(255, Math.max(0, r + Math.floor(r * percent / 100)));
+  g = Math.min(255, Math.max(0, g + Math.floor(g * percent / 100)));
+  b = Math.min(255, Math.max(0, b + Math.floor(b * percent / 100)));
+  
+  // Convert back to hex
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+};
+
+// Premium Color Themes Component
+const PremiumColorThemes = ({ isPremium }: { isPremium: boolean }) => {
+  const { theme } = useTheme();
+  const { themeVariant, setThemeVariant } = useThemeVariant();
+  const [colorPickerVisible, setColorPickerVisible] = useState(false);
+  const [customColor, setCustomColor] = useState('#3b82f6'); // Default blue
+  const [customTheme, setCustomTheme] = useState('');
+  
+  // Function to create and apply a custom theme
+  const applyCustomTheme = () => {
+    if (!isPremium) return;
+    
+    const isDark = theme === 'dark';
+    const uniqueId = `custom-${new Date().getTime()}`;
+    
+    // Create CSS variables for the custom theme
+    let style = document.createElement('style');
+    
+    if (isDark) {
+      style.textContent = `
+        .dark[data-theme="${uniqueId}"] {
+          --primary: ${customColor};
+          --primary-foreground: 0 0% 7%;
+          --secondary: ${adjustColorBrightness(customColor, -40)};
+          --secondary-foreground: 0 0% 100%;
+          --accent: ${adjustColorBrightness(customColor, -60)};
+          --accent-foreground: 0 0% 100%;
+          --ring: ${customColor};
+        }
+      `;
+    } else {
+      style.textContent = `
+        [data-theme="${uniqueId}"] {
+          --primary: ${customColor};
+          --primary-foreground: 0 0% 98%;
+          --secondary: ${adjustColorBrightness(customColor, 60)};
+          --secondary-foreground: 0 0% 9%;
+          --accent: ${adjustColorBrightness(customColor, 80)};
+          --accent-foreground: 0 0% 9%;
+          --ring: ${customColor};
+        }
+      `;
+    }
+    
+    document.head.appendChild(style);
+    
+    // Store the custom theme in localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('customThemeColor', customColor);
+      localStorage.setItem('customThemeId', uniqueId);
+    }
+    
+    // Apply the custom theme
+    setCustomTheme(uniqueId);
+    setThemeVariant(uniqueId);
+    setColorPickerVisible(false);
+    
+    toast.success('Custom theme applied');
+  };
+  
+  // Load custom theme on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isPremium) {
+      const savedColor = localStorage.getItem('customThemeColor');
+      const savedThemeId = localStorage.getItem('customThemeId');
+      
+      if (savedColor) {
+        setCustomColor(savedColor);
+      }
+      
+      if (savedThemeId) {
+        setCustomTheme(savedThemeId);
+        
+        // Re-create the style for the custom theme if it's currently active
+        if (themeVariant === savedThemeId) {
+          const isDark = theme === 'dark';
+          let style = document.createElement('style');
+          
+          if (isDark) {
+            style.textContent = `
+              .dark[data-theme="${savedThemeId}"] {
+                --primary: ${savedColor ?? '#000000'};
+                --primary-foreground: 0 0% 7%;
+                --secondary: ${savedColor ? adjustColorBrightness(savedColor, -40) : '#505050'};
+                --secondary-foreground: 0 0% 100%;
+                --accent: ${savedColor ? adjustColorBrightness(savedColor, -60) : '#303030'};
+                --accent-foreground: 0 0% 100%;
+                --ring: ${savedColor ?? '#000000'};
+              }
+            `;
+          } else {
+            style.textContent = `
+              [data-theme="${savedThemeId}"] {
+                --primary: ${savedColor ?? '#3b82f6'};
+                --primary-foreground: 0 0% 98%;
+                --secondary: ${savedColor ? adjustColorBrightness(savedColor, 60) : '#bfdbfe'};
+                --secondary-foreground: 0 0% 9%;
+                --accent: ${savedColor ? adjustColorBrightness(savedColor, 80) : '#dbeafe'};
+                --accent-foreground: 0 0% 9%;
+                --ring: ${savedColor ?? '#3b82f6'};
+              }
+            `;
+          }          
+          
+          document.head.appendChild(style);
+        }
+      }
+    }
+  }, [isPremium, theme, themeVariant]);
+  
+  if (!isPremium) {
+    return (
+      <div className="mt-4 p-3 border rounded-md bg-zinc-50 dark:bg-zinc-800">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-yellow-500" />
+          <h4 className="text-sm font-medium">Premium Color Themes</h4>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          Upgrade to Premium to create custom color themes for your timer.
+        </p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="mt-4">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-sm font-medium flex items-center gap-2">
+          <PaintBucket className="h-4 w-4 text-yellow-500" />
+          Custom Color Theme
+        </h4>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setColorPickerVisible(!colorPickerVisible)}
+        >
+          {colorPickerVisible ? 'Hide Color Picker' : 'Create Custom Theme'}
+        </Button>
+      </div>
+      
+      {colorPickerVisible && (
+        <div className="p-3 border rounded-md space-y-3 mt-2">
+          <div className="space-y-2">
+            <Label htmlFor="customThemeColor" className="text-sm">Primary Color</Label>
+            <div className="flex gap-2 items-center">
+              <input
+                id="customThemeColor"
+                type="color"
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="h-8 w-10 rounded cursor-pointer"
+              />
+              <Input
+                type="text"
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="w-24 h-8"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-4 h-4 rounded-full" style={{ backgroundColor: customColor }}></span>
+                <span className="inline-block w-4 h-4 rounded-full" style={{ backgroundColor: adjustColorBrightness(customColor, theme === 'dark' ? -40 : 60) }}></span>
+                <span className="inline-block w-4 h-4 rounded-full" style={{ backgroundColor: adjustColorBrightness(customColor, theme === 'dark' ? -60 : 80) }}></span>
+              </div>
+              <Button size="sm" onClick={applyCustomTheme}>Apply Theme</Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {customTheme && themeVariant === customTheme && (
+        <div className="text-xs text-green-600 dark:text-green-400 mt-2">
+          Custom theme applied successfully
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function Settings() {
   const { settings, updateSettings, isPremium, refreshUserSettings } = usePomodoroTimer();
@@ -235,7 +436,7 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {/* New Appearance Card */}
+      {/* Appearance Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -277,6 +478,9 @@ export default function Settings() {
                   </div>
                 ))}
               </div>
+              
+              {/* Premium custom color theme component */}
+              <PremiumColorThemes isPremium={isPremium} />
             </TabsContent>
 
             <TabsContent value="dark" className="space-y-4">
@@ -298,6 +502,9 @@ export default function Settings() {
                   </div>
                 ))}
               </div>
+              
+              {/* Premium custom color theme component */}
+              <PremiumColorThemes isPremium={isPremium} />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -324,7 +531,7 @@ export default function Settings() {
             <>
               <h3 className="text-lg font-medium mb-2">Upgrade to Premium</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Get access to animated timers, ambient sounds, focus analytics, and more with a one-time purchase.
+                Get access to animated timers, ambient sounds, focus analytics, custom themes, and more with a one-time purchase.
               </p>
               <Button 
                 className="w-full bg-gradient-to-r from-amber-300 to-yellow-500 hover:from-amber-400 hover:to-yellow-600"

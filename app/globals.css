@@ -29,6 +29,10 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    /* Animation color variables with defaults */
+    --animation-primary: #000000;
+    --animation-secondary: #666666;
+    --animation-background: #f0f0f0;
   }
 
   /* Light Theme Variants */
@@ -105,6 +109,11 @@
     --chart-3: 30 80% 65%;
     --chart-4: 280 65% 70%;
     --chart-5: 340 75% 65%;
+
+    /* Dark mode animation colors */
+    --animation-primary: #A0A0A0;
+    --animation-secondary: #505050;
+    --animation-background: #303030;
   }
 
   /* Dark Theme Variants */
