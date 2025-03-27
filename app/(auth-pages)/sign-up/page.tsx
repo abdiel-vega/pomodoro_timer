@@ -157,6 +157,7 @@ export default function SignUp() {
             
             <Button 
               type="submit" 
+              variant={'outline'}
               className="w-full"
               disabled={isLoading}
             >
@@ -190,13 +191,12 @@ export default function SignUp() {
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center text-sm">
             Already have an account?{" "}
-            <Link className="text-primary underline hover:text-primary/90" href="/sign-in">
+            <Link className="text-secondary-foreground hover:underline" href="/sign-in">
               Sign in
             </Link>
           </div>
         </CardFooter>
       </Card>
-      <SmtpMessage />
     </div>
   );
 }

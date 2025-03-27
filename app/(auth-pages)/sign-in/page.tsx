@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { FormMessage } from '@/components/form-message';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -65,7 +67,7 @@ export default function SignIn() {
     <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] p-4">
       <div className="w-full max-w-md">
         <div className="bg-card shadow-lg rounded-lg p-6">
-          <h1 className="text-2xl font-bold mb-2 text-center">Sign in</h1>
+          <h1 className="text-2xl font-bold mb-2 text-center text-foreground">Sign in</h1>
           <p className="text-muted-foreground text-center mb-6">
             Enter your credentials to access your account
           </p>
@@ -78,7 +80,7 @@ export default function SignIn() {
           
           <form onSubmit={handleSignIn} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <label htmlFor="email" className="text-sm font-medium text-foreground">
                 Email
               </label>
               <Input
@@ -93,28 +95,41 @@ export default function SignIn() {
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-medium">
+                <label htmlFor="password" className="text-sm font-medium text-foreground">
                   Password
                 </label>
                 <Link 
                   href="/forgot-password" 
-                  className="text-sm text-primary hover:underline"
+                  className="text-sm text-secondary-foreground hover:underline"
                 >
                   Forgot Password?
                 </Link>
               </div>
+              <div className="relative">
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <Button 
+                type="button"
+                variant="ghost" 
+                size="sm"
+                className="absolute right-0 top-0 h-10 px-3"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </Button>
+            </div>
             </div>
             
             <Button 
               type="submit" 
+              variant={'outline'}
               className="w-full" 
               disabled={loading}
             >
@@ -124,7 +139,7 @@ export default function SignIn() {
           
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+              <span className="w-full border-t border-2 border-background" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
@@ -145,9 +160,9 @@ export default function SignIn() {
             Sign in with Google
           </Button>
           
-          <div className="mt-6 text-center text-sm">
+          <div className="mt-6 text-center text-sm text-foreground">
             Don't have an account?{" "}
-            <Link href="/sign-up" className="text-primary hover:underline">
+            <Link href="/sign-up" className="text-secondary-foreground hover:underline">
               Sign up
             </Link>
           </div>

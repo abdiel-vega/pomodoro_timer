@@ -531,7 +531,7 @@ export default function Settings() {
                 {LIGHT_THEMES.map((theme) => (
                   <div
                     key={theme.id}
-                    className={`flex flex-col items-center p-3 cursor-pointer rounded-md border transition-all hover:shadow-md ${
+                    className={`flex flex-col items-center p-3 cursor-pointer rounded-md border border-accent-foreground transition-all hover:shadow-md ${
                       themeVariant === theme.id ? 'ring-2 ring-primary' : ''
                     }`}
                     onClick={() => handleThemeVariantChange(theme.id)}
@@ -559,10 +559,10 @@ export default function Settings() {
                 Manage all your premium features including sounds, animations, and analytics.
               </p>
               <Button 
-                className="w-full bg-foreground hover:bg-muted-foreground text-muted"
+                className="w-full bg-accent-foreground hover:bg-secondary-foreground text-background"
                 onClick={() => window.location.href = '/premium'}
               >
-                <Sparkles className="mr-2 h-4 w-4 text-muted" />
+                <Sparkles className="mr-2 h-4 w-4 text-background" />
                 Premium Settings
               </Button>
             </>
@@ -573,7 +573,7 @@ export default function Settings() {
                 Get access to animated timers, ambient sounds, focus analytics, custom themes, and more with a one-time purchase.
               </p>
               <Button 
-                className="w-full bg-gradient-to-r from-amber-300 to-yellow-500 hover:from-amber-400 hover:to-yellow-600"
+                className="w-full text-white bg-gradient-to-r from-amber-300 to-yellow-500 hover:from-amber-400 hover:to-yellow-600"
                 onClick={() => window.location.href = '/premium'}
               >
                 <Sparkles className="mr-2 h-4 w-4" />

@@ -22,8 +22,9 @@ export function SignOutButton() {
         variant="outline" 
         size="sm" 
         onClick={() => setShowConfirmation(true)}
+        className='text-foreground hover:text-accent-foreground'
       >
-        <LogOutIcon className="mr-2 h-4 w-4" /> Sign Out
+        <LogOutIcon className="mr-2 h-4 w-4 text-foreground hover:text-accent-foreground" /> Sign Out
       </Button>
       
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
@@ -44,7 +45,7 @@ export function SignOutButton() {
               Cancel
             </Button>
             <form action={signOutAction}>
-              <Button type="submit" variant="default">
+              <Button type="submit" variant="outline">
                 Sign Out
               </Button>
             </form>

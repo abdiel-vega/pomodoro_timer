@@ -105,12 +105,12 @@ export default function DeepFocusMode() {
                 Toggle Deep Focus Mode from the home screen
               </p>
             </div>
-            <div className={`px-3 py-1 rounded-full text-sm ${deepFocusMode ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+            <div className={`px-3 py-1 rounded-full text-sm ${deepFocusMode ? "bg-secondary-foreground text-background" : "bg-muted text-foreground"}`}>
               {deepFocusMode ? "Active" : "Inactive"}
             </div>
           </div>
           
-          <div className="space-y-4 border-t mt-2 pt-4">
+          <div className="space-y-4 border-t border-accent-foreground mt-2 pt-4">
             <h4 className="text-sm font-medium">Focus Settings</h4>
             
             <div className="flex items-center justify-between">

@@ -100,7 +100,7 @@ export default function PremiumPurchase() {
       </CardContent>
       <CardFooter>
         <Button 
-          className="w-full" 
+          className="w-full text-background bg-accent-foreground hover:bg-input" 
           onClick={handlePurchase}
           disabled={isProcessing}
         >

@@ -157,10 +157,10 @@ const handleUnselectTask = () => {
 
   return (
     <>
-      <Card className="w-full task-list-container border-zinc-400 dark:border-zinc-300">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="w-full task-list-container border-muted">
+      <CardHeader className="flex flex-row items-center justify-between text-foreground">
         <CardTitle>Tasks</CardTitle>
-        <Button onClick={handleNewTask} size="sm">
+        <Button onClick={handleNewTask} size="sm" variant={'outline'}>
           <PlusIcon className="h-4 w-4 mr-2" />
           Add Task
         </Button>
@@ -168,15 +168,15 @@ const handleUnselectTask = () => {
         <CardContent>
           <Tabs defaultValue="pending" onValueChange={setActiveTab}>
             <TabsList className="mb-4">
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="pending" className='text-accent-foreground'>Pending</TabsTrigger>
+              <TabsTrigger value="completed" className='text-accent-foreground'>Completed</TabsTrigger>
+              <TabsTrigger value="all" className='text-accent-foreground'>All</TabsTrigger>
             </TabsList>
             
             <TabsContent value={activeTab}>
               {loading ? (
                 <div className="flex justify-center p-4">
-                  <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
+                  <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
                 </div>
               ) : filteredTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -191,9 +191,9 @@ const handleUnselectTask = () => {
                   {filteredTasks.map(task => (
                     <div 
                       key={task.id}
-                      className={`border border-zinc-200 dark:border-zinc-500 rounded-lg p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors ${
-                        isCurrentTask(task.id) ? 'border-primary bg-primary/5' : 
-                        task.is_important ? 'border-orange-500' : ''
+                      className={`border border-accent-foreground rounded-lg p-4 flex items-start gap-3 hover:bg-muted transition-colors ${
+                        isCurrentTask(task.id) ? 'border-secondary-foreground' : 
+                        task.is_important ? 'border-2 border-primary-foreground' : ''
                       }`}
                     >
                       <Checkbox 
@@ -206,14 +206,14 @@ const handleUnselectTask = () => {
                           {/* Important indicator */}
                           {task.is_important && (
                             <span title="Important task">
-                              <AlertCircleIcon className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                              <AlertCircleIcon className="h-4 w-4 text-primary-foreground flex-shrink-0" />
                             </span>
                           )}
 
                           <h3 className={`font-medium truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
                             {task.title}
                             {isCurrentTask(task.id) && (
-                              <Badge variant="outline" className="ml-2 border-primary text-primary text-xs">
+                              <Badge variant="outline" className="ml-2 text-xs">
                                 Focused
                               </Badge>
                             )}
@@ -227,7 +227,7 @@ const handleUnselectTask = () => {
                         )}
                         <div className="flex flex-wrap gap-2 mt-2">
                           <div className="flex items-center text-xs text-muted-foreground">
-                            <ClockIcon className="h-3 w-3 mr-1" />
+                            <ClockIcon className="h-3 w-3 mr-1 text-muted-foreground" />
                             <span>
                               {task.completed_pomodoros}/{task.estimated_pomodoros} pomodoros
                             </span>
@@ -236,7 +236,7 @@ const handleUnselectTask = () => {
                           {/* Show important badge */}
                           {task.is_important && (
                             <Badge 
-                              className="bg-orange-500 text-white"
+                              className="bg-primary-foreground text-background hover:bg-accent cursor-pointer"
                             >
                               Important
                             </Badge>
@@ -253,7 +253,7 @@ const handleUnselectTask = () => {
                               onClick={() => handleUnselectTask()}
                               aria-label="Unfocus this task"
                             >
-                              <XCircleIcon className="h-4 w-4 text-primary" />
+                              <XCircleIcon className="h-4 w-4 text-secondary-foreground" />
                             </Button>
                           ) : (
                             // Show focus button for non-focused tasks
@@ -263,7 +263,7 @@ const handleUnselectTask = () => {
                               onClick={() => handleSelectTask(task)}
                               aria-label="Focus on this task"
                             >
-                              <PlayIcon className="h-4 w-4" />
+                              <PlayIcon className="h-4 w-4 text-foreground" />
                             </Button>
                           )
                         )}
@@ -272,14 +272,14 @@ const handleUnselectTask = () => {
                           size="sm"
                           onClick={() => handleEditTask(task.id)}
                         >
-                          <EditIcon className="h-4 w-4" />
+                          <EditIcon className="h-4 w-4 text-foreground" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="sm"
                           onClick={() => handleTaskDelete(task.id)}
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          <TrashIcon className="h-4 w-4 text-foreground" />
                         </Button>
                       </div>
                     </div>

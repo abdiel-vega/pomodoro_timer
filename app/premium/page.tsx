@@ -32,15 +32,15 @@ export default function PremiumPage() {
     return (
       <div className="container mx-auto max-w-6xl">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Premium Features</h1>
-          <Button variant="outline" size="sm" asChild>
+          <h1 className="text-3xl text-foreground font-bold">Premium Features</h1>
+          <Button className='text-foreground border-foreground' variant="outline" size="sm" asChild>
             <Link href="/">
               <HomeIcon className="mr-2 h-4 w-4" /> Return to Timer
             </Link>
           </Button>
         </div>
         <div className="flex justify-center items-center py-20">
-          <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+          <div className="h-12 w-12 animate-spin rounded-full border-b-4 border-secondary-foreground"></div>
         </div>
       </div>
     );
@@ -49,8 +49,8 @@ export default function PremiumPage() {
   return (
     <div className="container mx-auto max-w-6xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Premium Features</h1>
-        <Button variant="outline" size="sm" asChild>
+        <h1 className="text-3xl text-foreground font-bold">Premium Features</h1>
+        <Button className='text-foreground border-foreground hover:border-muted-foreground' variant="outline" size="sm" asChild>
           <Link href="/">
             <HomeIcon className="mr-2 h-4 w-4" /> Return to Timer
           </Link>
@@ -62,8 +62,8 @@ export default function PremiumPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <PremiumPurchase />
           <div className="space-y-6">
-            <div className="bg-zinc-50 dark:bg-zinc-800 dark:text-gray-100 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-2 dark:text-white">Enhanced Productivity Tools</h2>
+            <div className="bg-card text-card-foreground rounded-lg p-6">
+              <h2 className="text-xl text-card-foreground font-bold mb-2">Enhanced Productivity Tools</h2>
               <p className="mb-4">
                 Unlock premium features to transform your productivity experience with a single purchase. No subscriptions, yours forever.
               </p>
@@ -103,33 +103,33 @@ export default function PremiumPage() {
               </ul>
             </div>
             
-            <div className="bg-zinc-50 dark:bg-zinc-800 dark:text-gray-100 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-2 dark:text-white">Customer Reviews</h2>
+            <div className="bg-card text-card-foreground rounded-lg p-6">
+              <h2 className="text-xl font-bold mb-2 text-foreground">Customer Reviews</h2>
               <div className="space-y-4">
-                <div className="border-b dark:border-gray-700 pb-3">
+                <div className="border-b border-muted-foreground pb-3">
                   <div className="flex items-center gap-1 text-yellow-500 mb-1">
                     ★★★★★
-                    <span className="text-gray-700 dark:text-gray-300 text-sm ml-1">Sarah T.</span>
+                    <span className="text-card-foreground dark:text-gray-300 text-sm ml-1">Sarah T.</span>
                   </div>
-                  <p className="text-sm dark:text-gray-300">
+                  <p className="text-sm text-card-foreground">
                     "The premium features transformed how I study. The ambient sounds help me get in the zone instantly!"
                   </p>
                 </div>
-                <div className="border-b dark:border-gray-700 pb-3">
+                <div className="border-b border-muted-foreground pb-3">
                   <div className="flex items-center gap-1 text-yellow-500 mb-1">
                     ★★★★★
-                    <span className="text-gray-700 dark:text-gray-300 text-sm ml-1">Mark J.</span>
+                    <span className="text-card-foreground text-sm ml-1">Mark J.</span>
                   </div>
-                  <p className="text-sm dark:text-gray-300">
+                  <p className="text-sm text-card-foreground">
                     "Deep focus mode and the productivity analytics have helped me identify when I work best. Worth every penny."
                   </p>
                 </div>
                 <div>
                   <div className="flex items-center gap-1 text-yellow-500 mb-1">
                     ★★★★★
-                    <span className="text-gray-700 dark:text-gray-300 text-sm ml-1">Aisha K.</span>
+                    <span className="text-card-foreground text-sm ml-1">Aisha K.</span>
                   </div>
-                  <p className="text-sm dark:text-gray-300">
+                  <p className="text-sm text-card-foreground">
                     "I love seeing my productivity trends in the heatmap. It's so satisfying watching those green squares fill up!"
                   </p>
                 </div>

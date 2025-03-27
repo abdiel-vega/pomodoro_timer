@@ -174,21 +174,21 @@ export default function TaskInsights() {
           </CardTitle>
           <div className="flex items-center gap-2">
             <Button
-              variant={periodDays === 7 ? "default" : "outline"}
+              variant={periodDays === 7 ? "outline" : "default"}
               size="sm"
               onClick={() => setPeriodDays(7)}
             >
               Week
             </Button>
             <Button
-              variant={periodDays === 30 ? "default" : "outline"}
+              variant={periodDays === 30 ? "outline" : "default"}
               size="sm"
               onClick={() => setPeriodDays(30)}
             >
               Month
             </Button>
             <Button
-              variant={periodDays === 90 ? "default" : "outline"}
+              variant={periodDays === 90 ? "outline" : "default"}
               size="sm"
               onClick={() => setPeriodDays(90)}
             >
@@ -200,32 +200,32 @@ export default function TaskInsights() {
       <CardContent>
         {loading ? (
           <div className="flex justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
+            <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
           </div>
         ) : (
           <div className="space-y-6">
             {/* Task Summary */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
+              <div className="flex-1 bg-muted rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle2 size={16} className="text-green-500" />
+                  <CheckCircle2 size={16} className="text-foreground" />
                   <h3 className="text-sm font-medium">Task Completion</h3>
                 </div>
                 <div className="mt-2 flex items-end gap-1">
                   <span className="text-3xl font-bold">{completionRate}%</span>
                   <span className="text-sm text-muted-foreground mb-1">completion rate</span>
                 </div>
-                <div className="mt-3 bg-gray-200 h-2 rounded-full overflow-hidden">
+                <div className="mt-3 bg-accent h-2 rounded-full overflow-hidden">
                   <div 
-                    className="bg-green-500 h-full rounded-full"
+                    className="bg-accent-foreground h-full rounded-full"
                     style={{ width: `${completionRate}%` }}
                   />
                 </div>
               </div>
               
-              <div className="flex-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
+              <div className="flex-1 bg-muted rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <AlertCircle size={16} className="text-orange-500" />
+                  <AlertCircle size={16} className="text-foreground" />
                   <h3 className="text-sm font-medium">Important Tasks</h3>
                 </div>
                 <div className="mt-2">
@@ -239,12 +239,12 @@ export default function TaskInsights() {
             </div>
             
             {/* Pomodoro Accuracy */}
-            <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
+            <div className="bg-muted rounded-lg p-4">
               <div className="flex items-center gap-2 mb-1">
-                <Clock size={16} className="text-blue-500" />
+                <Clock size={16} className="text-foreground" />
                 <h3 className="text-sm font-medium">Pomodoro Estimation Accuracy</h3>
               </div>
-              <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center justify-between gap-4 mt-2">
                 <div>
                   <span className="text-3xl font-bold">{pomodoroAccuracy.percentage}%</span>
                   <span className="text-sm text-muted-foreground ml-2">accuracy</span>
@@ -276,9 +276,9 @@ export default function TaskInsights() {
             
             {/* Productivity Insights */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
+              <div className="bg-muted rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <BarChart4 size={16} className="text-purple-500" />
+                  <BarChart4 size={16} className="text-foreground" />
                   <h3 className="text-sm font-medium">Most Productive Day</h3>
                 </div>
                 <p className="text-2xl font-bold">{mostProductiveDay.day}</p>
@@ -287,13 +287,12 @@ export default function TaskInsights() {
                 </p>
               </div>
               
-              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
+              <div className="bg-muted rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Award size={16} className="text-yellow-500" />
+                  <Award size={16} className="text-foreground" />
                   <h3 className="text-sm font-medium">Task Efficiency</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <LineChart size={32} className="text-yellow-500" />
                   <div>
                     <p className="text-sm font-medium">
                       {pomodoroAccuracy.percentage > 90 
@@ -322,11 +321,11 @@ export default function TaskInsights() {
                   .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
                   .slice(0, 5)
                   .map(task => (
-                    <div key={task.id} className="flex items-center gap-2 p-2 border border-zinc-200 dark:border-zinc-500 rounded-md">
+                    <div key={task.id} className="flex items-center gap-2 p-2 border border-accent-foreground rounded-md">
                       {task.is_completed ? (
                         <CheckCircle2 size={16} className="text-green-500 flex-shrink-0" />
                       ) : (
-                        <Clock size={16} className="text-blue-500 flex-shrink-0" />
+                        <Clock size={16} className="text-foreground flex-shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{task.title}</p>

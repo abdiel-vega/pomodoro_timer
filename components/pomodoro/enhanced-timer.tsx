@@ -459,7 +459,7 @@ useEffect(() => {
                 <div className="mt-2">
                    <Badge 
                     variant="outline" 
-                    className="text-xs py-1 px-2 border-primary/50 text-primary"
+                    className="text-xs py-1 px-2 border-muted-foreground text-accent-foreground"
                   >
                     Working on: {currentTask.title}
                   </Badge>
@@ -502,20 +502,20 @@ useEffect(() => {
           {/* Controls */}
           <div className="flex items-center justify-center gap-4">
             {timerState === 'idle' && (
-              <Button onClick={startTimer} size="lg" className="rounded-full w-12 h-12 p-0">
-                <PlayIcon className="h-6 w-6" />
+              <Button onClick={startTimer} size="lg" variant="outline" className="rounded-full w-12 h-12 p-0">
+                <PlayIcon className="h-6 w-6 text-accent-foreground" />
               </Button>
             )}
             
             {timerState === 'running' && (
-              <Button onClick={pauseTimer} size="lg" className="rounded-full w-12 h-12 p-0">
-                <PauseIcon className="h-6 w-6" />
+              <Button onClick={pauseTimer} size="lg" variant="outline" className="rounded-full w-12 h-12 p-0">
+                <PauseIcon className="h-6 w-6 text-accent-foreground" />
               </Button>
             )}
             
             {timerState === 'paused' && (
-              <Button onClick={resumeTimer} size="lg" className="rounded-full w-12 h-12 p-0">
-                <PlayIcon className="h-6 w-6" />
+              <Button onClick={resumeTimer} size="lg" variant="outline" className="rounded-full w-12 h-12 p-0">
+                <PlayIcon className="h-6 w-6 text-accent-foreground" />
               </Button>
             )}
             
@@ -525,7 +525,7 @@ useEffect(() => {
               variant="outline" 
               className="rounded-full w-12 h-12 p-0"
             >
-              <RotateCcwIcon className="h-5 w-5" />
+              <RotateCcwIcon className="h-5 w-5 text-accent-foreground" />
             </Button>
           </div>
           
@@ -533,29 +533,29 @@ useEffect(() => {
           <div className="flex items-center justify-center gap-2 w-full">
             <Button 
               onClick={() => changeTimerType('work')} 
-              variant={timerType === 'work' ? 'default' : 'outline'}
+              variant={timerType === 'work' ? 'outline' : 'default'}
               className="flex items-center gap-1"
               size="sm"
             >
-              <BrainIcon className="h-4 w-4" />
+              <BrainIcon className="h-4 w-4 text-accent-foreground" />
               Focus Time
             </Button>
             <Button 
               onClick={() => changeTimerType('short_break')} 
-              variant={timerType === 'short_break' ? 'default' : 'outline'}
+              variant={timerType === 'short_break' ? 'outline' : 'default'}
               className="flex items-center gap-1"
               size="sm"
             >
-              <CoffeeIcon className="h-4 w-4" />
+              <CoffeeIcon className="h-4 w-4 text-accent-foreground" />
               Short Break
             </Button>
             <Button 
               onClick={() => changeTimerType('long_break')} 
-              variant={timerType === 'long_break' ? 'default' : 'outline'}
+              variant={timerType === 'long_break' ? 'outline' : 'default'}
               className="flex items-center gap-1"
               size="sm"
             >
-              <CupSodaIcon className="h-4 w-4" />
+              <CupSodaIcon className="h-4 w-4 text-accent-foreground" />
               Long Break
             </Button>
           </div>
@@ -571,7 +571,7 @@ useEffect(() => {
           </div>
           
           {!isPremium && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-300">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-white">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-yellow-500" />
                 <p className="font-medium">Unlock animations and more premium features</p>

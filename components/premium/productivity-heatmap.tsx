@@ -149,21 +149,21 @@ export default function ProductivityHeatmap() {
   const getHeatmapColor = (score: number) => {
     if (isDarkMode) {
       switch (score) {
-        case 0: return 'bg-zinc-800';
+        case 0: return 'bg-background';
         case 1: return 'bg-green-900';
         case 2: return 'bg-green-700';
         case 3: return 'bg-green-500';
         case 4: return 'bg-green-400';
-        default: return 'bg-zinc-800';
+        default: return 'bg-background';
       }
     } else {
       switch (score) {
-        case 0: return 'bg-zinc-100';
+        case 0: return 'bg-background';
         case 1: return 'bg-green-100';
         case 2: return 'bg-green-300';
         case 3: return 'bg-green-500';
         case 4: return 'bg-green-700';
-        default: return 'bg-zinc-100';
+        default: return 'bg-background';
       }
     }
   };  
@@ -183,17 +183,23 @@ export default function ProductivityHeatmap() {
             ))}
             
             {days.map((day, index) => {
+              if (!day) {
+                return <div key={`empty-${index}`} className="bg-transparent h-10" />;
+              }
+
               const score = getProductivityScore(day);
+              const isToday = day.toDateString() === new Date().toDateString();
+              
               return (
                 <div
                   key={index}
-                  className={`${getHeatmapColor(score)} h-16 rounded-md flex flex-col items-center justify-center p-1`}
+                  className={`${getHeatmapColor(score)} h-16 rounded-md flex flex-col items-center justify-center p-1 ${isToday ? 'ring-2 ring-secondary-foreground' : ''}`}
                 >
                   <span className="text-xs font-medium">
                     {format(day, 'd')}
                   </span>
                   {score > 0 && (
-                    <span className="text-xs mt-1 text-gray-700">{score * 2} pomodoros</span>
+                    <span className="text-xs mt-1 text-foreground">{score * 2} pomodoros</span>
                   )}
                 </div>
               );
@@ -224,7 +230,7 @@ export default function ProductivityHeatmap() {
               return (
                 <div
                   key={index}
-                  className={`${getHeatmapColor(score)} h-10 rounded-md flex items-center justify-center ${isToday ? 'ring-2 ring-primary' : ''}`}
+                  className={`${getHeatmapColor(score)} h-10 rounded-md flex items-center justify-center ${isToday ? 'ring-2 ring-secondary-foreground' : ''}`}
                 >
                   <span className="text-xs font-medium">
                     {format(day, 'd')}
@@ -245,19 +251,19 @@ export default function ProductivityHeatmap() {
         <span className="text-xs">Less</span>
         {isDarkMode ? (
           <>
-            <div className="bg-zinc-800 w-4 h-4 rounded"></div>
-            <div className="bg-green-900 w-4 h-4 rounded"></div>
+            <div className="bg-background w-4 h-4 rounded"></div>
             <div className="bg-green-700 w-4 h-4 rounded"></div>
+            <div className="bg-green-600 w-4 h-4 rounded"></div>
             <div className="bg-green-500 w-4 h-4 rounded"></div>
             <div className="bg-green-400 w-4 h-4 rounded"></div>
           </>
         ) : (
           <>
-            <div className="bg-zinc-100 w-4 h-4 rounded"></div>
-            <div className="bg-green-100 w-4 h-4 rounded"></div>
+            <div className="bg-background w-4 h-4 rounded"></div>
+            <div className="bg-green-200 w-4 h-4 rounded"></div>
             <div className="bg-green-300 w-4 h-4 rounded"></div>
+            <div className="bg-green-400 w-4 h-4 rounded"></div>
             <div className="bg-green-500 w-4 h-4 rounded"></div>
-            <div className="bg-green-700 w-4 h-4 rounded"></div>
           </>
         )}
         <span className="text-xs">More</span>

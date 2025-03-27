@@ -120,7 +120,7 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg text-foreground">
         <DialogHeader>
           <DialogTitle>{taskId ? 'Edit Task' : 'Create New Task'}</DialogTitle>
         </DialogHeader>
@@ -186,13 +186,13 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
             <DialogFooter className="pt-4">
               <Button 
                 type="button" 
-                variant="outline" 
                 onClick={onClose}
+                variant={'outline'}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting || !title}>
+              <Button type="submit" variant={'outline'} disabled={isSubmitting || !title}>
                 {isSubmitting ? (
                   <>
                     <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-background"></div>

@@ -53,6 +53,7 @@ export default function ForgotPassword() {
             
             <Button 
               type="submit" 
+              variant={"outline"}
               className="w-full" 
               disabled={isSubmitting}
             >
@@ -63,16 +64,12 @@ export default function ForgotPassword() {
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-sm text-center">
             Remember your password?{" "}
-            <Link className="text-primary underline" href="/sign-in">
+            <Link className="text-secondary-foreground hover:underline" href="/sign-in">
               Sign in
             </Link>
           </div>
         </CardFooter>
       </Card>
-      
-      <div className="mt-6 max-w-md mx-auto">
-        <SmtpMessage />
-      </div>
     </>
   );
 }

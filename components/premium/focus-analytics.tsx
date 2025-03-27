@@ -239,13 +239,13 @@ export default function FocusAnalytics() {
         ) : (
           <div className="space-y-6">
             {/* Focus Score */}
-            <div className="bg-gradient-to-br from-indigo-100 to-teal-50 dark:from-indigo-950/40 dark:to-teal-950/40 rounded-lg p-4">
+            <div className="bg-gradient-to-br from-background to-muted rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500">Focus Score</h3>
+                  <h3 className="text-sm font-medium text-foreground">Focus Score</h3>
                   <div className="flex items-end gap-2">
                     <p className="text-3xl font-bold">{focusScore}</p>
-                    <div className={`flex items-center text-xs ${focusTrend === 'up' ? 'text-green-500' : focusTrend === 'down' ? 'text-red-500' : 'text-gray-500'}`}>
+                    <div className={`flex items-center text-xs ${focusTrend === 'up' ? 'text-green-500' : focusTrend === 'down' ? 'text-red-500' : 'text-foreground'}`}>
                       {focusTrend === 'up' ? (
                         <ArrowUpRight size={14} className="mr-1" />
                       ) : focusTrend === 'down' ? (
@@ -255,17 +255,17 @@ export default function FocusAnalytics() {
                     </div>
                   </div>
                 </div>
-                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-white dark:bg-gray-800">
-                  <BrainCircuit size={28} className="text-primary" />
+                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-secondary-foreground">
+                  <BrainCircuit size={28} className="text-background" />
                 </div>
               </div>
             </div>
             
             {/* Key Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
+              <div className="bg-muted rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Clock size={16} className="text-primary" />
+                  <Clock size={16} className="text-foreground" />
                   <h3 className="text-sm font-medium">Focus Time</h3>
                 </div>
                 <p className="text-2xl font-bold">{stats.totalFocusTime}m</p>
@@ -274,9 +274,9 @@ export default function FocusAnalytics() {
                 </p>
               </div>
               
-              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
+              <div className="bg-muted rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <CalendarCheck2 size={16} className="text-primary" />
+                  <CalendarCheck2 size={16} className="text-foreground" />
                   <h3 className="text-sm font-medium">Tasks</h3>
                 </div>
                 <p className="text-2xl font-bold">{stats.completedTasks}</p>
@@ -285,9 +285,9 @@ export default function FocusAnalytics() {
                 </p>
               </div>
               
-              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
+              <div className="bg-muted rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp size={16} className="text-primary" />
+                  <TrendingUp size={16} className="text-foreground" />
                   <h3 className="text-sm font-medium">Daily Average</h3>
                 </div>
                 <p className="text-2xl font-bold">{stats.dailyAverage}</p>
@@ -296,9 +296,9 @@ export default function FocusAnalytics() {
                 </p>
               </div>
               
-              <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-4">
+              <div className="bg-muted rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <BrainCircuit size={16} className="text-primary" />
+                  <BrainCircuit size={16} className="text-foreground" />
                   <h3 className="text-sm font-medium">Best Day</h3>
                 </div>
                 <p className="text-2xl font-bold">
@@ -311,7 +311,7 @@ export default function FocusAnalytics() {
             </div>
             
             {/* Chart */}
-            <div className="mt-4 rounded border border-zinc-200 dark:border-zinc-500 p-6">
+            <div className="mt-4 rounded border border-accent-foreground p-6">
               <h3 className="text-sm font-medium mb-4">Daily Focus Time (minutes)</h3>
               <div className="h-40 relative">
                 {data.map((value, index) => {
@@ -323,7 +323,7 @@ export default function FocusAnalytics() {
                       width: '20px'
                     }}>
                       <div 
-                        className="bg-primary rounded-t-sm w-6"
+                        className="bg-secondary-foreground rounded-t-sm w-6"
                         style={{ height: `${barHeight}%` }}
                       />
                       <div className="text-xs text-center mt-1">{labels[index % labels.length]}</div>

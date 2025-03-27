@@ -93,29 +93,29 @@ export default function HomePremiumControls() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-card/50 rounded-lg p-3 border border-zinc-100 dark:border-zinc-600 mb-4">
+    <div className="w-full max-w-md mx-auto bg-card rounded-lg p-3 border border-muted mb-4">
       <div className="flex items-center gap-1 text-sm mb-3 justify-center">
-        <Sparkles className="h-4 w-4 text-yellow-500" />
-        <span className="font-medium">Premium Features</span>
+        <Sparkles className="h-4 w-4 text-yellow-400" />
+        <span className="font-medium text-foreground">Premium Features</span>
       </div>
       
       <div className="flex items-center justify-between px-2">
         {/* Timer Effects */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8">
-              <Sparkles className="h-4 w-4 mr-1" /> Effects
+            <Button variant="outline" size="sm" className="h-8 text-foreground">
+              <Sparkles className="h-4 w-4 mr-1 text-foreground" /> Effects
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-3">
             <div className="space-y-2">
-              <h4 className="text-sm font-medium">Timer Animation</h4>
+              <h4 className="text-sm font-medium text-foreground">Timer Animation</h4>
               <div className="flex flex-wrap gap-1">
                 {Object.entries(ANIMATION_NAMES).map(([key, displayName]) => (
                   <Button
                     key={key}
                     size="sm"
-                    variant={animationType === key ? "default" : "outline"}
+                    variant={animationType === key ? "outline" : "default"}
                     className="h-8 text-xs px-2"
                     onClick={() => setAnimationType(key)}
                   >
@@ -133,9 +133,9 @@ export default function HomePremiumControls() {
             <Button 
               variant="outline" 
               size="sm" 
-              className={`h-8 ${soundEnabled ? 'bg-muted' : ''}`}
+              className={`h-8 border-accent-foreground text-foreground ${soundEnabled ? 'bg-muted' : ''}`}
             >
-              <Music className="h-4 w-4 mr-1" /> Sounds
+              <Music className="h-4 w-4 mr-1 text-foreground" /> Sounds
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-64 p-2">
@@ -179,7 +179,7 @@ export default function HomePremiumControls() {
                       return (
                         <Button
                           key={sound.id}
-                          variant={isActive ? "default" : "outline"}
+                          variant={isActive ? "outline" : "default"}
                           size="sm"
                           className="text-xs h-8"
                           onClick={() => selectSound(sound.id)}
@@ -197,8 +197,8 @@ export default function HomePremiumControls() {
 
         {/* Deep Focus Mode - Changed to Switch */}
         <div className="flex items-center gap-2">
-          <Label htmlFor="focus-mode" className="cursor-pointer text-sm flex items-center gap-1">
-            <EyeIcon className="h-4 w-4" /> Deep Focus
+          <Label htmlFor="focus-mode" className="cursor-pointer text-sm flex items-center gap-1 text-accent-foreground">
+            <EyeIcon className="h-4 w-4 text-accent-foreground" /> Deep Focus
           </Label>
           <Switch
             id="focus-mode"

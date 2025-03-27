@@ -132,11 +132,11 @@ export default function SoundControls() {
       </CardHeader>
       <CardContent>
         {/* Category tabs */}
-        <div className="flex mb-4 border-b">
+        <div className="flex mb-4 border-b border-accent-foreground">
           <Button
             variant="ghost"
             size="sm"
-            className={`rounded-none border-b-2 ${activeCategory === 'nature' ? 'border-primary' : 'border-transparent'}`}
+            className={`rounded-none border-b-2 ${activeCategory === 'nature' ? 'border-secondary-foreground' : 'border-transparent'}`}
             onClick={() => setActiveCategory('nature')}
           >
             Nature
@@ -144,7 +144,7 @@ export default function SoundControls() {
           <Button
             variant="ghost"
             size="sm"
-            className={`rounded-none border-b-2 ${activeCategory === 'ambient' ? 'border-primary' : 'border-transparent'}`}
+            className={`rounded-none border-b-2 ${activeCategory === 'ambient' ? 'border-secondary-foreground' : 'border-transparent'}`}
             onClick={() => setActiveCategory('ambient')}
           >
             Ambient
@@ -152,7 +152,7 @@ export default function SoundControls() {
           <Button
             variant="ghost"
             size="sm"
-            className={`rounded-none border-b-2 ${activeCategory === 'music' ? 'border-primary' : 'border-transparent'}`}
+            className={`rounded-none border-b-2 ${activeCategory === 'music' ? 'border-secondary-foreground' : 'border-transparent'}`}
             onClick={() => setActiveCategory('music')}
           >
             Music

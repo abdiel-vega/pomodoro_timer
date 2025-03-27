@@ -146,7 +146,7 @@ export default function Timer() {
                 <div className="mt-2">
                    <Badge 
                     variant="outline" 
-                    className="text-xs py-1 px-2 border-primary/50 text-primary"
+                    className="text-xs py-1 px-2 border-secondary-foreground"
                   >
                     Working on: {currentTask.title}
                   </Badge>
@@ -188,20 +188,20 @@ export default function Timer() {
           {/* Controls */}
           <div className="flex items-center justify-center gap-4">
             {timerState === 'idle' && (
-              <Button onClick={startTimer} size="lg" className="rounded-full w-12 h-12 p-0">
-                <PlayIcon className="h-6 w-6" />
+              <Button onClick={startTimer} size="lg" variant="outline" className="rounded-full w-12 h-12 p-0">
+                <PlayIcon className="h-6 w-6 text-accent-foreground" />
               </Button>
             )}
             
             {timerState === 'running' && (
-              <Button onClick={pauseTimer} size="lg" className="rounded-full w-12 h-12 p-0">
-                <PauseIcon className="h-6 w-6" />
+              <Button onClick={pauseTimer} size="lg" variant="outline" className="rounded-full w-12 h-12 p-0">
+                <PauseIcon className="h-6 w-6 text-accent-foreground" />
               </Button>
             )}
             
             {timerState === 'paused' && (
-              <Button onClick={resumeTimer} size="lg" className="rounded-full w-12 h-12 p-0">
-                <PlayIcon className="h-6 w-6" />
+              <Button onClick={resumeTimer} size="lg" variant="outline" className="rounded-full w-12 h-12 p-0">
+                <PlayIcon className="h-6 w-6 text-accent-foreground" />
               </Button>
             )}
             
@@ -211,7 +211,7 @@ export default function Timer() {
               variant="outline" 
               className="rounded-full w-12 h-12 p-0"
             >
-              <RotateCcwIcon className="h-5 w-5" />
+              <RotateCcwIcon className="h-5 w-5 text-accent-foreground" />
             </Button>
           </div>
           
@@ -219,7 +219,7 @@ export default function Timer() {
           <div className="flex items-center justify-center gap-2 w-full">
             <Button 
               onClick={() => changeTimerType('work')} 
-              variant={timerType === 'work' ? 'default' : 'outline'}
+              variant={timerType === 'work' ? 'outline' : 'default'}
               className="flex items-center gap-1"
               size="sm"
             >
@@ -228,20 +228,20 @@ export default function Timer() {
             </Button>
             <Button 
               onClick={() => changeTimerType('short_break')} 
-              variant={timerType === 'short_break' ? 'default' : 'outline'}
+              variant={timerType === 'short_break' ? 'outline' : 'default'}
               className="flex items-center gap-1"
               size="sm"
             >
-              <CoffeeIcon className="h-4 w-4" />
+              <CoffeeIcon className="h-4 w-4 text-accent-foreground" />
               Short Break
             </Button>
             <Button 
               onClick={() => changeTimerType('long_break')} 
-              variant={timerType === 'long_break' ? 'default' : 'outline'}
+              variant={timerType === 'long_break' ? 'outline' : 'default'}
               className="flex items-center gap-1"
               size="sm"
             >
-              <CupSodaIcon className="h-4 w-4" />
+              <CupSodaIcon className="h-4 w-4 text-accent-foreground" />
               Long Break
             </Button>
           </div>
