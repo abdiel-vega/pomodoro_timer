@@ -130,7 +130,7 @@ export default function ResetPassword() {
   if (hasValidSession === false) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md text-foreground">
           <CardHeader>
             <CardTitle>Session Expired</CardTitle>
             <CardDescription>
@@ -144,7 +144,7 @@ export default function ResetPassword() {
             </p>
           </CardContent>
           <CardFooter>
-            <Button asChild className="w-full">
+            <Button asChild className="w-full" variant={"outline"}>
               <Link href="/forgot-password">Request New Reset Link</Link>
             </Button>
           </CardFooter>
@@ -223,7 +223,8 @@ export default function ResetPassword() {
             </div>
             
             <Button 
-              type="submit" 
+              type="submit"
+              variant={"outline"}
               className="w-full"
               disabled={isSubmitting}
             >

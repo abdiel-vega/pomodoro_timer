@@ -18,7 +18,7 @@ export function FormMessage({ message }: { message: Message }) {
 
   if ("error" in message) {
     return (
-      <div className="flex items-center gap-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+      <div className="flex items-center gap-2 rounded-md bg-muted p-3 text-sm text-accent-foreground">
         <AlertCircle className="h-4 w-4" />
         <p>{message.error}</p>
       </div>
@@ -27,7 +27,7 @@ export function FormMessage({ message }: { message: Message }) {
 
   if ("success" in message) {
     return (
-      <div className="flex items-center gap-2 rounded-md bg-green-500/15 p-3 text-sm text-green-500">
+      <div className="flex items-center gap-2 rounded-md bg-muted p-3 text-sm text-accent-foreground">
         <CheckCircle2 className="h-4 w-4" />
         <p>{message.success}</p>
       </div>
