@@ -32,7 +32,6 @@ export default function Timer() {
   } = usePomodoroTimer();
   
   const { theme } = useTheme();
-  const isDarkMode = theme === 'dark';
 
   // Calculate total time based on timer type
   const totalTime = timerType === 'work'
@@ -67,61 +66,48 @@ export default function Timer() {
 
   // Get background color based on timer type and theme
   const getBackgroundColor = () => {
-    if (isDarkMode) {
-      switch (timerType) {
-        case 'work':
-          return 'bg-zinc-900';
-        case 'short_break':
-          return 'bg-violet-900/30';
-        case 'long_break':
-          return 'bg-blue-900/30';
-        default:
-          return 'bg-background';
-      }
-    } else {
-      switch (timerType) {
-        case 'work':
-          return 'bg-zinc-50';
-        case 'short_break':
-          return 'bg-violet-50';
-        case 'long_break':
-          return 'bg-blue-50';
-        default:
-          return 'bg-background';
-      }
+    switch (timerType) {
+      case 'work':
+        return 'bg-card';
+      case 'short_break':
+        return 'bg-primary';
+      case 'long_break':
+        return 'bg-secondary';
+      default:
+        return 'bg-card';
     }
   };
-
+  
   // Get circle stroke color for the timer
   const getCircleColor = () => {
     switch (timerType) {
       case 'work':
-        return isDarkMode ? '#ffffff' : '#000000';
+        return 'var(--muted)';
       case 'short_break':
-        return '#8b5cf6'; // violet-500
+        return 'var(--primary-foreground)';
       case 'long_break':
-        return '#3b82f6'; // blue-500
+        return 'var(--secondary-foreground)';
       default:
-        return 'hsl(var(--primary))';
+        return 'var(--muted)';
     }
   };
-
+  
   // Get progress bar colors
   const getProgressBarColors = () => {
     if (timerType === 'work') {
       return {
-        bg: isDarkMode ? 'bg-zinc-700' : 'bg-zinc-100',
-        fg: isDarkMode ? 'bg-white' : 'bg-black'
+        bg: 'bg-muted',
+        fg: 'bg-accent-foreground'
       };
     } else if (timerType === 'short_break') {
       return {
-        bg: isDarkMode ? 'bg-violet-800/50' : 'bg-violet-300',
-        fg: 'bg-violet-500'
+        bg: 'bg-primary-foreground',
+        fg: 'bg-accent-foreground'
       };
     } else {
       return {
-        bg: isDarkMode ? 'bg-blue-800/50' : 'bg-blue-300',
-        fg: 'bg-blue-500'
+        bg: 'bg-secondary-foreground',
+        fg: 'bg-accent-foreground'
       };
     }
   };

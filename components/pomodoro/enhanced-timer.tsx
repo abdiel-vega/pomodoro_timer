@@ -42,7 +42,6 @@ export default function EnhancedTimer() {
   } = usePomodoroTimer();
 
   const { theme } = useTheme();
-  const isDarkMode = theme === 'dark';
 
   // Animation references
   const lottieRef = useRef(null);
@@ -82,62 +81,48 @@ export default function EnhancedTimer() {
 
   // Get background color based on timer type and theme
   const getBackgroundColor = () => {
-    if (isDarkMode) {
-      switch (timerType) {
-        case 'work':
-          return 'bg-zinc-900';
-        case 'short_break':
-          return 'bg-violet-900/30';
-        case 'long_break':
-          return 'bg-blue-900/30';
-        default:
-          return 'bg-background';
-      }
-    } else {
-      switch (timerType) {
-        case 'work':
-          return 'bg-zinc-50';
-        case 'short_break':
-          return 'bg-violet-50';
-        case 'long_break':
-          return 'bg-blue-50';
-        default:
-          return 'bg-background';
-      }
+    switch (timerType) {
+      case 'work':
+        return 'bg-card';
+      case 'short_break':
+        return 'bg-primary';
+      case 'long_break':
+        return 'bg-secondary';
+      default:
+        return 'bg-card';
     }
   };
-
+  
   // Get circle stroke color for the timer
   const getCircleColor = () => {
     switch (timerType) {
       case 'work':
-        return isDarkMode ? '#FFFFFF' : '#000000';
+        return 'var(--muted)';
       case 'short_break':
-        return isDarkMode ? '#a78bfa' : '#8b5cf6'; 
+        return 'var(--primary-foreground)';
       case 'long_break':
-        return isDarkMode ? '#93c5fd' : '#3b82f6';
+        return 'var(--secondary-foreground)';
       default:
-        return isDarkMode ? '#FFFFFF' : '#000000';
+        return 'var(--muted)';
     }
   };
   
-
   // Get progress bar colors
   const getProgressBarColors = () => {
     if (timerType === 'work') {
       return {
-        bg: isDarkMode ? 'bg-zinc-700' : 'bg-zinc-200',
-        fg: isDarkMode ? 'bg-white' : 'bg-black'
+        bg: 'bg-muted',
+        fg: 'bg-accent-foreground'
       };
     } else if (timerType === 'short_break') {
       return {
-        bg: isDarkMode ? 'bg-violet-800/50' : 'bg-violet-300',
-        fg: 'bg-violet-500'
+        bg: 'bg-primary-foreground',
+        fg: 'bg-accent-foreground'
       };
     } else {
       return {
-        bg: isDarkMode ? 'bg-blue-800/50' : 'bg-blue-300',
-        fg: 'bg-blue-500'
+        bg: 'bg-secondary-foreground',
+        fg: 'bg-accent-foreground'
       };
     }
   };
@@ -159,7 +144,6 @@ export default function EnhancedTimer() {
       justifyContent: 'center',
       overflow: 'hidden',
       borderRadius: '50%',
-      filter: `${isDarkMode ? 'brightness(1.5)' : ''}`,
     } as React.CSSProperties;
     
     // For canvas-based animations that we're still keeping (wave and breathing)
@@ -305,24 +289,24 @@ export default function EnhancedTimer() {
       
       // Fill with gradient based on timer type and theme
       let primaryColor, secondaryColor;
-      if (timerType === 'work') {
-        primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
-        secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
-      } else if (timerType === 'short_break') {
-        primaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.3)' : 'rgba(139, 92, 246, 0.3)';
-        secondaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.05)' : 'rgba(139, 92, 246, 0.05)';
-      } else {
-        primaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.3)' : 'rgba(59, 130, 246, 0.3)';
-        secondaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.05)' : 'rgba(59, 130, 246, 0.05)';
-      }
-
-      const gradient = ctx.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, primaryColor);
-      gradient.addColorStop(1, secondaryColor);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-    };
-    
+        if (timerType === 'work') {
+          primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
+          secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
+        } else if (timerType === 'short_break') {
+          primaryColor = 'rgba(var(--primary), 0.2)';
+          secondaryColor = 'rgba(var(--primary), 0.03)';
+        } else {
+          primaryColor = 'rgba(var(--secondary), 0.2)';
+          secondaryColor = 'rgba(var(--secondary), 0.03)';
+        }
+        
+        // Create gradient with theme colors
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, primaryColor);
+        gradient.addColorStop(1, secondaryColor);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      };
 
     // Breathing animation
     const drawBreathing = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -343,18 +327,18 @@ export default function EnhancedTimer() {
       
       // Get color based on timer type and theme
       let primaryColor, secondaryColor;
-      if (timerType === 'work') {
-        primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
-        secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
-      } else if (timerType === 'short_break') {
-        // Change from 0.3/0.05 to 0.2/0.03 for less opacity
-        primaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.2)' : 'rgba(139, 92, 246, 0.2)';
-        secondaryColor = isDarkMode ? 'rgba(167, 139, 250, 0.03)' : 'rgba(139, 92, 246, 0.03)';
-      } else {
-        // Change from 0.3/0.05 to 0.2/0.03 for less opacity
-        primaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.2)' : 'rgba(59, 130, 246, 0.2)';
-        secondaryColor = isDarkMode ? 'rgba(147, 197, 253, 0.03)' : 'rgba(59, 130, 246, 0.03)';
-      }      
+        if (timerType === 'work') {
+          primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
+          secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
+        } else if (timerType === 'short_break') {
+          // Use theme variables for short break
+          primaryColor = 'rgba(var(--primary), 0.2)';
+          secondaryColor = 'rgba(var(--primary), 0.03)';
+        } else {
+          // Use theme variables for long break
+          primaryColor = 'rgba(var(--secondary), 0.2)';
+          secondaryColor = 'rgba(var(--secondary), 0.03)';
+        }
       
       // Draw multiple concentric circles for breathing visualization
       const circleCount = 4;
@@ -402,42 +386,41 @@ export default function EnhancedTimer() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-// create a global style element once
-useEffect(() => {
-  // Create a style element for animation colors if it doesn't exist
-  if (!document.getElementById('animation-colors-style')) {
-    const styleElement = document.createElement('style');
-    styleElement.id = 'animation-colors-style';
-    document.head.appendChild(styleElement);
-  }
-  
-  // Update the style content based on the current animation
-  const styleElement = document.getElementById('animation-colors-style');
-  if (styleElement) {
-    styleElement.textContent = `
-      .lottie-zen svg path, .lottie-zen svg circle {
-        fill: var(--animation-primary) !important;
-        stroke: var(--animation-secondary) !important;
-      }
-      .lottie-pulse svg path, .lottie-pulse svg circle {
-        fill: var(--animation-primary) !important;
-        stroke: var(--animation-secondary) !important;
-      }
-      .lottie-particles svg path, .lottie-particles svg circle {
-        fill: var(--animation-primary) !important;
-        stroke: var(--animation-secondary) !important;
-      }
-    `;
-  }
-  
-  return () => {
-    // Clean up the style element when the component unmounts
+  useEffect(() => {
+    // Create style element for animation colors if it doesn't exist
+    if (!document.getElementById('animation-colors-style')) {
+      const styleElement = document.createElement('style');
+      styleElement.id = 'animation-colors-style';
+      document.head.appendChild(styleElement);
+    }
+    
+    // Update the style content based on the current animation
     const styleElement = document.getElementById('animation-colors-style');
     if (styleElement) {
-      styleElement.textContent = '';
+      styleElement.textContent = `
+        .lottie-zen svg path, .lottie-zen svg circle {
+          fill: var(--animation-primary) !important;
+          stroke: var(--animation-secondary) !important;
+        }
+        .lottie-pulse svg path, .lottie-pulse svg circle {
+          fill: var(--animation-primary) !important;
+          stroke: var(--animation-secondary) !important;
+        }
+        .lottie-particles svg path, .lottie-particles svg circle {
+          fill: var(--animation-primary) !important;
+          stroke: var(--animation-secondary) !important;
+        }
+      `;
     }
-  };
-}, [animationType, theme]); // Re-run when animation type or theme changes
+    
+    return () => {
+      // Clean up when component unmounts
+      const styleElement = document.getElementById('animation-colors-style');
+      if (styleElement) {
+        styleElement.textContent = '';
+      }
+    };
+  }, [animationType, theme]);
 
   const progressColors = getProgressBarColors();
 

@@ -98,7 +98,6 @@ export default function AnimationSettings() {
   });
   const [colorMode, setColorMode] = useState<'preset' | 'custom'>('preset');
   const { theme } = useTheme();
-  const isDarkMode = theme === 'dark';
 
   // On component mount, load saved color preferences
   useEffect(() => {
@@ -135,7 +134,7 @@ export default function AnimationSettings() {
     let colors;
     
     if (colorMode === 'preset') {
-      colors = isDarkMode 
+      colors = theme === 'dark' 
         ? DARK_COLOR_SCHEMES[selectedColorScheme as keyof typeof DARK_COLOR_SCHEMES]
         : COLOR_SCHEMES[selectedColorScheme as keyof typeof COLOR_SCHEMES];
     } else {
@@ -237,7 +236,7 @@ export default function AnimationSettings() {
               {/* Preset Color Schemes */}
               {colorMode === 'preset' && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {Object.entries(isDarkMode ? DARK_COLOR_SCHEMES : COLOR_SCHEMES).map(([key, scheme]) => (
+                  {Object.entries(COLOR_SCHEMES ? DARK_COLOR_SCHEMES : COLOR_SCHEMES).map(([key, scheme]) => (
                     <div
                       key={key}
                       className={`flex flex-col items-center p-3 cursor-pointer rounded-md border transition-all hover:shadow-md ${

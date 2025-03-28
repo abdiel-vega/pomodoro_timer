@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 export default function DeepFocusMode() {
   const { isPremium, deepFocusMode } = usePomodoroTimer();
   const { theme } = useTheme();
-  const isDarkMode = theme === 'dark';  
   
   // Settings for deep focus mode (these would ideally be part of the context)
   const [settings, setSettings] = useState({
@@ -36,12 +35,13 @@ export default function DeepFocusMode() {
   };
   
   // Add a helper function to apply focus settings
+  // Apply focus settings
   const applyFocusSettings = (currentSettings: typeof settings) => {
     // Dim Interface setting
     if (currentSettings.dimInterface) {
-      document.documentElement.style.setProperty('--focus-dim-amount', isDarkMode ? '0.1' : '0.3');
+      document.documentElement.style.setProperty('--focus-dim-amount', '0.3');
     } else {
-      document.documentElement.style.setProperty('--focus-dim-amount', isDarkMode ? '0.5' : '0.7');
+      document.documentElement.style.setProperty('--focus-dim-amount', '0.7');
     }
     
     // Hide Elements setting

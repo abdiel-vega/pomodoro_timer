@@ -17,7 +17,6 @@ export default function ProductivityHeatmap() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
-  const isDarkMode = theme === 'dark';
 
   useEffect(() => {
     if (isPremium) {
@@ -147,26 +146,15 @@ export default function ProductivityHeatmap() {
 
   // Get color for heatmap cell based on productivity score
   const getHeatmapColor = (score: number) => {
-    if (isDarkMode) {
-      switch (score) {
-        case 0: return 'bg-background';
-        case 1: return 'bg-green-900';
-        case 2: return 'bg-green-700';
-        case 3: return 'bg-green-500';
-        case 4: return 'bg-green-400';
-        default: return 'bg-background';
-      }
-    } else {
-      switch (score) {
-        case 0: return 'bg-background';
-        case 1: return 'bg-green-100';
-        case 2: return 'bg-green-300';
-        case 3: return 'bg-green-500';
-        case 4: return 'bg-green-700';
-        default: return 'bg-background';
-      }
+    switch (score) {
+      case 0: return 'bg-background';
+      case 1: return 'bg-green-200';
+      case 2: return 'bg-green-300';
+      case 3: return 'bg-green-400';
+      case 4: return 'bg-green-500';
+      default: return 'bg-background';
     }
-  };  
+  };
 
   // Render heatmap based on view mode
   const renderHeatmap = () => {
@@ -249,15 +237,6 @@ export default function ProductivityHeatmap() {
     return (
       <div className="flex items-center justify-center gap-2 mt-4">
         <span className="text-xs">Less</span>
-        {isDarkMode ? (
-          <>
-            <div className="bg-background w-4 h-4 rounded"></div>
-            <div className="bg-green-700 w-4 h-4 rounded"></div>
-            <div className="bg-green-600 w-4 h-4 rounded"></div>
-            <div className="bg-green-500 w-4 h-4 rounded"></div>
-            <div className="bg-green-400 w-4 h-4 rounded"></div>
-          </>
-        ) : (
           <>
             <div className="bg-background w-4 h-4 rounded"></div>
             <div className="bg-green-200 w-4 h-4 rounded"></div>
@@ -265,7 +244,6 @@ export default function ProductivityHeatmap() {
             <div className="bg-green-400 w-4 h-4 rounded"></div>
             <div className="bg-green-500 w-4 h-4 rounded"></div>
           </>
-        )}
         <span className="text-xs">More</span>
       </div>
     );
