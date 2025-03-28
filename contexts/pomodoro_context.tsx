@@ -135,7 +135,49 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     }
     // No return value to match Promise<void>
   }, [supabase, isPremium]);
-  
+
+  // Set up auth listener and premium status sync
+  useEffect(() => {
+    const checkPremiumStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          console.log('User authenticated, checking premium status');
+          const { data } = await supabase
+            .from('users')
+            .select('is_premium')
+            .eq('id', user.id)
+            .single();
+            
+          setIsPremium(!!data?.is_premium);
+          console.log('Premium status:', !!data?.is_premium);
+        } else {
+          setIsPremium(false);
+        }
+      } catch (error) {
+        console.error('Failed to check premium status:', error);
+        setIsPremium(false);
+      }
+    };
+
+    // Check immediately on mount
+    checkPremiumStatus();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event) => {
+        console.log('Auth state changed in context:', event);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          await checkPremiumStatus();
+        } else if (event === 'SIGNED_OUT') {
+          setIsPremium(false);
+        }
+      }
+    );
+    
+    return () => subscription.unsubscribe();
+  }, [supabase]);
   
   // Function to refresh tasks - can be called by any component to get the latest task data
   const refreshTasks = useCallback(async () => {
@@ -180,49 +222,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     
     loadSettings();
   }, []);
-
-  // Set up auth listener and premium status sync
-  useEffect(() => {
-    const checkPremiumStatus = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          console.log('User authenticated, checking premium status');
-          const { data } = await supabase
-            .from('users')
-            .select('is_premium')
-            .eq('id', user.id)
-            .single();
-            
-          setIsPremium(!!data?.is_premium);
-          console.log('Premium status:', !!data?.is_premium);
-        } else {
-          setIsPremium(false);
-        }
-      } catch (error) {
-        console.error('Failed to check premium status:', error);
-        setIsPremium(false);
-      }
-    };
-
-    // Check immediately on mount
-    checkPremiumStatus();
-    
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event) => {
-        console.log('Auth state changed in context:', event);
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await checkPremiumStatus();
-        } else if (event === 'SIGNED_OUT') {
-          setIsPremium(false);
-        }
-      }
-    );
-    
-    return () => subscription.unsubscribe();
-  }, [supabase]);
   
   // Load premium status on initialization
   useEffect(() => {
