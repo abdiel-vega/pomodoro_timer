@@ -498,7 +498,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.notifications]);
 
-  // Deep focus mode
+  // Deep focus mode - updated to handle settings changes properly
   useEffect(() => {
     if (!isPremium) return;
   
@@ -523,40 +523,90 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         document.body.appendChild(vignette);
       }
       
-      // Hide header and footer
-      if (deepFocusSettings.hideHeaderFooter) {
+      // Apply settings function
+      const applySettings = (settings: any) => {
+        // Hide header and footer
         const header = document.querySelector('header');
         const footer = document.querySelector('footer');
-        if (header) header.classList.add('focus-hidden');
-        if (footer) footer.classList.add('focus-hidden');
-      }
-      
-      // Apply Do Not Disturb
-      if (deepFocusSettings.doNotDisturb) {
-        document.body.classList.add('do-not-disturb');
-      }
-      
-      // Enter fullscreen if enabled
-      if (deepFocusSettings.autoFullscreen) {
-        try {
-          const docEl = document.documentElement;
-          if (docEl.requestFullscreen) {
-            docEl.requestFullscreen();
-            document.body.classList.add('fullscreen');
-          } else if ((docEl as any).mozRequestFullScreen) {
-            (docEl as any).mozRequestFullScreen();
-            document.body.classList.add('fullscreen');
-          } else if ((docEl as any).webkitRequestFullscreen) {
-            (docEl as any).webkitRequestFullscreen();
-            document.body.classList.add('fullscreen');
-          } else if ((docEl as any).msRequestFullscreen) {
-            (docEl as any).msRequestFullscreen();
-            document.body.classList.add('fullscreen');
-          }
-        } catch (error) {
-          console.error('Failed to enter fullscreen mode:', error);
+        
+        if (settings.hideHeaderFooter) {
+          if (header) header.classList.add('focus-hidden');
+          if (footer) footer.classList.add('focus-hidden');
+        } else {
+          if (header) header.classList.remove('focus-hidden');
+          if (footer) footer.classList.remove('focus-hidden');
         }
-      }
+        
+        // Apply Do Not Disturb
+        if (settings.doNotDisturb) {
+          document.body.classList.add('do-not-disturb');
+        } else {
+          document.body.classList.remove('do-not-disturb');
+        }
+        
+        // Manage fullscreen
+        if (settings.autoFullscreen) {
+          try {
+            const docEl = document.documentElement;
+            if (docEl.requestFullscreen && !document.fullscreenElement) {
+              docEl.requestFullscreen();
+              document.body.classList.add('fullscreen');
+            } else if ((docEl as any).mozRequestFullScreen && !(document as any).mozFullScreenElement) {
+              (docEl as any).mozRequestFullScreen();
+              document.body.classList.add('fullscreen');
+            } else if ((docEl as any).webkitRequestFullscreen && !(document as any).webkitFullscreenElement) {
+              (docEl as any).webkitRequestFullscreen();
+              document.body.classList.add('fullscreen');
+            } else if ((docEl as any).msRequestFullscreen && !(document as any).msFullscreenElement) {
+              (docEl as any).msRequestFullscreen();
+              document.body.classList.add('fullscreen');
+            }
+          } catch (error) {
+            console.error('Failed to enter fullscreen mode:', error);
+          }
+        } else {
+          try {
+            if (document.fullscreenElement) {
+              document.exitFullscreen();
+            } else if ((document as any).webkitFullscreenElement) {
+              (document as any).webkitExitFullscreen();
+            } else if ((document as any).mozFullScreenElement) {
+              (document as any).mozCancelFullScreen();
+            } else if ((document as any).msFullscreenElement) {
+              (document as any).msExitFullscreen();
+            }
+            document.body.classList.remove('fullscreen');
+          } catch (error) {
+            console.error('Failed to exit fullscreen mode:', error);
+          }
+        }
+      };
+      
+      // Apply initial settings
+      applySettings(deepFocusSettings);
+      
+      // Listen for settings changes via storage event
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === 'deepFocusSettings' && e.newValue) {
+          try {
+            const newSettings = JSON.parse(e.newValue);
+            applySettings(newSettings);
+          } catch (error) {
+            console.error('Error parsing deep focus settings:', error);
+          }
+        }
+      };
+      
+      // Listen for custom event from DeepFocusMode component
+      const handleCustomEvent = (e: Event) => {
+        const customEvent = e as CustomEvent;
+        if (customEvent.detail) {
+          applySettings(customEvent.detail);
+        }
+      };
+      
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('deepFocusSettingsChanged', handleCustomEvent);
       
       return () => {
         // Clean up
@@ -595,12 +645,14 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         if (vignette) {
           vignette.remove();
         }
+        
+        // Remove event listeners
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('deepFocusSettingsChanged', handleCustomEvent);
       };
     }
-  }, [deepFocusMode, isPremium, toast]);
+  }, [deepFocusMode, isPremium]);
    
-
-  
   const value = {
     timerState,
     timerType,

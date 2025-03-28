@@ -72,10 +72,10 @@ export default function DeepFocusMode() {
       // Save to localStorage
       localStorage.setItem('deepFocusSettings', JSON.stringify(newSettings));
       
-      // If deep focus mode is active, apply settings immediately
-      if (deepFocusMode) {
-        applyFocusSettings(newSettings);
-      }
+      // Dispatch custom event for the context to listen to
+      window.dispatchEvent(new CustomEvent('deepFocusSettingsChanged', {
+        detail: newSettings
+      }));
       
       return newSettings;
     });
@@ -140,7 +140,7 @@ export default function DeepFocusMode() {
   };
   
   // Apply focus settings
-  const applyFocusSettings = (currentSettings: typeof settings) => {
+  const applyFocusSettings = (currentSettings: typeof settings, isUpdate = false) => {
     // Hide header and footer
     const header = document.querySelector('header');
     const footer = document.querySelector('footer');
@@ -159,11 +159,16 @@ export default function DeepFocusMode() {
       document.body.classList.remove('do-not-disturb');
     }
     
-    // Apply fullscreen setting
-    if (currentSettings.autoFullscreen) {
+    // Fullscreen - only toggle if this is a direct update, not initial application
+    if (isUpdate) {
+      if (currentSettings.autoFullscreen) {
+        requestFullscreen();
+      } else {
+        exitFullscreen();
+      }
+    } else if (currentSettings.autoFullscreen) {
+      // Initial application
       requestFullscreen();
-    } else {
-      exitFullscreen();
     }
   };
 
