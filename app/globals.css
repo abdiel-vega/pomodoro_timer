@@ -209,90 +209,30 @@
   }
 }
 
-/* Additional dark mode utility classes */
-.dark .dark-improved-visibility {
-  background-color: #383838;
-  color: #FFFFFF;
-}
-
-.dark .dark-card-highlight {
-  background-color: #262626;
-  border-color: #383838;
-}
-
-/* Deep focus mode */
-.dark .deep-focus-mode {
-  --focus-dim-amount: 0.15;
-  background-color: rgba(18, 18, 18, 0.95);
-}
-
-.dark .timer-focus {
-  filter: brightness(1.2);
-}
-
-/* Fix for sliders in dark mode */
-.dark .SliderRoot {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 20px;
-}
-
-.dark .SliderTrack {
-  background-color: #383838;
-  position: relative;
-  flex-grow: 1;
-  border-radius: 9999px;
-  height: 4px;
-}
-
-.dark .SliderRange {
-  position: absolute;
-  background-color: #FFFFFF;
-  border-radius: 9999px;
-  height: 100%;
-}
-
-.dark .SliderThumb {
-  display: block;
-  width: 16px;
-  height: 16px;
-  background-color: #FFFFFF;
-  border-radius: 9999px;
-}
-
 /* Deep focus mode styles */
 .mute-notifications .notification-element {
   display: none !important;
 }
 
-.deep-focus-mode {
-  --focus-dim-amount: 0.3;
-  background-color: rgba(255, 255, 255, 0.95);
-  transition: all 0.3s ease;
+/* Hide header and footer in focus mode */
+.focus-hidden {
+  display: none !important;
 }
 
-.dark .deep-focus-mode {
-  --focus-dim-amount: 0.1;
-  background-color: rgba(18, 18, 18, 0.95);
+/* Do Not Disturb mode */
+.do-not-disturb .notification-element {
+  display: none !important;
 }
 
-.deep-focus-mode * {
-  transition: opacity 0.3s ease, display 0.3s ease;
+/* Make sure these components remain interactive during focus mode */
+.deep-focus-mode .timer-container *,
+.deep-focus-mode .task-list-container *,
+.deep-focus-mode .premium-controls * {
+  pointer-events: auto;
 }
 
-.deep-focus-mode .header,
-.deep-focus-mode .navigation,
-.deep-focus-mode footer,
-.deep-focus-mode .non-essential {
-  opacity: var(--focus-dim-amount);
-  transition: opacity 0.3s ease;
-}
-
-.deep-focus-mode .header:hover,
-.deep-focus-mode .navigation:hover,
-.deep-focus-mode footer:hover,
-.deep-focus-mode .non-essential:hover {
-  opacity: 0.8;
+/* Styles for the focus mode button when active */
+.deep-focus-active {
+  background-color: hsl(var(--secondary-foreground)) !important;
+  color: hsl(var(--secondary)) !important;
 }

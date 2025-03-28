@@ -499,64 +499,91 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   }, [settings.notifications]);
 
   // Add to the useEffect that handles deep focus mode:
-useEffect(() => {
-  if (!isPremium) return;
-
-  if (deepFocusMode) {
-    // Apply deep focus class to body
-    document.body.classList.add('deep-focus-mode');
-    
-    // Add specific class for timer and task list
-    const timer = document.querySelector('.timer-container');
-    if (timer) timer.classList.add('timer-focus');
-    
-    const taskList = document.querySelector('.task-list-container');
-    if (taskList) taskList.classList.add('task-list-focus');
-    
-    // Save original title
-    const originalTitle = document.title;
-    document.title = "🧠 Focus Mode - " + originalTitle;
-    
-    // Apply deep focus settings - getting settings from the DeepFocusMode component
-    const dimInterface = true;  // Default value
-    const hideElements = true;  // Default value
-    const muteNotifications = true;  // Default value
-    
-    // Apply dim interface
-    document.documentElement.style.setProperty('--focus-dim-amount', 
-      theme === 'dark' ? '0.1' : '0.3'
-    );
-    
-    // Apply hide elements
-    const nonEssentialElements = document.querySelectorAll('.non-essential');
-    nonEssentialElements.forEach(el => {
-      if (hideElements) {
-        (el as HTMLElement).style.display = 'none';
+  useEffect(() => {
+    if (!isPremium) return;
+  
+    if (deepFocusMode) {
+      // Apply deep focus class to body
+      document.body.classList.add('deep-focus-mode');
+      
+      // Get deep focus settings from localStorage or use defaults
+      const storedSettings = localStorage.getItem('deepFocusSettings');
+      const deepFocusSettings = storedSettings 
+        ? JSON.parse(storedSettings) 
+        : {
+            doNotDisturb: false,
+            hideHeaderFooter: true,
+            blockDistractions: false
+          };
+      
+      // Hide header and footer
+      if (deepFocusSettings.hideHeaderFooter) {
+        const header = document.querySelector('header');
+        const footer = document.querySelector('footer');
+        if (header) header.classList.add('focus-hidden');
+        if (footer) footer.classList.add('focus-hidden');
       }
-    });
-    
-    // Apply mute notifications
-    if (muteNotifications) {
-      document.body.classList.add('mute-notifications');
+      
+      // Apply Do Not Disturb
+      if (deepFocusSettings.doNotDisturb) {
+        document.body.classList.add('do-not-disturb');
+      }
+      
+      // Apply distraction blocking
+      if (deepFocusSettings.blockDistractions) {
+        // Attempt to communicate with browser extensions if available
+        if (typeof window !== 'undefined' && window.postMessage) {
+          window.postMessage({ 
+            type: 'POMODORO_FOCUS_MODE', 
+            action: 'BLOCK_DISTRACTIONS',
+            enabled: true 
+          }, '*');
+        }
+      }
+      
+      // Increase z-index of timer and task list
+      const timer = document.querySelector('.timer-container');
+      const taskList = document.querySelector('.task-list-container');
+      const premiumControls = document.querySelector('.premium-controls');
+      
+      if (timer) timer.classList.add('focus-exempt');
+      if (taskList) taskList.classList.add('focus-exempt');
+      if (premiumControls) premiumControls.classList.add('focus-exempt');
+      
+      // Update document title to indicate focus mode
+      const originalTitle = document.title;
+      document.title = "🧠 Focus Mode - " + originalTitle;
+      
+      return () => {
+        // Clean up
+        document.body.classList.remove('deep-focus-mode');
+        document.body.classList.remove('do-not-disturb');
+        
+        // Restore header and footer
+        const header = document.querySelector('header');
+        const footer = document.querySelector('footer');
+        if (header) header.classList.remove('focus-hidden');
+        if (footer) footer.classList.remove('focus-hidden');
+        
+        // Reset components
+        if (timer) timer.classList.remove('focus-exempt');
+        if (taskList) taskList.classList.remove('focus-exempt');
+        if (premiumControls) premiumControls.classList.remove('focus-exempt');
+        
+        // Disable distraction blocking
+        if (deepFocusSettings.blockDistractions && typeof window !== 'undefined' && window.postMessage) {
+          window.postMessage({ 
+            type: 'POMODORO_FOCUS_MODE', 
+            action: 'BLOCK_DISTRACTIONS',
+            enabled: false 
+          }, '*');
+        }
+        
+        // Restore document title
+        document.title = originalTitle;
+      };
     }
-    
-    return () => {
-      // Clean up
-      document.body.classList.remove('deep-focus-mode');
-      document.body.classList.remove('mute-notifications');
-      
-      if (timer) timer.classList.remove('timer-focus');
-      if (taskList) taskList.classList.remove('task-list-focus');
-      
-      document.title = originalTitle;
-      
-      // Reset non-essential elements display
-      nonEssentialElements.forEach(el => {
-        (el as HTMLElement).style.display = '';
-      });
-    };
-  }
-}, [deepFocusMode, isPremium, theme]);
+  }, [deepFocusMode, isPremium]);  
 
   
   const value = {

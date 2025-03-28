@@ -1,24 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { EyeIcon, PhoneOff, BellOff, Sparkles } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { EyeIcon, MoonIcon, LayoutDashboard, Globe, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function DeepFocusMode() {
-  const { isPremium, deepFocusMode } = usePomodoroTimer();
-  const { theme } = useTheme();
+  const { isPremium, deepFocusMode, setDeepFocusMode } = usePomodoroTimer();
   
-  // Settings for deep focus mode (these would ideally be part of the context)
+  // Settings for deep focus mode
   const [settings, setSettings] = useState({
-    dimInterface: true,
-    muteNotifications: true,
-    hideElements: true
+    doNotDisturb: false,
+    hideHeaderFooter: true,
+    blockDistractions: false
   });
+  
+  // Check for OS Do Not Disturb status
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'navigator' in window) {
+      // Use Notification API to check permission status
+      if (Notification.permission === 'granted') {
+        // Try to detect do not disturb when possible
+        try {
+          if ('permissions' in navigator && navigator.permissions) {
+            navigator.permissions.query({ name: 'notifications' as PermissionName })
+              .then(permissionStatus => {
+                // If notifications aren't allowed, DND might be on
+                if (permissionStatus.state === 'denied') {
+                  setSettings(prev => ({ ...prev, doNotDisturb: true }));
+                }
+              });
+          }
+        } catch (error) {
+          console.log('Unable to detect Do Not Disturb status');
+        }
+      }
+    }
+  }, []);
 
   // Handle settings changes
   const updateSettings = (key: keyof typeof settings, value: boolean) => {
@@ -32,37 +54,78 @@ export default function DeepFocusMode() {
     if (deepFocusMode) {
       applyFocusSettings({...settings, [key]: value});
     }
+    
+    // Special handling for doNotDisturb
+    if (key === 'doNotDisturb' && value) {
+      if (Notification.permission === 'granted') {
+        toast.info('The app will respect your system Do Not Disturb settings');
+      } else {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            toast.info('Notifications will be suppressed during focus time');
+          } else {
+            toast.info('Unable to access notification settings');
+          }
+        });
+      }
+    }
+    
+    // Special handling for blockDistractions
+    if (key === 'blockDistractions') {
+      if (value) {
+        toast.info('Website blocking requires browser extension integration', {
+          description: "The app will save your distraction list, but you'll need a compatible blocking extension."
+        });
+      }
+    }
   };
   
-  // Add a helper function to apply focus settings
   // Apply focus settings
   const applyFocusSettings = (currentSettings: typeof settings) => {
-    // Dim Interface setting
-    if (currentSettings.dimInterface) {
-      document.documentElement.style.setProperty('--focus-dim-amount', '0.3');
+    
+    // Hide header and footer
+    const header = document.querySelector('header');
+    const footer = document.querySelector('footer');
+    
+    if (currentSettings.hideHeaderFooter) {
+      if (header) header.classList.add('focus-hidden');
+      if (footer) footer.classList.add('focus-hidden');
     } else {
-      document.documentElement.style.setProperty('--focus-dim-amount', '0.7');
+      if (header) header.classList.remove('focus-hidden');
+      if (footer) footer.classList.remove('focus-hidden');
     }
     
-    // Hide Elements setting
-    const nonEssentials = document.querySelectorAll('.non-essential');
-    nonEssentials.forEach(el => {
-      if (currentSettings.hideElements) {
-        (el as HTMLElement).style.display = 'none';
-      } else {
-        (el as HTMLElement).style.display = '';
-      }
-    });
-    
-    // Mute Notifications setting
-    if (currentSettings.muteNotifications) {
-      document.body.classList.add('mute-notifications');
+    // Do Not Disturb setting
+    if (currentSettings.doNotDisturb) {
+      document.body.classList.add('do-not-disturb');
     } else {
-      document.body.classList.remove('mute-notifications');
+      document.body.classList.remove('do-not-disturb');
+    }
+    
+    // Block distractions (integration with browser extensions)
+    if (currentSettings.blockDistractions) {
+      // Save the user's preference
+      localStorage.setItem('blockDistractions', 'true');
+      
+      // Attempt to communicate with browser extensions if available
+      if (typeof window !== 'undefined' && window.postMessage) {
+        window.postMessage({ 
+          type: 'POMODORO_FOCUS_MODE', 
+          action: 'BLOCK_DISTRACTIONS',
+          enabled: true 
+        }, '*');
+      }
+    } else {
+      localStorage.removeItem('blockDistractions');
+      if (typeof window !== 'undefined' && window.postMessage) {
+        window.postMessage({ 
+          type: 'POMODORO_FOCUS_MODE', 
+          action: 'BLOCK_DISTRACTIONS',
+          enabled: false 
+        }, '*');
+      }
     }
   };
-  
-
 
   if (!isPremium) {
     return (
@@ -88,70 +151,53 @@ export default function DeepFocusMode() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="text-lg flex items-center gap-2 border-b border-accent-foreground pb-3">
           <EyeIcon size={18} />
           Deep Focus Mode Settings
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Deep Focus Status</h3>
-              <p className="text-sm text-muted-foreground">
-                {deepFocusMode ? "Currently active" : "Currently inactive"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Toggle Deep Focus Mode from the home screen
-              </p>
-            </div>
-            <div className={`px-3 py-1 rounded-full text-sm ${deepFocusMode ? "bg-secondary-foreground text-background" : "bg-muted text-foreground"}`}>
-              {deepFocusMode ? "Active" : "Inactive"}
-            </div>
-          </div>
-          
-          <div className="space-y-4 border-t border-accent-foreground mt-2 pt-4">
-            <h4 className="text-sm font-medium">Focus Settings</h4>
-            
+        <div className="flex flex-col gap-4">          
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <PhoneOff size={16} />
-                <Label htmlFor="dimInterface" className="cursor-pointer">
-                  Dim interface
+                <MoonIcon size={16} />
+                <Label htmlFor="doNotDisturb" className="cursor-pointer">
+                  Do Not Disturb
                 </Label>
               </div>
               <Switch
-                id="dimInterface"
-                checked={settings.dimInterface}
-                onCheckedChange={(checked) => updateSettings('dimInterface', checked)}
+                id="doNotDisturb"
+                checked={settings.doNotDisturb}
+                onCheckedChange={(checked) => updateSettings('doNotDisturb', checked)}
               />
             </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BellOff size={16} />
-                <Label htmlFor="muteNotifications" className="cursor-pointer">
-                  Mute notifications
+                <LayoutDashboard size={16} />
+                <Label htmlFor="hideHeaderFooter" className="cursor-pointer">
+                  Hide header and footer
                 </Label>
               </div>
               <Switch
-                id="muteNotifications"
-                checked={settings.muteNotifications}
-                onCheckedChange={(checked) => updateSettings('muteNotifications', checked)}
+                id="hideHeaderFooter"
+                checked={settings.hideHeaderFooter}
+                onCheckedChange={(checked) => updateSettings('hideHeaderFooter', checked)}
               />
             </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <EyeIcon size={16} />
-                <Label htmlFor="hideElements" className="cursor-pointer">
-                  Hide non-essential elements
+                <Globe size={16} />
+                <Label htmlFor="blockDistractions" className="cursor-pointer">
+                  Block distracting websites
                 </Label>
               </div>
               <Switch
-                id="hideElements"
-                checked={settings.hideElements}
-                onCheckedChange={(checked) => updateSettings('hideElements', checked)}
+                id="blockDistractions"
+                checked={settings.blockDistractions}
+                onCheckedChange={(checked) => updateSettings('blockDistractions', checked)}
               />
             </div>
           </div>
@@ -159,7 +205,7 @@ export default function DeepFocusMode() {
           <div className="text-xs text-muted-foreground mt-2 bg-muted p-2 rounded-md">
             <span className="flex items-center gap-1">
               <Sparkles size={12} className="text-yellow-500" />
-              Deep Focus Mode works best with the timer in full screen.
+              Toggle Deep Focus Mode from the home screen to apply these settings.
             </span>
           </div>
         </div>

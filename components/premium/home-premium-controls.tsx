@@ -85,6 +85,8 @@ export default function HomePremiumControls() {
   const toggleDeepFocusMode = (enabled: boolean) => {
     setDeepFocusMode(enabled);
     
+    localStorage.setItem('deepFocusEnabled', enabled.toString());
+    
     if (enabled) {
       toast.success("Deep Focus Mode activated. Stay focused!");
     } else {
@@ -195,7 +197,7 @@ export default function HomePremiumControls() {
           </PopoverContent>
         </Popover>
 
-        {/* Deep Focus Mode - Changed to Switch */}
+        {/* Deep Focus Mode */}
         <div className="flex items-center gap-2">
           <Label htmlFor="focus-mode" className="cursor-pointer text-sm flex items-center gap-1 text-foreground">
             <EyeIcon className="h-4 w-4 text-foreground" /> Deep Focus
@@ -204,6 +206,7 @@ export default function HomePremiumControls() {
             id="focus-mode"
             checked={deepFocusMode}
             onCheckedChange={toggleDeepFocusMode}
+            className={deepFocusMode ? 'deep-focus-active' : ''}
           />
         </div>
       </div>
