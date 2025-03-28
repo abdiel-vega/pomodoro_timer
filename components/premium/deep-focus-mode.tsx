@@ -16,9 +16,7 @@ export default function DeepFocusMode() {
   const [settings, setSettings] = useState({
     doNotDisturb: false,
     hideHeaderFooter: true,
-    blockDistractions: false
   });
-  
   // Check for OS Do Not Disturb status
   useEffect(() => {
     if (typeof window !== 'undefined' && 'navigator' in window) {
@@ -69,15 +67,6 @@ export default function DeepFocusMode() {
         });
       }
     }
-    
-    // Special handling for blockDistractions
-    if (key === 'blockDistractions') {
-      if (value) {
-        toast.info('Website blocking requires browser extension integration', {
-          description: "The app will save your distraction list, but you'll need a compatible blocking extension."
-        });
-      }
-    }
   };
   
   // Apply focus settings
@@ -100,30 +89,6 @@ export default function DeepFocusMode() {
       document.body.classList.add('do-not-disturb');
     } else {
       document.body.classList.remove('do-not-disturb');
-    }
-    
-    // Block distractions (integration with browser extensions)
-    if (currentSettings.blockDistractions) {
-      // Save the user's preference
-      localStorage.setItem('blockDistractions', 'true');
-      
-      // Attempt to communicate with browser extensions if available
-      if (typeof window !== 'undefined' && window.postMessage) {
-        window.postMessage({ 
-          type: 'POMODORO_FOCUS_MODE', 
-          action: 'BLOCK_DISTRACTIONS',
-          enabled: true 
-        }, '*');
-      }
-    } else {
-      localStorage.removeItem('blockDistractions');
-      if (typeof window !== 'undefined' && window.postMessage) {
-        window.postMessage({ 
-          type: 'POMODORO_FOCUS_MODE', 
-          action: 'BLOCK_DISTRACTIONS',
-          enabled: false 
-        }, '*');
-      }
     }
   };
 
@@ -186,22 +151,8 @@ export default function DeepFocusMode() {
                 onCheckedChange={(checked) => updateSettings('hideHeaderFooter', checked)}
               />
             </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Globe size={16} />
-                <Label htmlFor="blockDistractions" className="cursor-pointer">
-                  Block distracting websites
-                </Label>
-              </div>
-              <Switch
-                id="blockDistractions"
-                checked={settings.blockDistractions}
-                onCheckedChange={(checked) => updateSettings('blockDistractions', checked)}
-              />
-            </div>
+
           </div>
-          
           <div className="text-xs text-muted-foreground mt-2 bg-muted p-2 rounded-md">
             <span className="flex items-center gap-1">
               <Sparkles size={12} className="text-yellow-500" />
