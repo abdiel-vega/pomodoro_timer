@@ -558,28 +558,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      // Show digital wellbeing reminder
-      toast.info(
-        <div className="flex flex-col gap-1">
-          <strong>Digital Wellbeing Reminder</strong>
-          <span className="text-sm">Consider enabling Do Not Disturb mode on your phone for maximum focus.</span>
-        </div>, 
-        { duration: 5000 }
-      );
-      
-      // Increase z-index of timer and task list
-      const timer = document.querySelector('.timer-container');
-      const taskList = document.querySelector('.task-list-container');
-      const premiumControls = document.querySelector('.premium-controls');
-      
-      if (timer) timer.classList.add('focus-exempt');
-      if (taskList) taskList.classList.add('focus-exempt');
-      if (premiumControls) premiumControls.classList.add('focus-exempt');
-      
-      // Update document title to indicate focus mode
-      const originalTitle = document.title;
-      document.title = "🧠 Focus Mode - " + originalTitle;
-      
       return () => {
         // Clean up
         document.body.classList.remove('deep-focus-mode');
@@ -592,12 +570,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         if (header) header.classList.remove('focus-hidden');
         if (footer) footer.classList.remove('focus-hidden');
         
-        // Reset components
-        if (timer) timer.classList.remove('focus-exempt');
-        if (taskList) taskList.classList.remove('focus-exempt');
-        if (premiumControls) premiumControls.classList.remove('focus-exempt');
-        
-        // Exit fullscreen
+        // Exit fullscreen if needed
         if (document.fullscreenElement || 
             (document as any).webkitFullscreenElement || 
             (document as any).mozFullScreenElement || 
@@ -622,9 +595,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         if (vignette) {
           vignette.remove();
         }
-        
-        // Restore document title
-        document.title = originalTitle;
       };
     }
   }, [deepFocusMode, isPremium, toast]);

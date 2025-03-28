@@ -51,6 +51,11 @@ export default function EnhancedTimer() {
   const { theme } = useTheme();
   const [isCheckingPremium, setIsCheckingPremium] = useState(true);
 
+  useEffect(() => {
+    setIsCheckingPremium(false);
+  }, [isPremium]);
+
+
   // Animation references
   const lottieRef = useRef(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

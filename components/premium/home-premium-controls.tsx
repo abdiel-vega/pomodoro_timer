@@ -88,7 +88,13 @@ export default function HomePremiumControls() {
     localStorage.setItem('deepFocusEnabled', enabled.toString());
     
     if (enabled) {
-      toast.success("Deep Focus Mode activated. Stay focused!");
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <strong>Deep Focus Mode activated!</strong>
+          <span className="text-sm">Consider enabling Do Not Disturb mode on your phone for maximum focus.</span>
+        </div>, 
+        { duration: 5000 }
+      );
     } else {
       toast.info("Deep Focus Mode deactivated");
     }
