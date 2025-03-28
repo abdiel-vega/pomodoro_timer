@@ -82,15 +82,15 @@ export default function Timer() {
   const getCircleColor = () => {
     switch (timerType) {
       case 'work':
-        return 'var(--muted)';
+        return 'hsl(var(--muted))';
       case 'short_break':
-        return 'var(--primary-foreground)';
+        return 'hsl(var(--primary-foreground))';
       case 'long_break':
-        return 'var(--secondary-foreground)';
+        return 'hsl(var(--secondary-foreground))';
       default:
-        return 'var(--muted)';
+        return 'hsl(var(--muted))';
     }
-  };
+  };  
   
   // Get progress bar colors
   const getProgressBarColors = () => {

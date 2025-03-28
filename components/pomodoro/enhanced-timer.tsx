@@ -97,15 +97,15 @@ export default function EnhancedTimer() {
   const getCircleColor = () => {
     switch (timerType) {
       case 'work':
-        return 'var(--muted)';
+        return 'hsl(var(--muted))';
       case 'short_break':
-        return 'var(--primary-foreground)';
+        return 'hsl(var(--primary-foreground))';
       case 'long_break':
-        return 'var(--secondary-foreground)';
+        return 'hsl(var(--secondary-foreground))';
       default:
-        return 'var(--muted)';
+        return 'hsl(var(--muted))';
     }
-  };
+  };  
   
   // Get progress bar colors
   const getProgressBarColors = () => {
@@ -161,8 +161,8 @@ export default function EnhancedTimer() {
     if (animationType === 'zenCircles') {
       // Zen animation
       const zenStyles = {
-        width: '90%',
-        height: '90%',
+        width: '100%',
+        height: '100%',
         position: 'absolute',
         top: '50%',
         left: '50%',
@@ -187,8 +187,8 @@ export default function EnhancedTimer() {
     } else if (animationType === 'pulse') {
       // Pulse animation
       const pulseStyles = {
-        width: '148%',
-        height: '148%',
+        width: '154%',
+        height: '154%',
         position: 'absolute',
         top: '50%',
         left: '50%',
@@ -213,8 +213,8 @@ export default function EnhancedTimer() {
     } else if (animationType === 'particles') {
       // Particles animation
       const particlesStyles = {
-        width: '100%',
-        height: '100%',
+        width: '125%',
+        height: '125%',
         position: 'absolute',
         top: '50%',
         left: '50%',
@@ -456,16 +456,7 @@ export default function EnhancedTimer() {
             {isPremium && getLottieAnimation()}
             <span className="text-4xl font-bold z-10">{formatTime(timeRemaining)}</span>
             <div className="absolute -top-2 -right-2 -bottom-2 -left-2 z-5">
-              <svg width="100%" height="100%" viewBox="0 0 100 100" className="rotate-[-90deg]">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  strokeOpacity="0.1"
-                />
+              <svg width="48" height="48" viewBox="0 0 100 100" className="rotate-[-90deg]">
                 <circle
                   cx="50"
                   cy="50"
