@@ -498,7 +498,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.notifications]);
 
-  // Add to the useEffect that handles deep focus mode:
+  // Deep focus mode
   useEffect(() => {
     if (!isPremium) return;
   
@@ -513,8 +513,15 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         : {
             doNotDisturb: false,
             hideHeaderFooter: true,
-            blockDistractions: false
+            autoFullscreen: true
           };
+      
+      // Create vignette overlay element if it doesn't exist
+      if (!document.querySelector('.vignette-overlay')) {
+        const vignette = document.createElement('div');
+        vignette.className = 'vignette-overlay';
+        document.body.appendChild(vignette);
+      }
       
       // Hide header and footer
       if (deepFocusSettings.hideHeaderFooter) {
@@ -529,17 +536,36 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         document.body.classList.add('do-not-disturb');
       }
       
-      // Apply distraction blocking
-      if (deepFocusSettings.blockDistractions) {
-        // Attempt to communicate with browser extensions if available
-        if (typeof window !== 'undefined' && window.postMessage) {
-          window.postMessage({ 
-            type: 'POMODORO_FOCUS_MODE', 
-            action: 'BLOCK_DISTRACTIONS',
-            enabled: true 
-          }, '*');
+      // Enter fullscreen if enabled
+      if (deepFocusSettings.autoFullscreen) {
+        try {
+          const docEl = document.documentElement;
+          if (docEl.requestFullscreen) {
+            docEl.requestFullscreen();
+            document.body.classList.add('fullscreen');
+          } else if ((docEl as any).mozRequestFullScreen) {
+            (docEl as any).mozRequestFullScreen();
+            document.body.classList.add('fullscreen');
+          } else if ((docEl as any).webkitRequestFullscreen) {
+            (docEl as any).webkitRequestFullscreen();
+            document.body.classList.add('fullscreen');
+          } else if ((docEl as any).msRequestFullscreen) {
+            (docEl as any).msRequestFullscreen();
+            document.body.classList.add('fullscreen');
+          }
+        } catch (error) {
+          console.error('Failed to enter fullscreen mode:', error);
         }
       }
+      
+      // Show digital wellbeing reminder
+      toast.info(
+        <div className="flex flex-col gap-1">
+          <strong>Digital Wellbeing Reminder</strong>
+          <span className="text-sm">Consider enabling Do Not Disturb mode on your phone for maximum focus.</span>
+        </div>, 
+        { duration: 5000 }
+      );
       
       // Increase z-index of timer and task list
       const timer = document.querySelector('.timer-container');
@@ -558,6 +584,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         // Clean up
         document.body.classList.remove('deep-focus-mode');
         document.body.classList.remove('do-not-disturb');
+        document.body.classList.remove('fullscreen');
         
         // Restore header and footer
         const header = document.querySelector('header');
@@ -570,20 +597,38 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         if (taskList) taskList.classList.remove('focus-exempt');
         if (premiumControls) premiumControls.classList.remove('focus-exempt');
         
-        // Disable distraction blocking
-        if (deepFocusSettings.blockDistractions && typeof window !== 'undefined' && window.postMessage) {
-          window.postMessage({ 
-            type: 'POMODORO_FOCUS_MODE', 
-            action: 'BLOCK_DISTRACTIONS',
-            enabled: false 
-          }, '*');
+        // Exit fullscreen
+        if (document.fullscreenElement || 
+            (document as any).webkitFullscreenElement || 
+            (document as any).mozFullScreenElement || 
+            (document as any).msFullscreenElement) {
+          try {
+            if (document.exitFullscreen) {
+              document.exitFullscreen();
+            } else if ((document as any).webkitExitFullscreen) {
+              (document as any).webkitExitFullscreen();
+            } else if ((document as any).mozCancelFullScreen) {
+              (document as any).mozCancelFullScreen();
+            } else if ((document as any).msExitFullscreen) {
+              (document as any).msExitFullscreen();
+            }
+          } catch (error) {
+            console.error('Failed to exit fullscreen mode:', error);
+          }
+        }
+        
+        // Remove vignette
+        const vignette = document.querySelector('.vignette-overlay');
+        if (vignette) {
+          vignette.remove();
         }
         
         // Restore document title
         document.title = originalTitle;
       };
     }
-  }, [deepFocusMode, isPremium]);  
+  }, [deepFocusMode, isPremium, toast]);
+   
 
   
   const value = {

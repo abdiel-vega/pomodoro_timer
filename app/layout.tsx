@@ -19,6 +19,7 @@ import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon, Sparkles } from 'lucide
 import { createClient } from '@/utils/supabase/client';
 import './globals.css';
 import { SignOutButton } from '@/components/sign-out-button';
+import VignetteEffect from '@/components/premium/vignette-effect';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -134,6 +135,7 @@ useEffect(() => {
       <body className={cn('min-h-screen bg-background font-sans antialiased', fontSans.variable)}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <PomodoroProvider>
+            <VignetteEffect />
             <div className="flex min-h-screen flex-col">
               <header className="sticky top-0 z-10 w-full border-b border-accent bg-background non-essential">
                 <div className="container flex h-16 items-center justify-between py-4">

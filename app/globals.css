@@ -224,15 +224,64 @@
   display: none !important;
 }
 
-/* Make sure these components remain interactive during focus mode */
-.deep-focus-mode .timer-container *,
-.deep-focus-mode .task-list-container *,
-.deep-focus-mode .premium-controls * {
-  pointer-events: auto;
+/* Vignette effect overlay for deep focus mode */
+.vignette-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+  background: radial-gradient(
+    circle at center,
+    transparent 30%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 
-/* Styles for the focus mode button when active */
-.deep-focus-active {
-  background-color: hsl(var(--secondary-foreground)) !important;
-  color: hsl(var(--secondary)) !important;
+.deep-focus-mode .vignette-overlay {
+  opacity: 1;
+}
+
+/* Fullscreen display adjustments */
+.deep-focus-mode.fullscreen {
+  background-color: hsl(var(--background));
+}
+
+/* Deep focus mode with vertical centering */
+.deep-focus-mode .main-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 0 1rem;
+}
+
+.deep-focus-mode .container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Ensure the timer and task list are properly spaced in focus mode */
+.deep-focus-mode .focus-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+}
+
+/* Adjust spacing in fullscreen mode */
+.deep-focus-mode.fullscreen .focus-content {
+  padding-top: 0;
+  padding-bottom: 2rem;
+}
+
+/* Hide non-essential elements during focus mode */
+.deep-focus-mode .non-essential {
+  display: none;
 }

@@ -5,7 +5,7 @@ import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { EyeIcon, MoonIcon, LayoutDashboard, Globe, Sparkles } from 'lucide-react';
+import { EyeIcon, MoonIcon, LayoutDashboard, Maximize, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -16,7 +16,9 @@ export default function DeepFocusMode() {
   const [settings, setSettings] = useState({
     doNotDisturb: false,
     hideHeaderFooter: true,
+    autoFullscreen: true, // New setting for auto-fullscreen
   });
+  
   // Check for OS Do Not Disturb status
   useEffect(() => {
     if (typeof window !== 'undefined' && 'navigator' in window) {
@@ -38,24 +40,43 @@ export default function DeepFocusMode() {
         }
       }
     }
+    
+    // Load saved settings
+    const savedSettings = localStorage.getItem('deepFocusSettings');
+    if (savedSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(prev => ({
+          ...prev,
+          ...parsedSettings
+        }));
+      } catch (error) {
+        console.error('Failed to parse saved deep focus settings:', error);
+      }
+    }
   }, []);
 
   // Handle settings changes
   const updateSettings = (key: keyof typeof settings, value: boolean) => {
     // Update the local state
-    setSettings(prev => ({
-      ...prev,
+    const updatedSettings = {
+      ...settings,
       [key]: value
-    }));
+    };
+    
+    setSettings(updatedSettings);
+    
+    // Save to localStorage
+    localStorage.setItem('deepFocusSettings', JSON.stringify(updatedSettings));
     
     // If deep focus mode is active, apply settings immediately
     if (deepFocusMode) {
-      applyFocusSettings({...settings, [key]: value});
+      applyFocusSettings(updatedSettings);
     }
     
     // Special handling for doNotDisturb
     if (key === 'doNotDisturb' && value) {
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === 'denied') {
         toast.info('The app will respect your system Do Not Disturb settings');
       } else {
         Notification.requestPermission().then(permission => {
@@ -71,7 +92,6 @@ export default function DeepFocusMode() {
   
   // Apply focus settings
   const applyFocusSettings = (currentSettings: typeof settings) => {
-    
     // Hide header and footer
     const header = document.querySelector('header');
     const footer = document.querySelector('footer');
@@ -152,6 +172,19 @@ export default function DeepFocusMode() {
               />
             </div>
 
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Maximize size={16} />
+                <Label htmlFor="autoFullscreen" className="cursor-pointer">
+                  Auto-fullscreen mode
+                </Label>
+              </div>
+              <Switch
+                id="autoFullscreen"
+                checked={settings.autoFullscreen}
+                onCheckedChange={(checked) => updateSettings('autoFullscreen', checked)}
+              />
+            </div>
           </div>
           <div className="text-xs text-muted-foreground mt-2 bg-muted p-2 rounded-md">
             <span className="flex items-center gap-1">
