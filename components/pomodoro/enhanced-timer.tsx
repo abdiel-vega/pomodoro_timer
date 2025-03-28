@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles } from 'lucide-react';
 import { PlayIcon, PauseIcon, RotateCcwIcon, BrainIcon, CoffeeIcon, CupSodaIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import Lottie from 'lottie-react';
+import dynamic from 'next/dynamic';
+
+// Dynamically import Lottie with SSR disabled
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
+
 import zenAnimationData from '../../public/animations/zen-animation.json';
 import pulseAnimationData from '../../public/animations/pulse-animation.json';
 import particlesAnimationData from '../../public/animations/particles-animation.json';
+
 
 // Animation variants
 const ANIMATIONS = {
@@ -38,10 +43,12 @@ export default function EnhancedTimer() {
     currentTask,
     isPremium,
     deepFocusMode,
-    animationType
+    animationType,
+    refreshUserSettings,
   } = usePomodoroTimer();
 
   const { theme } = useTheme();
+  const [isCheckingPremium, setIsCheckingPremium] = useState(true);
 
   // Animation references
   const lottieRef = useRef(null);
@@ -179,7 +186,7 @@ export default function EnhancedTimer() {
             style={zenStyles}
             className='lottie-zen'
             rendererSettings={{
-              preserveAspectRatio: 'xMidYMid slice',
+            preserveAspectRatio: 'xMidYMid slice',
             }}
           />
         </div>
@@ -241,6 +248,17 @@ export default function EnhancedTimer() {
     // Default to no animation
     return null;
   };
+
+  // Check premium status on component mount
+useEffect(() => {
+  const checkStatus = async () => {
+    setIsCheckingPremium(true);
+    await refreshUserSettings();
+    setIsCheckingPremium(false);
+  };
+  
+  checkStatus();
+}, [refreshUserSettings]);
 
   // Handle canvas-based animations for wave and breathing animations
   useEffect(() => {
@@ -424,6 +442,17 @@ export default function EnhancedTimer() {
 
   const progressColors = getProgressBarColors();
 
+  // Show loading state while checking premium
+  if (isCheckingPremium) {
+    return (
+      <Card className="w-full max-w-md mx-auto shadow-lg border-0 timer-container">
+        <CardContent className="pt-6 flex justify-center items-center" style={{ height: "400px" }}>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
     <Card className={`w-full max-w-md mx-auto shadow-lg border-0 timer-container ${getBackgroundColor()}`}>
       <CardContent className="pt-6 relative">

@@ -108,26 +108,34 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   // Function to refresh user settings, including premium status
   const refreshUserSettings = useCallback(async () => {
     try {
-      const userSettings = await getUserSettings();
-      if (userSettings) {
-        setSettings(userSettings);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Get user settings
+        const userSettings = await getUserSettings();
+        setSettings(userSettings || DEFAULT_SETTINGS);
         
-        // Access the extended user data
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data } = await supabase
-            .from('users')
-            .select('is_premium')
-            .eq('id', user.id)
-            .single();
-            
-          setIsPremium(!!data?.is_premium);
+        // Get premium status directly from database
+        const { data } = await supabase
+          .from('users')
+          .select('is_premium')
+          .eq('id', user.id)
+          .single();
+          
+        const newPremiumStatus = !!data?.is_premium;
+        
+        // Only update if different to avoid re-renders
+        if (newPremiumStatus !== isPremium) {
+          console.log('Updating premium status:', newPremiumStatus);
+          setIsPremium(newPremiumStatus);
         }
       }
     } catch (error) {
       console.error('Failed to refresh user settings:', error);
     }
-  }, []);
+    // No return value to match Promise<void>
+  }, [supabase, isPremium]);
+  
   
   // Function to refresh tasks - can be called by any component to get the latest task data
   const refreshTasks = useCallback(async () => {
@@ -148,7 +156,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to refresh tasks:', error);
     }
   }, [currentTask]);
-  
+
   // Load user settings from database or localStorage
   useEffect(() => {
     const loadSettings = async () => {
@@ -172,6 +180,49 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     
     loadSettings();
   }, []);
+
+  // Set up auth listener and premium status sync
+  useEffect(() => {
+    const checkPremiumStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          console.log('User authenticated, checking premium status');
+          const { data } = await supabase
+            .from('users')
+            .select('is_premium')
+            .eq('id', user.id)
+            .single();
+            
+          setIsPremium(!!data?.is_premium);
+          console.log('Premium status:', !!data?.is_premium);
+        } else {
+          setIsPremium(false);
+        }
+      } catch (error) {
+        console.error('Failed to check premium status:', error);
+        setIsPremium(false);
+      }
+    };
+
+    // Check immediately on mount
+    checkPremiumStatus();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event) => {
+        console.log('Auth state changed in context:', event);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          await checkPremiumStatus();
+        } else if (event === 'SIGNED_OUT') {
+          setIsPremium(false);
+        }
+      }
+    );
+    
+    return () => subscription.unsubscribe();
+  }, [supabase]);
   
   // Load premium status on initialization
   useEffect(() => {
