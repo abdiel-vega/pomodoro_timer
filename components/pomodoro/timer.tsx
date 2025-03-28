@@ -82,13 +82,13 @@ export default function Timer() {
   const getCircleColor = () => {
     switch (timerType) {
       case 'work':
-        return 'hsl(var(--muted))';
+        return 'hsl(var(--accent-foreground))';
       case 'short_break':
-        return 'hsl(var(--primary-foreground))';
+        return 'hsl(var(--accent-foreground))';
       case 'long_break':
-        return 'hsl(var(--secondary-foreground))';
+        return 'hsl(var(--accent-foreground))';
       default:
-        return 'hsl(var(--muted))';
+        return 'hsl(var(--accent-foreground))';
     }
   };  
   
@@ -120,19 +120,19 @@ export default function Timer() {
         <div className="flex flex-col items-center space-y-8">
           {/* Timer Title */}
           <div className="text-center">
-            <h2 className="text-2xl font-bold">{getTimerTitle()}</h2>
+            <h2 className="text-2xl font-bold text-accent-foreground">{getTimerTitle()}</h2>
             <div className="flex flex-col gap-1 mt-2">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-foreground">
                 Cycles: {currentCyclePosition}/{settings.longBreakInterval}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-foreground">
                 Total Pomodoros: {completedPomodoros}
               </p>
               {currentTask && (
                 <div className="mt-2">
                    <Badge 
                     variant="outline" 
-                    className="text-xs py-1 px-2 border-secondary-foreground"
+                    className="text-xs py-1 px-2 border-accent-foreground text-accent-foreground"
                   >
                     Working on: {currentTask.title}
                   </Badge>
@@ -142,33 +142,41 @@ export default function Timer() {
           </div>
           
           {/* Timer Display */}
-          <div className="w-48 h-48 rounded-full border-8 border-muted flex items-center justify-center relative">
-            <span className="text-4xl font-bold">{formatTime(timeRemaining)}</span>
-            <div className="absolute -top-2 -right-2 -bottom-2 -left-2" style={{ zIndex: 5, opacity: 1 }}>
-              <svg width="100%" height="100%" viewBox="0 0 100 100" className="rotate-[-90deg]">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  strokeOpacity="0.1"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke={getCircleColor()}
-                  strokeWidth="4"
-                  strokeDasharray={`${2 * Math.PI * 45}`}
-                  strokeDashoffset={`${2 * Math.PI * 45 * (1 - progressPercentage / 100)}`}
-                  strokeLinecap="round"
-                  className="transition-all duration-1000"
-                />
-              </svg>
-            </div>
+          <div className="w-48 h-48 rounded-full flex items-center justify-center relative">
+            <span className="text-4xl font-bold text-accent-foreground">{formatTime(timeRemaining)}</span>
+              <div className="absolute -top-2 -right-2 -bottom-2 -left-2" style={{ zIndex: 5, opacity: 1 }}>
+                <svg width="100%" height="100%" viewBox="0 0 100 100" className="rotate-[-90deg]">
+                  {/* Background circle - appears first in the SVG, so it's at the bottom */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      fill="none"
+                      className={`
+                        ${timerType === 'work' 
+                          ? 'stroke-muted' 
+                          : timerType === 'short_break' 
+                            ? 'stroke-primary-foreground' 
+                            : 'stroke-secondary-foreground'
+                        }
+                      `}
+                      strokeWidth="4"
+                    />
+                    
+                    {/* Progress circle - appears second, so it's on top */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      fill="none"
+                      stroke={getCircleColor()}
+                      strokeWidth="4"
+                      strokeDasharray={`${2 * Math.PI * 45}`}
+                      strokeDashoffset={`${2 * Math.PI * 45 * (1 - progressPercentage / 100)}`}
+                      strokeLinecap="round"
+                    />
+                </svg>
+              </div>
           </div>
           
           {/* Controls */}
