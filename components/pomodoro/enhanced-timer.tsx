@@ -305,26 +305,17 @@ useEffect(() => {
       ctx.lineTo(0, height);
       ctx.closePath();
       
-      // Fill with gradient based on timer type and theme
-      let primaryColor, secondaryColor;
-        if (timerType === 'work') {
-          primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
-          secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
-        } else if (timerType === 'short_break') {
-          primaryColor = 'rgba(var(--primary), 0.2)';
-          secondaryColor = 'rgba(var(--primary), 0.03)';
-        } else {
-          primaryColor = 'rgba(var(--secondary), 0.2)';
-          secondaryColor = 'rgba(var(--secondary), 0.03)';
-        }
-        
-        // Create gradient with theme colors
-        const gradient = ctx.createLinearGradient(0, 0, 0, height);
-        gradient.addColorStop(0, primaryColor);
-        gradient.addColorStop(1, secondaryColor);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-      };
+      // Use the CSS variables directly
+      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
+      const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
+      
+      // Create gradient with theme colors
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, primaryColor);
+      gradient.addColorStop(1, secondaryColor);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    };
 
     // Breathing animation
     const drawBreathing = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -334,8 +325,7 @@ useEffect(() => {
       const centerY = height / 2;
       const now = Date.now() * 0.001;
       
-      // Create a breathing pattern with a slower, more natural rhythm
-      // Full cycle takes about 6 seconds (inhale 3s, exhale 3s)
+      // Breathing pattern with a slower, natural rhythm
       const breathCycle = (Math.sin(now * 0.5) + 1) / 2; // 0 to 1 range
       
       // Size oscillates between 40% and 75% of container
@@ -343,20 +333,17 @@ useEffect(() => {
       const maxSize = Math.min(width, height) * 0.75;
       const currentSize = minSize + breathCycle * (maxSize - minSize);
       
-      // Get color based on timer type and theme
-      let primaryColor, secondaryColor;
-        if (timerType === 'work') {
-          primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary');
-          secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary');
-        } else if (timerType === 'short_break') {
-          // Use theme variables for short break
-          primaryColor = 'rgba(var(--primary), 0.2)';
-          secondaryColor = 'rgba(var(--primary), 0.03)';
-        } else {
-          // Use theme variables for long break
-          primaryColor = 'rgba(var(--secondary), 0.2)';
-          secondaryColor = 'rgba(var(--secondary), 0.03)';
-        }
+      // Use the CSS variables directly
+      const primaryColorHsl = getComputedStyle(document.documentElement).getPropertyValue('--animation-primary').trim();
+      const secondaryColorHsl = getComputedStyle(document.documentElement).getPropertyValue('--animation-secondary').trim();
+
+      // Define opacity for breathing animation
+      const primaryOpacity = 0.6;  // Adjust this value as needed (0.0 to 1.0)
+      const secondaryOpacity = 0.4;  // Adjust this value as needed (0.0 to 1.0)
+
+      // Convert HSL to HSLA by adding opacity
+      const primaryColorWithOpacity = primaryColorHsl.replace('hsl', 'hsla').replace(')', `, ${primaryOpacity})`);
+      const secondaryColorWithOpacity = secondaryColorHsl.replace('hsl', 'hsla').replace(')', `, ${secondaryOpacity})`);
       
       // Draw multiple concentric circles for breathing visualization
       const circleCount = 4;
@@ -368,15 +355,8 @@ useEffect(() => {
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         
         // Alternate between primary and secondary colors
-        ctx.fillStyle = i % 2 === 0 ? primaryColor : secondaryColor;
+        ctx.fillStyle = i % 2 === 0 ? primaryColorWithOpacity : secondaryColorWithOpacity;
         ctx.fill();
-      }
-      
-      // Add text hint about breathing if timer is running
-      if (timerState === 'running') {
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = primaryColor;
       }
     };
     
@@ -404,41 +384,78 @@ useEffect(() => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    // Create style element for animation colors if it doesn't exist
-    if (!document.getElementById('animation-colors-style')) {
-      const styleElement = document.createElement('style');
-      styleElement.id = 'animation-colors-style';
-      document.head.appendChild(styleElement);
-    }
+    useEffect(() => {
+      if (!isPremium) return;
+      
+      // Get the CSS variables based on timer type and current theme
+      const getAnimationColors = () => {
+        // Get CSS custom properties based on current timer type
+        if (timerType === 'work') {
+          return {
+            primary: 'var(--muted)',
+            secondary: 'var(--accent-foreground)',
+            background: 'var(--background)'
+          };
+        } else if (timerType === 'short_break') {
+          return {
+            primary: 'var(--primary)',
+            secondary: 'var(--primary-foreground)',
+            background: 'var(--background)'
+          };
+        } else { // long_break
+          return {
+            primary: 'var(--secondary)',
+            secondary: 'var(--secondary-foreground)',
+            background: 'var(--background)'
+          };
+        }
+      };
     
-    // Update the style content based on the current animation
-    const styleElement = document.getElementById('animation-colors-style');
-    if (styleElement) {
-      styleElement.textContent = `
-        .lottie-zen svg path, .lottie-zen svg circle {
-          fill: var(--animation-primary) !important;
-          stroke: var(--animation-secondary) !important;
-        }
-        .lottie-pulse svg path, .lottie-pulse svg circle {
-          fill: var(--animation-primary) !important;
-          stroke: var(--animation-secondary) !important;
-        }
-        .lottie-particles svg path, .lottie-particles svg circle {
-          fill: var(--animation-primary) !important;
-          stroke: var(--animation-secondary) !important;
-        }
-      `;
-    }
+      // Get colors based on current timer type and theme
+      const colors = getAnimationColors();
+      
+      // Update CSS variables
+      document.documentElement.style.setProperty('--animation-primary', `hsl(${colors.primary})`);
+      document.documentElement.style.setProperty('--animation-secondary', `hsl(${colors.secondary})`);
+      document.documentElement.style.setProperty('--animation-background', `hsl(${colors.background})`);
+      
+    }, [timerType, theme, isPremium]);
     
-    return () => {
-      // Clean up when component unmounts
+    useEffect(() => {
+      // Create style element for animation colors if it doesn't exist
+      if (!document.getElementById('animation-colors-style')) {
+        const styleElement = document.createElement('style');
+        styleElement.id = 'animation-colors-style';
+        document.head.appendChild(styleElement);
+      }
+      
+      // Update the style content based on the current timer type and theme
       const styleElement = document.getElementById('animation-colors-style');
       if (styleElement) {
-        styleElement.textContent = '';
+        styleElement.textContent = `
+          .lottie-zen svg path, .lottie-zen svg circle {
+            fill: var(--animation-primary) !important;
+            stroke: var(--animation-secondary) !important;
+          }
+          .lottie-pulse svg path, .lottie-pulse svg circle {
+            fill: var(--animation-primary) !important;
+            stroke: var(--animation-secondary) !important;
+          }
+          .lottie-particles svg path, .lottie-particles svg circle {
+            fill: var(--animation-secondary) !important;
+            stroke: var(--animation-primary) !important;
+          }
+        `;
       }
-    };
-  }, [animationType, theme]);
+      
+      return () => {
+        // Clean up when component unmounts
+        const styleElement = document.getElementById('animation-colors-style');
+        if (styleElement) {
+          styleElement.textContent = '';
+        }
+      };
+    }, [animationType, timerType, theme]);    
 
   const progressColors = getProgressBarColors();
 
