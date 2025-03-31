@@ -148,3 +148,85 @@ export const signOutAction = async () => {
     return redirect('/sign-in');
   }
 };
+
+export async function handleGoogleAuthCallback(userId: string) {
+  try {
+    const supabase = await createClient();
+
+    // Get user info
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('Failed to get user');
+    }
+
+    // Check if user already exists in our users table
+    const { data: existingUser, error: existingError } = await supabase
+      .from('users')
+      .select('id, username')
+      .eq('id', userId)
+      .single();
+
+    // If user doesn't exist or doesn't have a username, create a temporary one
+    if (!existingUser || !existingUser.username) {
+      // Extract name from email (before @)
+      const emailName = user.email?.split('@')[0] || '';
+
+      // Generate a base username from email or name
+      let baseUsername = '';
+      if (user.user_metadata?.full_name) {
+        baseUsername = user.user_metadata.full_name.split(' ')[0].toLowerCase();
+      } else {
+        baseUsername = emailName.toLowerCase();
+      }
+
+      // Clean the username (replace special chars with _)
+      baseUsername = baseUsername.replace(/[^a-z0-9]/gi, '_');
+
+      // Try to create a unique username by adding random numbers if needed
+      let username = baseUsername;
+      let isUnique = false;
+      let attempts = 0;
+
+      while (!isUnique && attempts < 5) {
+        // Check if username is already taken
+        const { data: usernameCheck } = await supabase
+          .from('users')
+          .select('username')
+          .eq('username', username)
+          .single();
+
+        if (!usernameCheck) {
+          isUnique = true;
+        } else {
+          // Add random numbers to make it unique
+          username = `${baseUsername}${Math.floor(Math.random() * 1000)}`;
+          attempts++;
+        }
+      }
+
+      // Insert or update the user record
+      const { error: insertError } = await supabase.from('users').upsert({
+        id: userId,
+        email: user.email,
+        username,
+        created_at: user.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      return { needsProfile: true };
+    }
+
+    return { needsProfile: false };
+  } catch (error) {
+    console.error('Error handling Google auth:', error);
+    return { error: 'Failed to process authentication' };
+  }
+}

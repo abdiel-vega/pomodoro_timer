@@ -47,6 +47,17 @@ export interface Session {
   is_completed: boolean;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  username: string | null;
+  profile_picture: string | null;
+  created_at: string;
+  updated_at: string;
+  settings: UserSettings;
+  is_premium: boolean;
+}
+
 // Database response types
 export type TasksResponse = Task[];
 export type SessionsResponse = Session[];

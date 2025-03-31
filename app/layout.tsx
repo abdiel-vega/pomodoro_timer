@@ -20,6 +20,7 @@ import { createClient } from '@/utils/supabase/client';
 import './globals.css';
 import { SignOutButton } from '@/components/sign-out-button';
 import VignetteEffect from '@/components/premium/vignette-effect';
+import UserProfile from '@/components/user-profile';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -36,99 +37,134 @@ export default function RootLayout({
   const supabase = createClient();
   const [isPremium, setIsPremium] = useState(false);
 
-useEffect(() => {
-  // Define function to check auth status
-  const checkAuth = async () => {
-    try {
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error("Session error:", error);
-        setIsAuthenticated(false);
-        setUser(null);
-        setIsPremium(false);
-        return;
-      }
-      
-      if (data && data.session) {
-        console.log("Initial auth check: User is signed in", data.session.user.email);
-        setIsAuthenticated(true);
-        setUser(data.session.user);
+  useEffect(() => {
+    // Define function to check auth status
+    const checkAuth = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
         
-        // Fetch premium status from database
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('is_premium')
-          .eq('id', data.session.user.id)
-          .single();
-          
-        if (!userError && userData) {
-          setIsPremium(userData.is_premium || false);
+        if (error) {
+          console.error("Session error:", error);
+          setIsAuthenticated(false);
+          setUser(null);
+          setIsPremium(false);
+          return;
         }
-      } else {
-        console.log("Initial auth check: No active session");
-        setIsAuthenticated(false);
-        setUser(null);
-        setIsPremium(false);
-      }
-    } catch (err) {
-      console.error("Auth check failed:", err);
-      setIsAuthenticated(false);
-      setUser(null);
-      setIsPremium(false);
-    }
-  };  
-  
-  // Check auth status immediately
-  checkAuth();
-  
-  // Set up auth state listener with improved handling
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    async (event, session) => {
-      console.log("Auth state changed:", event, session?.user?.email);
-      
-      // Handle specific auth events
-      if (event === 'SIGNED_IN') {
-        console.log("Sign-in detected, updating UI");
-        setIsAuthenticated(true);
-        setUser(session?.user || null);
         
-        // Check premium status on sign in
-        if (session?.user) {
-          const { data: userData } = await supabase
+        if (data && data.session) {
+          console.log("Initial auth check: User is signed in", data.session.user.email);
+          setIsAuthenticated(true);
+          
+          // Fetch full user profile from the users table
+          const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('is_premium')
-            .eq('id', session.user.id)
+            .select('*')
+            .eq('id', data.session.user.id)
             .single();
             
-          setIsPremium(userData?.is_premium || false);
+          if (!userError && userData) {
+            setUser(userData);
+            setIsPremium(userData.is_premium || false);
+          } else {
+            // Fallback to just auth user data if we can't get the profile
+            setUser(data.session.user);
+            
+            // Fetch premium status from database
+            const { data: premiumData, error: premiumError } = await supabase
+              .from('users')
+              .select('is_premium')
+              .eq('id', data.session.user.id)
+              .single();
+              
+            if (!premiumError && premiumData) {
+              setIsPremium(premiumData.is_premium || false);
+            }
+          }
+        } else {
+          console.log("Initial auth check: No active session");
+          setIsAuthenticated(false);
+          setUser(null);
+          setIsPremium(false);
         }
-      }      
-      else if (event === 'SIGNED_OUT') {
-        console.log("Sign-out detected, updating UI");
+      } catch (err) {
+        console.error("Auth check failed:", err);
         setIsAuthenticated(false);
         setUser(null);
+        setIsPremium(false);
       }
-      else if (event === 'TOKEN_REFRESHED') {
-        // Session was refreshed, make sure our UI reflects current state
-        if (session) {
+    };  
+    
+    // Check auth status immediately
+    checkAuth();
+    
+    // Set up auth state listener with improved handling
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.email);
+        
+        // Handle specific auth events
+        if (event === 'SIGNED_IN') {
+          console.log("Sign-in detected, updating UI");
           setIsAuthenticated(true);
-          setUser(session.user);
+          
+          // Fetch full user profile
+          if (session?.user) {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (!userError && userData) {
+              setUser(userData);
+              setIsPremium(userData.is_premium || false);
+            } else {
+              // Fallback to just auth user data
+              setUser(session.user);
+              
+              // Check premium status on sign in
+              const { data: premiumData } = await supabase
+                .from('users')
+                .select('is_premium')
+                .eq('id', session.user.id)
+                .single();
+                
+              setIsPremium(premiumData?.is_premium || false);
+            }
+          }
+        }      
+        else if (event === 'SIGNED_OUT') {
+          console.log("Sign-out detected, updating UI");
+          setIsAuthenticated(false);
+          setUser(null);
+          setIsPremium(false);
+        }
+        else if (event === 'USER_UPDATED') {
+          // User data was updated, refresh our state
+          if (session) {
+            setIsAuthenticated(true);
+            
+            // Fetch updated user profile
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (!userError && userData) {
+              setUser(userData);
+              setIsPremium(userData.is_premium || false);
+            } else {
+              setUser(session.user);
+            }
+          }
         }
       }
-      else if (event === 'USER_UPDATED') {
-        // User data was updated, refresh our state
-        if (session) {
-          setIsAuthenticated(true);
-          setUser(session.user);
-        }
-      }
-    }
-  );
-  
-  // Clean up listener
-  return () => subscription.unsubscribe();
-}, []);
+    );
+    
+    // Clean up listener
+    return () => subscription.unsubscribe();
+  }, []);  
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -162,20 +198,7 @@ useEffect(() => {
                       <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
                     ) : isAuthenticated ? (
                       // User is authenticated
-                      <div className="flex items-center gap-2">
-                        {/* Small premium indicator only - removed the Upgrade link */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-muted-foreground hidden md:inline">
-                            {user?.email}
-                          </span>
-                          {isPremium && (
-                            <span title="Premium User">
-                              <Sparkles size={14} className="text-yellow-500" />
-                            </span>
-                          )}
-                        </div>
-                        <SignOutButton />
-                      </div>
+                      <UserProfile user={user} />
                     ) : (
                       // User is not authenticated
                       <Button variant="outline" className='border-foreground' size="sm" asChild>

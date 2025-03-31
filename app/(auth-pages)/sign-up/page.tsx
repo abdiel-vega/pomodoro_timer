@@ -3,17 +3,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signUpAction } from "@/app/actions";
-import { FormMessage, Message } from "@/components/form-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { SmtpMessage } from "../smtp-message";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, User as UserIcon } from "lucide-react";
 import { createClient } from '@/utils/supabase/client';
+import { FormMessage } from '@/components/form-message';
 
 export default function SignUp() {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -29,6 +29,13 @@ export default function SignUp() {
     setIsLoading(true);
     setError('');
 
+    // Validate username
+    if (!username.trim() || username.length < 3) {
+      setError('Username must be at least 3 characters');
+      setIsLoading(false);
+      return;
+    }
+
     // Validate passwords match
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -37,15 +44,48 @@ export default function SignUp() {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Check if username already exists
+      const { data: existingUser, error: usernameError } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', username)
+        .single();
+
+      if (existingUser) {
+        setError('Username already taken');
+        setIsLoading(false);
+        return;
+      }
+
+      // Sign up the user
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            username: username, // Add username to auth metadata
+          }
         },
       });
 
-      if (error) throw error;
+      if (signUpError) throw signUpError;
+      
+      // After signup, create/update the user record in the users table
+      if (data?.user) {
+        const { error: userError } = await supabase
+          .from('users')
+          .upsert({
+            id: data.user.id,
+            username: username,
+            email: email,
+            profile_picture: null,
+          });
+
+        if (userError) {
+          console.error('Error saving user profile:', userError);
+        }
+      }
       
       // Navigate to confirmation page
       router.push('/sign-up/confirmation');
@@ -79,13 +119,29 @@ export default function SignUp() {
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
           <CardDescription>
-            Enter your email and password to create an account
+            Enter your details to create an account
           </CardDescription>
         </CardHeader>
         <CardContent>
           {error && <FormMessage message={{ error }} />}
           
           <form className="flex flex-col space-y-4" onSubmit={handleSignUp}>
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <div className="relative">
+                <Input
+                  id="username"
+                  name="username"
+                  placeholder="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="pl-8"
+                />
+                <UserIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input 

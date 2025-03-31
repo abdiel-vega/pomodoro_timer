@@ -1,3 +1,4 @@
+// app/auth/callback/route.ts
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
     // Log for debugging the timestamp issue
     console.log('Processing auth callback at time:', new Date().toISOString());
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
       console.error('Auth callback error:', error.message);
@@ -34,6 +35,20 @@ export async function GET(request: Request) {
     // For password reset (recovery) flow
     if (type === 'recovery') {
       return NextResponse.redirect(`${origin}/auth/reset-password`);
+    }
+
+    // Check if user has a username (for OAuth users like Google sign-in)
+    if (data.session) {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', data.session.user.id)
+        .single();
+
+      // If no username, redirect to username setup
+      if (!userData?.username || userError) {
+        return NextResponse.redirect(`${origin}/profile/setup`);
+      }
     }
 
     // Otherwise go to protected page
