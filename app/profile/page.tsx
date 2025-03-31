@@ -1,4 +1,3 @@
-// app/profile/page.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -10,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { FormMessage } from '@/components/form-message';
 import { Camera, Check, UserCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import Image from 'next/image';
 import ProfileImage from '@/components/profile-image';
 
 export default function ProfilePage() {
