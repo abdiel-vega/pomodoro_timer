@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
-import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { EyeIcon, MoonIcon, LayoutDashboard, Maximize, Sparkles } from 'lucide-react';
+import { Check, EyeIcon, MoonIcon, LayoutDashboard, Maximize, Sparkles, Contrast } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export default function DeepFocusMode() {
-  const { isPremium, deepFocusMode, setDeepFocusMode } = usePomodoroTimer();
+  const { isPremium, deepFocusMode } = usePomodoroTimer();
   
   // Settings for deep focus mode
   const [settings, setSettings] = useState({
@@ -202,7 +201,7 @@ export default function DeepFocusMode() {
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2 border-b border-accent-foreground pb-3">
           <EyeIcon size={18} />
-          Deep Focus Mode Settings
+          Deep Focus Mode Features
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -211,49 +210,55 @@ export default function DeepFocusMode() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MoonIcon size={16} />
-                <Label htmlFor="doNotDisturb" className="cursor-pointer">
+                <Label className="cursor-pointer">
                   Do Not Disturb
                 </Label>
               </div>
-              <Switch
-                id="doNotDisturb"
-                checked={settings.doNotDisturb}
-                onCheckedChange={(checked) => updateSettings('doNotDisturb', checked)}
-              />
+              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-muted">
+                <Check className="h-4 w-4 text-accent-foreground" />
+              </div>
             </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <LayoutDashboard size={16} />
-                <Label htmlFor="hideHeaderFooter" className="cursor-pointer">
+                <Label className="cursor-pointer">
                   Hide header and footer
                 </Label>
               </div>
-              <Switch
-                id="hideHeaderFooter"
-                checked={settings.hideHeaderFooter}
-                onCheckedChange={(checked) => updateSettings('hideHeaderFooter', checked)}
-              />
+              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-muted">
+                <Check className="h-4 w-4 text-accent-foreground" />
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Maximize size={16} />
-                <Label htmlFor="autoFullscreen" className="cursor-pointer">
+                <Label className="cursor-pointer">
                   Auto-fullscreen mode
                 </Label>
               </div>
-              <Switch
-                id="autoFullscreen"
-                checked={settings.autoFullscreen}
-                onCheckedChange={(checked) => updateSettings('autoFullscreen', checked)}
-              />
+              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-muted">
+                <Check className="h-4 w-4 text-accent-foreground" />
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Contrast size={16} />
+                <Label className="cursor-pointer">
+                  Vignette effect
+                </Label>
+              </div>
+              <div className="flex items-center justify-center h-6 w-6 rounded-full bg-muted">
+                <Check className="h-4 w-4 text-accent-foreground" />
+              </div>
             </div>
           </div>
           <div className="text-xs text-muted-foreground mt-2 bg-muted p-2 rounded-md">
             <span className="flex items-center gap-1">
               <Sparkles size={12} className="text-yellow-500" />
-              Toggle Deep Focus Mode from the home screen to apply these settings.
+              Toggle Deep Focus Mode from the home screen to apply these features.
             </span>
           </div>
         </div>

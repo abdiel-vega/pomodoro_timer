@@ -502,105 +502,45 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isPremium) return;
 
-    // Function to apply settings - define outside conditionals so it can be called from multiple places
-    const applySettings = (settings: any) => {
-      console.log('Applying deep focus settings:', settings);
-      
-      // Hide header and footer
-      const header = document.querySelector('header');
-      const footer = document.querySelector('footer');
-      
-      if (settings.hideHeaderFooter) {
-        if (header) header.classList.add('focus-hidden');
-        if (footer) footer.classList.add('focus-hidden');
-      } else {
-        if (header) header.classList.remove('focus-hidden');
-        if (footer) footer.classList.remove('focus-hidden');
-      }
-      
-      // Apply Do Not Disturb
-      if (settings.doNotDisturb) {
-        document.body.classList.add('do-not-disturb');
-      } else {
-        document.body.classList.remove('do-not-disturb');
-      }
-      
-      // Manage fullscreen - only if deep focus mode is active
-      if (deepFocusMode) {
-        if (settings.autoFullscreen) {
-          try {
-            const docEl = document.documentElement;
-            if (docEl.requestFullscreen && !document.fullscreenElement) {
-              docEl.requestFullscreen();
-              document.body.classList.add('fullscreen');
-            } else if ((docEl as any).mozRequestFullScreen && !(document as any).mozFullScreenElement) {
-              (docEl as any).mozRequestFullScreen();
-              document.body.classList.add('fullscreen');
-            } else if ((docEl as any).webkitRequestFullscreen && !(document as any).webkitFullscreenElement) {
-              (docEl as any).webkitRequestFullscreen();
-              document.body.classList.add('fullscreen');
-            } else if ((docEl as any).msRequestFullscreen && !(document as any).msFullscreenElement) {
-              (docEl as any).msRequestFullscreen();
-              document.body.classList.add('fullscreen');
-            }
-          } catch (error) {
-            console.error('Failed to enter fullscreen mode:', error);
-          }
-        } else {
-          try {
-            if (document.fullscreenElement) {
-              document.exitFullscreen();
-            } else if ((document as any).webkitFullscreenElement) {
-              (document as any).webkitExitFullscreen();
-            } else if ((document as any).mozFullScreenElement) {
-              (document as any).mozCancelFullScreen();
-            } else if ((document as any).msFullscreenElement) {
-              (document as any).msExitFullscreen();
-            }
-            document.body.classList.remove('fullscreen');
-          } catch (error) {
-            console.error('Failed to exit fullscreen mode:', error);
-          }
-        }
-      }
-    };
-
-    // Function to get settings from localStorage
-    const getStoredSettings = () => {
-      try {
-        const storedSettings = localStorage.getItem('deepFocusSettings');
-        return storedSettings 
-          ? JSON.parse(storedSettings) 
-          : {
-              doNotDisturb: false,
-              hideHeaderFooter: true,
-              autoFullscreen: true
-            };
-      } catch (error) {
-        console.error('Error parsing deep focus settings:', error);
-        return {
-          doNotDisturb: false,
-          hideHeaderFooter: true,
-          autoFullscreen: true
-        };
-      }
-    };
-
     if (deepFocusMode) {
       // Apply deep focus class to body
       document.body.classList.add('deep-focus-mode');
       
-      // Get settings and apply them immediately
-      const deepFocusSettings = getStoredSettings();
-      applySettings(deepFocusSettings);
+      // Hide header and footer
+      const header = document.querySelector('header');
+      const footer = document.querySelector('footer');
+      if (header) header.classList.add('focus-hidden');
+      if (footer) footer.classList.add('focus-hidden');
       
-      // Create vignette overlay element if it doesn't exist
+      // Apply Do Not Disturb
+      document.body.classList.add('do-not-disturb');
+      
+      // Apply fullscreen
+      try {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen && !document.fullscreenElement) {
+          docEl.requestFullscreen();
+          document.body.classList.add('fullscreen');
+        } else if ((docEl as any).mozRequestFullScreen && !(document as any).mozFullScreenElement) {
+          (docEl as any).mozRequestFullScreen();
+          document.body.classList.add('fullscreen');
+        } else if ((docEl as any).webkitRequestFullscreen && !(document as any).webkitFullscreenElement) {
+          (docEl as any).webkitRequestFullscreen();
+          document.body.classList.add('fullscreen');
+        } else if ((docEl as any).msRequestFullscreen && !(document as any).msFullscreenElement) {
+          (docEl as any).msRequestFullscreen();
+          document.body.classList.add('fullscreen');
+        }
+      } catch (error) {
+        console.error('Failed to enter fullscreen mode:', error);
+      }
+
+      // Create vignette overlay element
       if (!document.querySelector('.vignette-overlay')) {
         const vignette = document.createElement('div');
         vignette.className = 'vignette-overlay';
         document.body.appendChild(vignette);
         
-        // Short delay to ensure the transition plays
         setTimeout(() => {
           if (vignette instanceof HTMLElement) {
             vignette.style.opacity = '1';
@@ -609,20 +549,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
     }
     
-    // Always set up listeners regardless of current mode state
-    // This ensures we can handle settings changes even when the mode is off
-    const handleCustomEvent = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail && deepFocusMode) {
-        console.log('Received settings change event:', customEvent.detail);
-        applySettings(customEvent.detail);
-      }
-    };
-    
-    window.addEventListener('deepFocusSettingsChanged', handleCustomEvent);
-    
     return () => {
-      // Only clean up if we're turning off deep focus mode
+      // Only clean up if deep focus mode was on
       if (deepFocusMode) {
         document.body.classList.remove('deep-focus-mode');
         document.body.classList.remove('do-not-disturb');
@@ -635,20 +563,27 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         if (footer) footer.classList.remove('focus-hidden');
         
         // Exit fullscreen if needed
-        if (document.fullscreenElement || 
-            (document as any).webkitFullscreenElement || 
-            (document as any).mozFullScreenElement || 
-            (document as any).msFullscreenElement) {
+        if (document.fullscreenElement) {
           try {
-            if (document.exitFullscreen) {
-              document.exitFullscreen();
-            } else if ((document as any).webkitExitFullscreen) {
-              (document as any).webkitExitFullscreen();
-            } else if ((document as any).mozCancelFullScreen) {
-              (document as any).mozCancelFullScreen();
-            } else if ((document as any).msExitFullscreen) {
-              (document as any).msExitFullscreen();
-            }
+            document.exitFullscreen();
+          } catch (error) {
+            console.error('Failed to exit fullscreen mode:', error);
+          }
+        } else if ((document as any).webkitFullscreenElement) {
+          try {
+            (document as any).webkitExitFullscreen();
+          } catch (error) {
+            console.error('Failed to exit fullscreen mode:', error);
+          }
+        } else if ((document as any).mozFullScreenElement) {
+          try {
+            (document as any).mozCancelFullScreen();
+          } catch (error) {
+            console.error('Failed to exit fullscreen mode:', error);
+          }
+        } else if ((document as any).msFullscreenElement) {
+          try {
+            (document as any).msExitFullscreen();
           } catch (error) {
             console.error('Failed to exit fullscreen mode:', error);
           }
@@ -661,15 +596,12 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
             vignette.style.opacity = '0';
             setTimeout(() => {
               vignette.remove();
-            }, 500); // Match the CSS transition duration
+            }, 500);
           } else {
             vignette.remove();
           }
         }
       }
-      
-      // Always remove event listeners
-      window.removeEventListener('deepFocusSettingsChanged', handleCustomEvent);
     };
   }, [deepFocusMode, isPremium]);
    

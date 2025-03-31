@@ -88,28 +88,13 @@ export default function HomePremiumControls() {
     localStorage.setItem('deepFocusEnabled', enabled.toString());
     
     if (enabled) {
-      // When turning on, explicitly load and apply settings
-      try {
-        const storedSettings = localStorage.getItem('deepFocusSettings');
-        if (storedSettings) {
-          const settings = JSON.parse(storedSettings);
-          // Force apply settings by dispatching a custom event
-          window.dispatchEvent(new CustomEvent('deepFocusSettingsChanged', {
-            detail: settings
-          }));
-        }
-        
-        toast.success(
-          <div className="flex flex-col gap-1">
-            <strong>Deep Focus Mode activated!</strong>
-            <span className="text-sm">Consider enabling Do Not Disturb mode on your phone for maximum focus.</span>
-          </div>, 
-          { duration: 5000 }
-        );
-      } catch (error) {
-        console.error('Error applying deep focus settings:', error);
-        toast.error('Failed to apply some focus settings');
-      }
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <strong>Deep Focus Mode activated!</strong>
+          <span className="text-sm">Consider enabling Do Not Disturb mode on your phone for maximum focus.</span>
+        </div>, 
+        { duration: 5000 }
+      );
     } else {
       toast.info("Deep Focus Mode deactivated");
     }
