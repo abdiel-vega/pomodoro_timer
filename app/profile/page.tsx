@@ -11,6 +11,7 @@ import { FormMessage } from '@/components/form-message';
 import { Camera, Check, UserCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import ProfileImage from '@/components/profile-image';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
@@ -143,20 +144,34 @@ export default function ProfilePage() {
       setIsUploading(true);
       setError('');
       
-      // Upload file to Supabase Storage
-      const filePath = `${user.id}/${Math.random().toString(36).substring(2)}`;
+      // IMPORTANT: This path structure is required for RLS
+      // The first folder MUST match the user's ID exactly
+      const filePath = `${user.id}/${Math.random().toString(36).substring(2)}.${file.name.split('.').pop()}`;
+      
+      console.log('Uploading to path:', filePath);
+      
+      // Get user session to verify upload permissions
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Authentication required to upload files');
+      }
       
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('profile_pictures')
-        .upload(filePath, file);
+        .from('profile-pictures')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
         
       if (uploadError) {
+        console.error('Upload error details:', uploadError);
         throw uploadError;
       }
       
       // Get the public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
-        .from('profile_pictures')
+        .from('profile-pictures')
         .getPublicUrl(filePath);
         
       // Update the user record with the new profile picture URL
@@ -169,6 +184,7 @@ export default function ProfilePage() {
         .eq('id', user.id);
         
       if (updateError) {
+        console.error('Error updating user record:', updateError);
         throw updateError;
       }
       
@@ -177,13 +193,23 @@ export default function ProfilePage() {
       setUser({ ...user, profile_picture: publicUrl });
       toast.success('Profile picture updated');
     } catch (err: any) {
-      console.error('Error uploading profile picture:', err);
-      setError(err.message || 'Failed to upload profile picture');
+      // Improved error logging
+      console.error('Profile picture upload failed:', err);
+      
+      // Check for specific known issues
+      if (err.message?.includes('row-level security')) {
+        setError('Permission denied: Check storage bucket policies');
+      } else if (err.message?.includes('auth')) {
+        setError('Authentication required, please re-login');
+      } else {
+        setError(err.message || 'Failed to upload profile picture');
+      }
+      
       toast.error('Failed to upload profile picture');
     } finally {
       setIsUploading(false);
     }
-  };
+  };  
 
   if (isLoading) {
     return (
@@ -216,26 +242,19 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row gap-8 items-start md:items-center mb-6">
             <div className="flex flex-col items-center gap-2">
               <div 
-                className="relative w-24 h-24 rounded-full overflow-hidden bg-muted cursor-pointer"
+                className="relative cursor-pointer"
                 onClick={handleProfilePictureClick}
               >
-                {profilePicture ? (
-                  <Image 
-                    src={profilePicture} 
-                    alt="Profile" 
-                    fill 
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center w-full h-full">
-                    <UserCircle className="w-16 h-16 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                <ProfileImage
+                  src={profilePicture} 
+                  alt={user?.username || 'Profile'} 
+                  size={96}
+                />
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full">
                   <Camera className="w-6 h-6 text-white" />
                 </div>
                 {isUploading && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                   </div>
                 )}
