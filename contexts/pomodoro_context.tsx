@@ -498,53 +498,35 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.notifications]);
 
-  // Deep focus mode - updated to handle settings changes properly
+  // Deep focus mode effect
   useEffect(() => {
     if (!isPremium) return;
-  
-    if (deepFocusMode) {
-      // Apply deep focus class to body
-      document.body.classList.add('deep-focus-mode');
+
+    // Function to apply settings - define outside conditionals so it can be called from multiple places
+    const applySettings = (settings: any) => {
+      console.log('Applying deep focus settings:', settings);
       
-      // Get deep focus settings from localStorage or use defaults
-      const storedSettings = localStorage.getItem('deepFocusSettings');
-      const deepFocusSettings = storedSettings 
-        ? JSON.parse(storedSettings) 
-        : {
-            doNotDisturb: false,
-            hideHeaderFooter: true,
-            autoFullscreen: true
-          };
+      // Hide header and footer
+      const header = document.querySelector('header');
+      const footer = document.querySelector('footer');
       
-      // Create vignette overlay element if it doesn't exist
-      if (!document.querySelector('.vignette-overlay')) {
-        const vignette = document.createElement('div');
-        vignette.className = 'vignette-overlay';
-        document.body.appendChild(vignette);
+      if (settings.hideHeaderFooter) {
+        if (header) header.classList.add('focus-hidden');
+        if (footer) footer.classList.add('focus-hidden');
+      } else {
+        if (header) header.classList.remove('focus-hidden');
+        if (footer) footer.classList.remove('focus-hidden');
       }
       
-      // Apply settings function
-      const applySettings = (settings: any) => {
-        // Hide header and footer
-        const header = document.querySelector('header');
-        const footer = document.querySelector('footer');
-        
-        if (settings.hideHeaderFooter) {
-          if (header) header.classList.add('focus-hidden');
-          if (footer) footer.classList.add('focus-hidden');
-        } else {
-          if (header) header.classList.remove('focus-hidden');
-          if (footer) footer.classList.remove('focus-hidden');
-        }
-        
-        // Apply Do Not Disturb
-        if (settings.doNotDisturb) {
-          document.body.classList.add('do-not-disturb');
-        } else {
-          document.body.classList.remove('do-not-disturb');
-        }
-        
-        // Manage fullscreen
+      // Apply Do Not Disturb
+      if (settings.doNotDisturb) {
+        document.body.classList.add('do-not-disturb');
+      } else {
+        document.body.classList.remove('do-not-disturb');
+      }
+      
+      // Manage fullscreen - only if deep focus mode is active
+      if (deepFocusMode) {
         if (settings.autoFullscreen) {
           try {
             const docEl = document.documentElement;
@@ -580,36 +562,68 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
             console.error('Failed to exit fullscreen mode:', error);
           }
         }
-      };
+      }
+    };
+
+    // Function to get settings from localStorage
+    const getStoredSettings = () => {
+      try {
+        const storedSettings = localStorage.getItem('deepFocusSettings');
+        return storedSettings 
+          ? JSON.parse(storedSettings) 
+          : {
+              doNotDisturb: false,
+              hideHeaderFooter: true,
+              autoFullscreen: true
+            };
+      } catch (error) {
+        console.error('Error parsing deep focus settings:', error);
+        return {
+          doNotDisturb: false,
+          hideHeaderFooter: true,
+          autoFullscreen: true
+        };
+      }
+    };
+
+    if (deepFocusMode) {
+      // Apply deep focus class to body
+      document.body.classList.add('deep-focus-mode');
       
-      // Apply initial settings
+      // Get settings and apply them immediately
+      const deepFocusSettings = getStoredSettings();
       applySettings(deepFocusSettings);
       
-      // Listen for settings changes via storage event
-      const handleStorageChange = (e: StorageEvent) => {
-        if (e.key === 'deepFocusSettings' && e.newValue) {
-          try {
-            const newSettings = JSON.parse(e.newValue);
-            applySettings(newSettings);
-          } catch (error) {
-            console.error('Error parsing deep focus settings:', error);
+      // Create vignette overlay element if it doesn't exist
+      if (!document.querySelector('.vignette-overlay')) {
+        const vignette = document.createElement('div');
+        vignette.className = 'vignette-overlay';
+        document.body.appendChild(vignette);
+        
+        // Short delay to ensure the transition plays
+        setTimeout(() => {
+          if (vignette instanceof HTMLElement) {
+            vignette.style.opacity = '1';
           }
-        }
-      };
-      
-      // Listen for custom event from DeepFocusMode component
-      const handleCustomEvent = (e: Event) => {
-        const customEvent = e as CustomEvent;
-        if (customEvent.detail) {
-          applySettings(customEvent.detail);
-        }
-      };
-      
-      window.addEventListener('storage', handleStorageChange);
-      window.addEventListener('deepFocusSettingsChanged', handleCustomEvent);
-      
-      return () => {
-        // Clean up
+        }, 10);
+      }
+    }
+    
+    // Always set up listeners regardless of current mode state
+    // This ensures we can handle settings changes even when the mode is off
+    const handleCustomEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && deepFocusMode) {
+        console.log('Received settings change event:', customEvent.detail);
+        applySettings(customEvent.detail);
+      }
+    };
+    
+    window.addEventListener('deepFocusSettingsChanged', handleCustomEvent);
+    
+    return () => {
+      // Only clean up if we're turning off deep focus mode
+      if (deepFocusMode) {
         document.body.classList.remove('deep-focus-mode');
         document.body.classList.remove('do-not-disturb');
         document.body.classList.remove('fullscreen');
@@ -643,14 +657,20 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         // Remove vignette
         const vignette = document.querySelector('.vignette-overlay');
         if (vignette) {
-          vignette.remove();
+          if (vignette instanceof HTMLElement) {
+            vignette.style.opacity = '0';
+            setTimeout(() => {
+              vignette.remove();
+            }, 500); // Match the CSS transition duration
+          } else {
+            vignette.remove();
+          }
         }
-        
-        // Remove event listeners
-        window.removeEventListener('storage', handleStorageChange);
-        window.removeEventListener('deepFocusSettingsChanged', handleCustomEvent);
-      };
-    }
+      }
+      
+      // Always remove event listeners
+      window.removeEventListener('deepFocusSettingsChanged', handleCustomEvent);
+    };
   }, [deepFocusMode, isPremium]);
    
   const value = {

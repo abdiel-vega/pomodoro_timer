@@ -63,7 +63,7 @@ export default function DeepFocusMode() {
     }
   }, []);
 
-  // Handle settings changes
+  // Update settings
   const updateSettings = (key: keyof typeof settings, value: boolean) => {
     // Update the local state
     setSettings(prev => {
@@ -73,9 +73,13 @@ export default function DeepFocusMode() {
       localStorage.setItem('deepFocusSettings', JSON.stringify(newSettings));
       
       // Dispatch custom event for the context to listen to
-      window.dispatchEvent(new CustomEvent('deepFocusSettingsChanged', {
-        detail: newSettings
-      }));
+      if (deepFocusMode) {
+        // Only apply immediately if deep focus mode is on
+        console.log('Dispatching settings change event:', newSettings);
+        window.dispatchEvent(new CustomEvent('deepFocusSettingsChanged', {
+          detail: newSettings
+        }));
+      }
       
       return newSettings;
     });
