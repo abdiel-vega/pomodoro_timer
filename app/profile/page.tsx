@@ -143,14 +143,13 @@ export default function ProfilePage() {
       setError('');
       
       // Create a consistent file path structure
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `${Date.now()}.${file.name.split('.').pop()}`;
       const filePath = `${user.id}/${fileName}`;
       
       console.log('Uploading to path:', filePath);
       
       // Upload the file
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('profile-pictures')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -163,28 +162,30 @@ export default function ProfilePage() {
       }
       
       // Get the public URL
-      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-pictures/${filePath}`;
+      const { data } = supabase.storage
+      .from('profile-pictures')
+      .getPublicUrl(filePath);
+    
+      console.log('Generated URL:', data.publicUrl);
       
       // Update the user record
       const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          profile_picture: publicUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-        
-      if (updateError) {
-        throw updateError;
-      }
+      .from('users')
+      .update({
+        profile_picture: data.publicUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id);
       
+      if (updateError) throw updateError;
+
       // Update local state
-      setProfilePicture(publicUrl);
-      setUser({ ...user, profile_picture: publicUrl });
-      toast.success('Profile picture updated');
+      setProfilePicture(data.publicUrl);
+      setUser((prev: typeof user) => ({ ...prev, profile_picture: data.publicUrl }));
       
-      // Force reload to update the UI
+      // Force component to rerender with new image
       router.refresh();
+      toast.success('Profile picture updated');
       
     } catch (err: any) {
       console.error('Profile picture upload failed:', err);

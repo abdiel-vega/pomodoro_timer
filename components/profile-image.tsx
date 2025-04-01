@@ -12,12 +12,20 @@ interface ProfileImageProps {
 export default function ProfileImage({ 
   src, 
   alt, 
-  size = 96, 
+  size = 96 
 }: ProfileImageProps) {
-  const [imgError, setImgError] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string | null>(src);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   
-  // If src doesn't exist or there's been an error loading it, show the placeholder
-  if (!src || imgError) {
+  // Reset state when src changes
+  useEffect(() => {
+    setImgSrc(src);
+    setIsLoading(true);
+    setHasError(false);
+  }, [src]);
+
+  if (!imgSrc || hasError) {
     return (
       <div 
         className="relative rounded-full overflow-hidden bg-muted flex items-center justify-center"
@@ -27,18 +35,27 @@ export default function ProfileImage({
       </div>
     );
   }
-  
+
   return (
     <div 
-      className="relative rounded-full overflow-hidden bg-muted flex items-center justify-center"
+      className="relative rounded-full overflow-hidden bg-muted"
       style={{ width: size, height: size }}
     >
-      {/* Use regular img tag instead of Next.js Image for Supabase URLs */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted">
+          <div className="w-5 h-5 border-2 border-t-transparent border-primary rounded-full animate-spin"></div>
+        </div>
+      )}
       <img
-        src={src}
+        src={imgSrc}
         alt={alt}
-        className="object-cover w-full h-full"
-        onError={() => setImgError(true)}
+        className="w-full h-full object-cover"
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          console.error(`Failed to load image: ${imgSrc}`);
+          setHasError(true);
+          setIsLoading(false);
+        }}
       />
     </div>
   );

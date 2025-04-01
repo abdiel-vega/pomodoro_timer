@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
@@ -15,7 +15,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { signOutAction } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 
 interface UserProfileProps {
@@ -31,9 +30,29 @@ interface UserProfileProps {
 export default function UserProfile({ user }: UserProfileProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [profilePicture, setProfilePicture] = useState<string | null>(user?.profile_picture || null);
   
   const router = useRouter();
   const supabase = createClient();
+  
+  // Add this effect to refresh the profile picture when needed
+  useEffect(() => {
+    if (user?.id) {
+      const refreshUserProfile = async () => {
+        const { data } = await supabase
+          .from('users')
+          .select('profile_picture')
+          .eq('id', user.id)
+          .single();
+          
+        if (data?.profile_picture) {
+          setProfilePicture(data.profile_picture);
+        }
+      };
+      
+      refreshUserProfile();
+    }
+  }, [user?.id, supabase]);
   
   const handleSignOut = async () => {
     try {
