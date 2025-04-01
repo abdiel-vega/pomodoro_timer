@@ -96,7 +96,7 @@ export default function UserProfile({ user }: UserProfileProps) {
             {user?.email}
           </div>
 
-          <div className="h-px bg-accent-foreground my-1" />
+          <div className="border-t border-accent-foreground my-1" />
           
           <Button 
             variant="ghost" 
@@ -134,7 +134,7 @@ export default function UserProfile({ user }: UserProfileProps) {
             </Link>
           </Button>
           
-          <div className="h-px bg-accent-foreground my-1" />
+          <div className="border-b border-accent-foreground my-1" />
           
           <Button 
             variant="ghost" 

@@ -142,20 +142,15 @@ export default function ProfilePage() {
       setIsUploading(true);
       setError('');
       
-      // IMPORTANT: This path structure is required for RLS
-      // The first folder MUST match the user's ID exactly
-      const filePath = `${user.id}/${Math.random().toString(36).substring(2)}.${file.name.split('.').pop()}`;
+      // Create a consistent file path structure
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
       
       console.log('Uploading to path:', filePath);
       
-      // Get user session to verify upload permissions
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('Authentication required to upload files');
-      }
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // Upload the file
+      const { data, error: uploadError } = await supabase.storage
         .from('profile-pictures')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -167,12 +162,10 @@ export default function ProfilePage() {
         throw uploadError;
       }
       
-      // Get the public URL for the uploaded file
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-pictures')
-        .getPublicUrl(filePath);
-        
-      // Update the user record with the new profile picture URL
+      // Get the public URL
+      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profile-pictures/${filePath}`;
+      
+      // Update the user record
       const { error: updateError } = await supabase
         .from('users')
         .update({
@@ -182,7 +175,6 @@ export default function ProfilePage() {
         .eq('id', user.id);
         
       if (updateError) {
-        console.error('Error updating user record:', updateError);
         throw updateError;
       }
       
@@ -190,29 +182,24 @@ export default function ProfilePage() {
       setProfilePicture(publicUrl);
       setUser({ ...user, profile_picture: publicUrl });
       toast.success('Profile picture updated');
+      
+      // Force reload to update the UI
+      router.refresh();
+      
     } catch (err: any) {
-      // Improved error logging
       console.error('Profile picture upload failed:', err);
-      
-      // Check for specific known issues
-      if (err.message?.includes('row-level security')) {
-        setError('Permission denied: Check storage bucket policies');
-      } else if (err.message?.includes('auth')) {
-        setError('Authentication required, please re-login');
-      } else {
-        setError(err.message || 'Failed to upload profile picture');
-      }
-      
+      setError(err.message || 'Failed to upload profile picture');
       toast.error('Failed to upload profile picture');
     } finally {
       setIsUploading(false);
     }
-  };  
+  };
+  
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
       </div>
     );
   }
@@ -248,11 +235,11 @@ export default function ProfilePage() {
                   alt={user?.username || 'Profile'} 
                   size={96}
                 />
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-full">
-                  <Camera className="w-6 h-6 text-white" />
+                <div className="absolute inset-0 bg-accent-foreground flex items-center justify-center opacity-0 hover:opacity-60 transition-opacity rounded-full">
+                  <Camera className="w-6 h-6 text-background" />
                 </div>
                 {isUploading && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                  <div className="absolute inset-0 bg-accent-foreground opacity-60 flex items-center justify-center rounded-full">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                   </div>
                 )}
