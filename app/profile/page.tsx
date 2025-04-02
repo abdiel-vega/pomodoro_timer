@@ -328,7 +328,7 @@ export default function ProfilePage() {
       }
       
       try {
-        // Create a canvas for cropping
+        // Create a canvas for cropping with exact dimensions
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -336,28 +336,35 @@ export default function ProfilePage() {
           return;
         }
         
-        // Get container dimensions and position
+        // Get exact container dimensions
         const container = containerRef.current;
-        const cropSize = container.offsetWidth; // Assuming square container
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
         
-        // Set canvas size to match the crop circle
-        canvas.width = cropSize;
-        canvas.height = cropSize;
+        // Set canvas dimensions to match container exactly
+        canvas.width = containerWidth;
+        canvas.height = containerHeight;
         
-        // Create circular clipping path
+        // Create circular clipping path with exact center and radius
         ctx.beginPath();
-        ctx.arc(cropSize / 2, cropSize / 2, cropSize / 2, 0, Math.PI * 2);
+        ctx.arc(
+          containerWidth / 2, 
+          containerHeight / 2, 
+          Math.min(containerWidth, containerHeight) / 2, 
+          0, 
+          Math.PI * 2
+        );
         ctx.closePath();
         ctx.clip();
         
-        // Get the image and its current state
+        // Get the image reference
         const img = imageRef.current;
         
-        // Draw the image with the exact same transformation as seen in the UI
+        // Draw the image with the EXACT same transformation as in the UI
         ctx.drawImage(
           img,
-          -position.x,
-          -position.y,
+          position.x,
+          position.y,
           img.naturalWidth * scale,
           img.naturalHeight * scale
         );
@@ -369,11 +376,15 @@ export default function ProfilePage() {
             return;
           }
           
-          // Create a file from the blob
-          const file = new File([blob], 'profile-picture.jpg', { type: 'image/jpeg' });
+          // Create file from blob
+          const file = new File([blob], 'profile-picture.jpg', { 
+            type: 'image/jpeg' 
+          });
+          
           resolve(file);
         }, 'image/jpeg', 0.95);
       } catch (error) {
+        console.error('Error in cropImage:', error);
         reject(error);
       }
     });
