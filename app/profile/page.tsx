@@ -12,6 +12,7 @@ import { Camera, Check, Clock, CheckSquare, Trophy, X, Move, ZoomIn, ZoomOut, Fl
 import { toast } from 'sonner';
 import ProfileImage from '@/components/profile-image';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { dispatchProfileUpdate } from '@/utils/events';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
@@ -147,11 +148,27 @@ export default function ProfilePage() {
         throw updateError;
       }
       
+      // After successful update:
+      const updatedProfile = { 
+        ...user, 
+        username, 
+        profile_picture: profilePictureUrl 
+      };
+      
       // Update the local state
-      setUser({ ...user, username, profile_picture: profilePictureUrl });
+      setUser(updatedProfile);
       setProfilePicture(profilePictureUrl);
-      setCroppedImageFile(null); // Clear the cropped image state
-      toast.success('Profile updated succesfully');
+      setCroppedImageFile(null);
+      
+      // Dispatch profile update event
+      dispatchProfileUpdate({
+        id: user.id,
+        username,
+        profile_picture: profilePictureUrl
+      });
+      
+      toast.success('Profile updated successfully');
+
     } catch (err: any) {
       console.error('Error updating profile:', err);
       setError(err.message || 'Failed to update profile');

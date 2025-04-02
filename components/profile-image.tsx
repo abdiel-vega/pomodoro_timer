@@ -35,6 +35,7 @@ export default function ProfileImage({
     
     setImgSrc(cleanSrc);
   }, [src]);
+  
 
   // Fallback for empty src or errors
   if (!imgSrc || hasError) {

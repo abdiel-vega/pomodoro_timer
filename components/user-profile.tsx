@@ -1,4 +1,3 @@
-// components/user-profile.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,6 +11,7 @@ import {
   UserIcon, SettingsIcon, LogOut, Sparkles, Clock, CheckSquare 
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { EVENTS, ProfileUpdatePayload } from '@/utils/events';
 
 interface UserProfileProps {
   user: {
@@ -51,6 +51,36 @@ export default function UserProfile({ user }: UserProfileProps) {
       refreshUserProfile();
     }
   }, [user?.id]);
+  
+  // Listen for profile update events
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent<ProfileUpdatePayload>) => {
+      const updatedProfile = event.detail;
+      
+      // Only update if it's for the current user
+      if (updatedProfile.id === profileData.id) {
+        setProfileData(prev => ({
+          ...prev,
+          username: updatedProfile.username ?? prev.username,
+          profile_picture: updatedProfile.profile_picture ?? prev.profile_picture
+        }));
+      }
+    };
+    
+    // Add event listener with proper type casting
+    window.addEventListener(
+      EVENTS.PROFILE_UPDATED, 
+      handleProfileUpdate as EventListener
+    );
+    
+    // Clean up
+    return () => {
+      window.removeEventListener(
+        EVENTS.PROFILE_UPDATED, 
+        handleProfileUpdate as EventListener
+      );
+    };
+  }, [profileData.id]);
   
   const refreshUserProfile = async () => {
     if (!user?.id) return;
