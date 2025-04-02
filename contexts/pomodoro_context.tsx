@@ -21,6 +21,7 @@ import {
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 import { createClient } from '@/utils/supabase/client';
+import { recordFocusTime } from '@/app/actions';
 
 // Default settings in case we can't load from database
 const DEFAULT_SETTINGS: UserSettings = {
@@ -307,10 +308,21 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       try {
         await completeSession(currentSessionId.current);
         currentSessionId.current = null;
+        
+        // Only record focus time if this was a work session
+        if (timerType === 'work') {
+          // Record the focus time server-side (anti-cheat)
+          const totalSeconds = settings.workDuration * 60;
+          const response = await recordFocusTime(totalSeconds);
+          
+          if (response.error) {
+            console.error('Failed to record focus time:', response.error);
+          }
+        }
       } catch (error) {
         console.error('Failed to complete session:', error);
       }
-    }
+    }  
     
     // Play sound if sound is enabled (premium feature)
     if (soundEnabled && currentSound && isPremium) {

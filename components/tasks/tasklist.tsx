@@ -19,6 +19,7 @@ import { PlusIcon, ClockIcon, TrashIcon, EditIcon, PlayIcon, AlertCircleIcon, XC
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import TaskDialog from '@/components/tasks/taskdialog';
+import { incrementCompletedTaskCount } from '@/app/actions';
 
 export default function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -65,15 +66,22 @@ export default function TaskList() {
     try {
       const updatedTask = await toggleTaskCompletion(taskId);
       
-      // Update the tasks state with the new task
+      // Update the tasks state
       setTasks(prevTasks => 
         prevTasks.map(task => 
           task.id === taskId ? updatedTask : task
         )
       );
       
-      // Show appropriate toast message
+      // If task was marked as completed, increment the count server-side
       if (updatedTask.is_completed) {
+        // Call server function to record completion securely
+        const response = await incrementCompletedTaskCount();
+        
+        if (response.error) {
+          console.error('Failed to increment task count:', response.error);
+        }
+        
         toast.success('Task completed');
         
         // If this was the current task, unset it
@@ -84,7 +92,7 @@ export default function TaskList() {
         toast.success('Task marked as incomplete');
       }
       
-      // Refresh tasks in the context to ensure all components are in sync
+      // Refresh tasks
       await refreshTasks();
     } catch (error) {
       console.error('Failed to toggle task completion:', error);

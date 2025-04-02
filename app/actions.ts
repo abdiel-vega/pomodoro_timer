@@ -230,3 +230,76 @@ export async function handleGoogleAuthCallback(userId: string) {
     return { error: 'Failed to process authentication' };
   }
 }
+
+export async function incrementCompletedTaskCount() {
+  const supabase = await createClient();
+  
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized' };
+    
+    // Apply rate limiting - max 1 completion every 30 seconds
+    const { data: recentActivity } = await supabase
+      .from('task_completions')
+      .select('created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (recentActivity?.[0]) {
+      const lastCompletionTime = new Date(recentActivity[0].created_at).getTime();
+      const now = Date.now();
+      const timeDiff = now - lastCompletionTime;
+      
+      // Enforce 30 second cooldown between completions
+      if (timeDiff < 30000) {
+        return { error: 'Rate limited' };
+      }
+    }
+    
+    // Record this completion for rate limiting
+    await supabase
+      .from('task_completions')
+      .insert({
+        user_id: user.id,
+        created_at: new Date().toISOString()
+      });
+    
+    // Use RPC function to update counter server-side
+    const { data, error } = await supabase.rpc('increment_user_completed_tasks', {
+      user_id: user.id
+    });
+    
+    if (error) throw error;
+    return { success: true, count: data };
+  } catch (err) {
+    console.error('Error incrementing task count:', err);
+    return { error: 'Failed to update task count' };
+  }
+}
+
+export async function recordFocusTime(seconds: number) {
+  const supabase = await createClient();
+  
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Unauthorized' };
+    
+    // Validate time is reasonable (max 25 minutes + small buffer)
+    if (seconds <= 0 || seconds > 1560) {
+      return { error: 'Invalid time value' };
+    }
+    
+    // Use RPC function to update time server-side
+    const { data, error } = await supabase.rpc('add_user_focus_time', {
+      user_id: user.id,
+      seconds: seconds
+    });
+    
+    if (error) throw error;
+    return { success: true, totalTime: data };
+  } catch (err) {
+    console.error('Error recording focus time:', err);
+    return { error: 'Failed to record focus time' };
+  }
+}

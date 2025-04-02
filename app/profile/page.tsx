@@ -181,7 +181,7 @@ export default function ProfilePage() {
 
       // Update local state
       setProfilePicture(data.publicUrl);
-      setUser((prev: typeof user) => ({ ...prev, profile_picture: data.publicUrl }));
+      setUser((prev: typeof user) => ({ ...prev, profile_picture: data.publicUrl }));   
       
       // Force component to rerender with new image
       router.refresh();

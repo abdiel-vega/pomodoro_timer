@@ -1,71 +1,66 @@
+// components/user-profile.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
-import { 
-  User as UserIcon,
-  Settings as SettingsIcon,
-  LogOut,
-  Sparkles
-} from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { User } from '@/types/user';
 import { Button } from '@/components/ui/button';
 import ProfileImage from './profile-image';
+import { 
+  UserIcon, SettingsIcon, LogOut, Sparkles, Clock, CheckSquare 
+} from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface UserProfileProps {
   user: {
     id: string;
-    username?: string | null;
     email: string;
+    username?: string | null;
     profile_picture?: string | null;
     is_premium?: boolean;
+    total_focus_time?: number;
+    completed_tasks_count?: number;
   };
 }
+
 
 export default function UserProfile({ user }: UserProfileProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [profilePicture, setProfilePicture] = useState<string | null>(user?.profile_picture || null);
   
   const router = useRouter();
   const supabase = createClient();
   
-  // Add this effect to refresh the profile picture when needed
+  // Refresh user data when profile popup opens
   useEffect(() => {
-    if (user?.id) {
-      const refreshUserProfile = async () => {
-        const { data } = await supabase
-          .from('users')
-          .select('profile_picture')
-          .eq('id', user.id)
-          .single();
-          
-        if (data?.profile_picture) {
-          setProfilePicture(data.profile_picture);
-        }
-      };
-      
+    if (isOpen && user?.id) {
       refreshUserProfile();
     }
-  }, [user?.id, supabase]);
+  }, [isOpen, user?.id]);
+  
+  const refreshUserProfile = async () => {
+    try {
+      const { data } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (data) {
+        setProfileData(data as User);
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    }
+  };
   
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
-      
-      // Sign out directly from the client-side
       await supabase.auth.signOut();
-      
-      // Force a router refresh to update the UI state
       router.refresh();
-      
-      // Navigate to sign-in page
       router.push('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -74,20 +69,29 @@ export default function UserProfile({ user }: UserProfileProps) {
     }
   };
   
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    return hours > 0 
+      ? `${hours}h ${minutes}m` 
+      : `${minutes}m`;
+  };
+  
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm" className="px-2 h-10">
           <div className="flex items-center gap-2">
             <ProfileImage 
-              src={profilePicture} 
-              alt={user?.username || 'User'} 
+              src={profileData.profile_picture} 
+              alt={profileData.username || 'User'} 
               size={32} 
             />
-            <span className="text-sm text-foreground hover:text-accent-foreground hidden md:inline">
-              {user?.username || 'User'}
+            <span className="text-sm hidden md:inline">
+              {profileData.username || 'User'}
             </span>
-            {user?.is_premium && (
+            {profileData.is_premium && (
               <span title="Premium User">
                 <Sparkles size={14} className="text-yellow-500" />
               </span>
@@ -95,59 +99,65 @@ export default function UserProfile({ user }: UserProfileProps) {
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-56 p-2" align="end">
-        <div className="p-1 flex flex-col space-y-1">
-          <div className="text-md font-medium text-foreground hover:text-accent-foreground transition-colors">
-            {user?.username || 'User'}
+      <PopoverContent className="w-64 p-3" align="end">
+        <div className="flex flex-col space-y-3">
+          <div className="flex items-center gap-3">
+            <ProfileImage 
+              src={profileData.profile_picture} 
+              alt={profileData.username || 'User'} 
+              size={40} 
+            />
+            <div>
+              <div className="font-medium">{profileData.username || 'User'}</div>
+              <div className="text-xs text-muted-foreground truncate">{profileData.email}</div>
+            </div>
           </div>
-          <div className="text-xs text-muted-foreground truncate">
-            {user?.email}
+          
+          {/* Stats section */}
+          <div className="bg-muted rounded-md p-2 text-xs">
+            <div className="flex justify-between items-center mb-1">
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                <span>Focus Time</span>
+              </div>
+              <span className="font-medium">{formatTime(profileData.total_focus_time || 0)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-1">
+                <CheckSquare className="h-3 w-3" />
+                <span>Tasks Completed</span>
+              </div>
+              <span className="font-medium">{profileData.completed_tasks_count || 0}</span>
+            </div>
           </div>
-
-          <div className="border-t border-accent-foreground my-1" />
+          
+          <div className="border-t border-border pt-2">
+            <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+              <Link href="/profile">
+                <UserIcon className="mr-2 h-4 w-4" />
+                Profile
+              </Link>
+            </Button>
+            
+            <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+              <Link href="/settings">
+                <SettingsIcon className="mr-2 h-4 w-4" />
+                Settings
+              </Link>
+            </Button>
+            
+            <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+              <Link href="/leaderboard">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Leaderboard
+              </Link>
+            </Button>
+          </div>
           
           <Button 
-            variant="ghost" 
+            variant="destructive" 
             size="sm" 
-            className="justify-start hover:bg-background"
-            asChild
-          >
-            <Link href="/profile">
-              <UserIcon className="mr-2 h-4 w-4" />
-              Profile
-            </Link>
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="justify-start hover:bg-background"
-            asChild
-          >
-            <Link href="/settings">
-              <SettingsIcon className="mr-2 h-4 w-4" />
-              Settings
-            </Link>
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="justify-start hover:bg-background"
-            asChild
-          >
-            <Link href="/premium">
-              <Sparkles className="mr-2 h-4 w-4" />
-              Premium
-            </Link>
-          </Button>
-          
-          <div className="border-b border-accent-foreground my-1" />
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="justify-start text-foreground hover:text-destructive-foreground hover:bg-destructive"
+            className="w-full justify-start"
             onClick={handleSignOut}
             disabled={isSigningOut}
           >
