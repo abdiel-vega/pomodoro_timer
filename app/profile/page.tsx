@@ -151,8 +151,7 @@ export default function ProfilePage() {
       setUser({ ...user, username, profile_picture: profilePictureUrl });
       setProfilePicture(profilePictureUrl);
       setCroppedImageFile(null); // Clear the cropped image state
-      setMessage('Profile updated successfully');
-      toast.success('Profile updated');
+      toast.success('Profile updated succesfully');
     } catch (err: any) {
       console.error('Error updating profile:', err);
       setError(err.message || 'Failed to update profile');
@@ -166,6 +165,7 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   };
 
+  // Image cropping related functions and hooks - replace your current implementation
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -188,23 +188,15 @@ export default function ProfilePage() {
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
     
-    // Reset position and scale
+    // Reset position and scale (don't set initial values here, we'll do it in onLoad)
     setPosition({ x: 0, y: 0 });
     setScale(1);
     
     // Show the crop dialog
     setShowCropDialog(true);
   };
-  
-  const handleCropCancel = () => {
-    setShowCropDialog(false);
-    setSelectedFile(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
-  };
-  
+
+  // Improved mouse event handlers for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!imageRef.current) return;
     
@@ -214,79 +206,103 @@ export default function ProfilePage() {
       y: e.clientY - position.y
     });
     
-    // Prevent default behavior to avoid text selection during drag
     e.preventDefault();
   };
-  
+
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !imageRef.current || !containerRef.current) return;
+    if (!isDragging || !imageRef.current) return;
     
-    // Calculate new position
     const newX = e.clientX - startPos.x;
     const newY = e.clientY - startPos.y;
     
-    // Update position without constraints (we'll apply constraints in a separate effect)
-    setPosition({
-      x: newX,
-      y: newY
-    });
+    // Apply constraints directly in the move handler
+    const constrainedPosition = constrainPosition(newX, newY, scale);
+    setPosition(constrainedPosition);
+  };
+
+  // Separate function to apply constraints
+  const calculateMinZoom = (img: HTMLImageElement, container: HTMLDivElement): number => {
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+    
+    // Calculate the minimum scale needed to cover the container
+    const scaleX = containerWidth / img.naturalWidth;
+    const scaleY = containerHeight / img.naturalHeight;
+    
+    // Return the larger of the two scales to ensure complete coverage
+    return Math.max(scaleX, scaleY);
   };
   
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-  
-  // Effect to ensure image stays within container bounds
-  useEffect(() => {
+  // 2. Update zoom handler to zoom relative to center
+  const handleZoomChange = (values: number[]) => {
     if (!imageRef.current || !containerRef.current) return;
     
     const container = containerRef.current;
     const img = imageRef.current;
     
-    // Get container and scaled image dimensions
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    const imgWidth = img.naturalWidth * scale;
-    const imgHeight = img.naturalHeight * scale;
+    // Get current and new scale values
+    const oldScale = scale;
+    const newScale = values[0];
     
-    // Calculate boundaries to ensure the image covers the container
-    const minX = containerWidth - imgWidth;
-    const maxX = 0;
-    const minY = containerHeight - imgHeight;
-    const maxY = 0;
+    // Calculate container center point
+    const containerCenterX = container.offsetWidth / 2;
+    const containerCenterY = container.offsetHeight / 2;
     
-    // Apply constraints if image is larger than container
-    if (imgWidth > containerWidth) {
-      const constrainedX = Math.max(minX, Math.min(maxX, position.x));
-      if (position.x !== constrainedX) {
-        setPosition(prev => ({ ...prev, x: constrainedX }));
-      }
-    } else {
-      // Center smaller images
-      const centerX = (containerWidth - imgWidth) / 2;
-      if (position.x !== centerX) {
-        setPosition(prev => ({ ...prev, x: centerX }));
-      }
-    }
+    // Calculate the point on the image that's currently at the center of the container
+    const imgPointX = (containerCenterX - position.x) / oldScale;
+    const imgPointY = (containerCenterY - position.y) / oldScale;
     
-    if (imgHeight > containerHeight) {
-      const constrainedY = Math.max(minY, Math.min(maxY, position.y));
-      if (position.y !== constrainedY) {
-        setPosition(prev => ({ ...prev, y: constrainedY }));
-      }
-    } else {
-      // Center smaller images
-      const centerY = (containerHeight - imgHeight) / 2;
-      if (position.y !== centerY) {
-        setPosition(prev => ({ ...prev, y: centerY }));
-      }
-    }
-  }, [position, scale, isDragging]);  
-  
-  const handleZoomChange = (values: number[]) => {
-    setScale(values[0]);
+    // Calculate new position to keep that same image point at the center
+    const newX = containerCenterX - imgPointX * newScale;
+    const newY = containerCenterY - imgPointY * newScale;
+    
+    // Set new scale
+    setScale(newScale);
+    
+    // Apply new position with constraints
+    setPosition(constrainPosition(newX, newY, newScale));
   };
   
+  // 3. Improved constraint function to prevent zooming out too far
+  const constrainPosition = (x: number, y: number, currentScale: number) => {
+    if (!imageRef.current || !containerRef.current) return { x, y };
+    
+    const container = containerRef.current;
+    const img = imageRef.current;
+    
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+    const scaledWidth = img.naturalWidth * currentScale;
+    const scaledHeight = img.naturalHeight * currentScale;
+    
+    // Calculate bounds to ensure image covers container completely
+    const minX = containerWidth - scaledWidth;
+    const minY = containerHeight - scaledHeight;
+    
+    // Constrain X position
+    let constrainedX = x;
+    if (scaledWidth <= containerWidth) {
+      // Center horizontally if image is narrower
+      constrainedX = (containerWidth - scaledWidth) / 2;
+    } else {
+      // Otherwise constrain within bounds
+      constrainedX = Math.min(0, Math.max(minX, x));
+    }
+    
+    // Constrain Y position
+    let constrainedY = y;
+    if (scaledHeight <= containerHeight) {
+      // Center vertically if image is shorter
+      constrainedY = (containerHeight - scaledHeight) / 2;
+    } else {
+      // Otherwise constrain within bounds
+      constrainedY = Math.min(0, Math.max(minY, y));
+    }
+    
+    return { x: constrainedX, y: constrainedY };
+  };
+  
+  // 4. Fixed cropImage function with correct coordinate mapping
   const cropImage = (): Promise<File> => {
     return new Promise((resolve, reject) => {
       if (!imageRef.current || !containerRef.current) {
@@ -303,24 +319,24 @@ export default function ProfilePage() {
           return;
         }
         
-        // Get container dimensions
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const cropSize = containerRect.width;
+        // Get container dimensions and position
+        const container = containerRef.current;
+        const cropSize = container.offsetWidth; // Assuming square container
         
-        // Set canvas size to the crop circle size
+        // Set canvas size to match the crop circle
         canvas.width = cropSize;
         canvas.height = cropSize;
         
-        // Create a circular clipping path
+        // Create circular clipping path
         ctx.beginPath();
         ctx.arc(cropSize / 2, cropSize / 2, cropSize / 2, 0, Math.PI * 2);
         ctx.closePath();
         ctx.clip();
         
-        // Draw the image with transformation
+        // Get the image and its current state
         const img = imageRef.current;
         
-        // Draw the image based on current position and scale
+        // Draw the image with the exact same transformation as seen in the UI
         ctx.drawImage(
           img,
           -position.x,
@@ -329,14 +345,14 @@ export default function ProfilePage() {
           img.naturalHeight * scale
         );
         
-        // Convert the canvas to a Blob
+        // Convert to blob with high quality
         canvas.toBlob((blob) => {
           if (!blob) {
             reject(new Error('Failed to create image blob'));
             return;
           }
           
-          // Create a File object from the Blob
+          // Create a file from the blob
           const file = new File([blob], 'profile-picture.jpg', { type: 'image/jpeg' });
           resolve(file);
         }, 'image/jpeg', 0.95);
@@ -375,6 +391,27 @@ export default function ProfilePage() {
       }
       setSelectedFile(null);
     }
+  };
+
+  const handleCropCancel = () => {
+    // Close the dialog
+    setShowCropDialog(false);
+    
+    // Clean up the selected file state
+    setSelectedFile(null);
+    
+    // Clean up the object URL to prevent memory leaks
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    
+    // Reset position and scale to default values
+    setPosition({ x: 0, y: 0 });
+    setScale(1);
+    
+    // Clear any temporary cropped image data
+    setCroppedImageFile(null);
   };
   
   const formatTime = (seconds: number): string => {
@@ -555,8 +592,8 @@ export default function ProfilePage() {
               }}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              onMouseUp={() => setIsDragging(false)}
+              onMouseLeave={() => setIsDragging(false)}
             >
               {previewUrl && (
                 <img
@@ -566,44 +603,45 @@ export default function ProfilePage() {
                   className="absolute"
                   style={{
                     transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                    transformOrigin: 'center',
+                    transformOrigin: '0 0',
                     maxWidth: 'none',
                     userSelect: 'none'
                   }}
                   draggable={false}
-                  onLoad={(e) => {
-                    // Center the image when it loads
+                  onLoad={() => {
+                    // Proper image initialization after load
                     if (imageRef.current && containerRef.current) {
                       const container = containerRef.current;
                       const img = imageRef.current;
                       
-                      // Calculate initial position for centering
-                      const initialScale = Math.max(
-                        container.clientWidth / img.naturalWidth,
-                        container.clientHeight / img.naturalHeight
-                      );
+                      // Calculate minimum scale needed to cover the container
+                      const minScale = calculateMinZoom(img, container);
                       
-                      // Set initial scale to fit container
+                      // Set initial scale to minimum required (or slightly larger for buffer)
+                      const initialScale = minScale * 1.01;
                       setScale(initialScale);
                       
                       // Calculate position to center the image
-                      const initialX = (container.clientWidth - (img.naturalWidth * initialScale)) / 2;
-                      const initialY = (container.clientHeight - (img.naturalHeight * initialScale)) / 2;
+                      const scaledWidth = img.naturalWidth * initialScale;
+                      const scaledHeight = img.naturalHeight * initialScale;
+                      const centerX = (container.offsetWidth - scaledWidth) / 2;
+                      const centerY = (container.offsetHeight - scaledHeight) / 2;
                       
-                      setPosition({ x: initialX, y: initialY });
+                      // Update position
+                      setPosition({ x: centerX, y: centerY });
                     }
                   }}
                 />
               )}
             </div>
-
-            {/* Improved zoom controls with wider range */}
+            {/* Zoom slider with dynamic min/max values */}
             <div className="mt-6 w-full max-w-xs flex items-center gap-4">
               <ZoomOut className="text-accent-foreground" size={20} />
               <Slider
                 value={[scale]}
-                min={0.1}
-                max={3}
+                min={imageRef.current && containerRef.current ? 
+                  calculateMinZoom(imageRef.current, containerRef.current) : 1}
+                max={5}
                 step={0.05}
                 onValueChange={handleZoomChange}
                 className="flex-1"
