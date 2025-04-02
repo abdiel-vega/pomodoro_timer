@@ -206,49 +206,82 @@ export default function ProfilePage() {
   };
   
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (!imageRef.current) return;
+    
     setIsDragging(true);
     setStartPos({
       x: e.clientX - position.x,
       y: e.clientY - position.y
     });
+    
+    // Prevent default behavior to avoid text selection during drag
+    e.preventDefault();
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && imageRef.current && containerRef.current) {
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const imageRect = imageRef.current.getBoundingClientRect();
-      
-      // Calculate the scaled image dimensions
-      const scaledWidth = imageRect.width;
-      const scaledHeight = imageRect.height;
-      
-      // Calculate the maximum allowed position to keep the circle filled
-      const circleRadius = containerRect.width / 2;
-      
-      // Calculate new position
-      const newX = e.clientX - startPos.x;
-      const newY = e.clientY - startPos.y;
-      
-      // Calculate boundaries to keep the image covering the circle
-      const minX = circleRadius - scaledWidth;
-      const maxX = circleRadius;
-      const minY = circleRadius - scaledHeight;
-      const maxY = circleRadius;
-      
-      // Apply constraints
-      const constrainedX = Math.min(maxX, Math.max(minX, newX));
-      const constrainedY = Math.min(maxY, Math.max(minY, newY));
-      
-      setPosition({
-        x: constrainedX,
-        y: constrainedY
-      });
-    }
+    if (!isDragging || !imageRef.current || !containerRef.current) return;
+    
+    // Calculate new position
+    const newX = e.clientX - startPos.x;
+    const newY = e.clientY - startPos.y;
+    
+    // Update position without constraints (we'll apply constraints in a separate effect)
+    setPosition({
+      x: newX,
+      y: newY
+    });
   };
   
   const handleMouseUp = () => {
     setIsDragging(false);
   };
+  
+  // Effect to ensure image stays within container bounds
+  useEffect(() => {
+    if (!imageRef.current || !containerRef.current) return;
+    
+    const container = containerRef.current;
+    const img = imageRef.current;
+    
+    // Get container and scaled image dimensions
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    const imgWidth = img.naturalWidth * scale;
+    const imgHeight = img.naturalHeight * scale;
+    
+    // Calculate boundaries to ensure the image covers the container
+    const minX = containerWidth - imgWidth;
+    const maxX = 0;
+    const minY = containerHeight - imgHeight;
+    const maxY = 0;
+    
+    // Apply constraints if image is larger than container
+    if (imgWidth > containerWidth) {
+      const constrainedX = Math.max(minX, Math.min(maxX, position.x));
+      if (position.x !== constrainedX) {
+        setPosition(prev => ({ ...prev, x: constrainedX }));
+      }
+    } else {
+      // Center smaller images
+      const centerX = (containerWidth - imgWidth) / 2;
+      if (position.x !== centerX) {
+        setPosition(prev => ({ ...prev, x: centerX }));
+      }
+    }
+    
+    if (imgHeight > containerHeight) {
+      const constrainedY = Math.max(minY, Math.min(maxY, position.y));
+      if (position.y !== constrainedY) {
+        setPosition(prev => ({ ...prev, y: constrainedY }));
+      }
+    } else {
+      // Center smaller images
+      const centerY = (containerHeight - imgHeight) / 2;
+      if (position.y !== centerY) {
+        setPosition(prev => ({ ...prev, y: centerY }));
+      }
+    }
+  }, [position, scale, isDragging]);  
   
   const handleZoomChange = (values: number[]) => {
     setScale(values[0]);
@@ -270,7 +303,7 @@ export default function ProfilePage() {
           return;
         }
         
-        // Get container dimensions (this is our crop circle size)
+        // Get container dimensions
         const containerRect = containerRef.current.getBoundingClientRect();
         const cropSize = containerRect.width;
         
@@ -287,17 +320,13 @@ export default function ProfilePage() {
         // Draw the image with transformation
         const img = imageRef.current;
         
-        // Calculate the image drawing parameters
-        const scaledWidth = img.naturalWidth * scale;
-        const scaledHeight = img.naturalHeight * scale;
-        
-        // Draw the image at the correct position and scale
+        // Draw the image based on current position and scale
         ctx.drawImage(
           img,
-          -position.x - (scaledWidth - cropSize) / 2,
-          -position.y - (scaledHeight - cropSize) / 2,
-          scaledWidth,
-          scaledHeight
+          -position.x,
+          -position.y,
+          img.naturalWidth * scale,
+          img.naturalHeight * scale
         );
         
         // Convert the canvas to a Blob
@@ -520,9 +549,8 @@ export default function ProfilePage() {
             {/* Image container with crop circle */}
             <div 
               ref={containerRef}
-              className="relative w-64 h-64 overflow-hidden bg-black bg-opacity-5"
+              className="relative w-64 h-64 overflow-hidden rounded-full bg-muted"
               style={{
-                borderRadius: '50%',
                 cursor: isDragging ? 'grabbing' : 'grab'
               }}
               onMouseDown={handleMouseDown}
@@ -531,50 +559,52 @@ export default function ProfilePage() {
               onMouseLeave={handleMouseUp}
             >
               {previewUrl && (
-                <>
-                  <div className="absolute inset-0 bg-black opacity-50 z-10 pointer-events-none"></div>
-                  <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                    <div className="w-56 h-56 rounded-full border-2 border-white"></div>
-                    <Move className="absolute text-white opacity-70" />
-                  </div>
-                  <img
-                    ref={imageRef}
-                    src={previewUrl}
-                    alt="Preview"
-                    className="absolute"
-                    style={{
-                      transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                      transformOrigin: 'center',
-                      maxWidth: 'none',
-                      userSelect: 'none'
-                    }}
-                    draggable={false}
-                    onLoad={(e) => {
-                      // Center the image when it loads
-                      if (imageRef.current && containerRef.current) {
-                        const container = containerRef.current;
-                        const img = imageRef.current;
-                        
-                        // Initial position to center the image
-                        const initialX = (container.clientWidth - img.clientWidth) / 2;
-                        const initialY = (container.clientHeight - img.clientHeight) / 2;
-                        
-                        setPosition({ x: initialX, y: initialY });
-                      }
-                    }}
-                  />
-                </>
+                <img
+                  ref={imageRef}
+                  src={previewUrl}
+                  alt="Preview"
+                  className="absolute"
+                  style={{
+                    transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                    transformOrigin: 'center',
+                    maxWidth: 'none',
+                    userSelect: 'none'
+                  }}
+                  draggable={false}
+                  onLoad={(e) => {
+                    // Center the image when it loads
+                    if (imageRef.current && containerRef.current) {
+                      const container = containerRef.current;
+                      const img = imageRef.current;
+                      
+                      // Calculate initial position for centering
+                      const initialScale = Math.max(
+                        container.clientWidth / img.naturalWidth,
+                        container.clientHeight / img.naturalHeight
+                      );
+                      
+                      // Set initial scale to fit container
+                      setScale(initialScale);
+                      
+                      // Calculate position to center the image
+                      const initialX = (container.clientWidth - (img.naturalWidth * initialScale)) / 2;
+                      const initialY = (container.clientHeight - (img.naturalHeight * initialScale)) / 2;
+                      
+                      setPosition({ x: initialX, y: initialY });
+                    }
+                  }}
+                />
               )}
             </div>
-            
-            {/* Zoom controls */}
+
+            {/* Improved zoom controls with wider range */}
             <div className="mt-6 w-full max-w-xs flex items-center gap-4">
               <ZoomOut className="text-accent-foreground" size={20} />
               <Slider
                 value={[scale]}
-                min={0.5}
+                min={0.1}
                 max={3}
-                step={0.1}
+                step={0.05}
                 onValueChange={handleZoomChange}
                 className="flex-1"
               />
