@@ -127,14 +127,14 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Validate file type and size
+    // Validate file
     if (!file.type.startsWith('image/')) {
       setError('Please upload an image file');
       return;
     }
     
-    if (file.size > 5 * 1024 * 1024) {
-      setError('File size must be less than 5MB');
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      setError('File size must be less than 2MB');
       return;
     }
     
@@ -142,49 +142,51 @@ export default function ProfilePage() {
       setIsUploading(true);
       setError('');
       
-    // Create a consistent filename
-    const fileName = `${user.id}/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      // Create a consistent folder structure: userId/filename
+      // This is critical - ensure the user's folder exists first
+      const folderPath = `${user.id}`;
+      const fileName = `${folderPath}/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       
-      console.log('Uploading to path:', fileName);
+      console.log('Uploading file:', fileName);
       
-      // Upload to Supabase
-    const { error: uploadError } = await supabase.storage
-      .from('profile-pictures')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: true
-      });
+      // Upload the file
+      const { error: uploadError } = await supabase.storage
+        .from('profile-pictures')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+        
+      if (uploadError) throw uploadError;
       
-    if (uploadError) throw uploadError;
-    
-    // Get the public URL
-    const { data } = supabase.storage
-      .from('profile-pictures')
-      .getPublicUrl(fileName);
-    
-    // Update the user profile with the new URL
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        profile_picture: data.publicUrl,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', user.id);
-
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('profile-pictures')
+        .getPublicUrl(fileName);
+      
+      console.log('File uploaded successfully. URL:', urlData.publicUrl);
+      
+      // Update the user record with the new URL
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          profile_picture: urlData.publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+        
       if (updateError) throw updateError;
-
-      // Update local state
-      setProfilePicture(data.publicUrl);
-      setUser((prev: typeof user) => ({ ...prev, profile_picture: data.publicUrl }));   
       
-      // Force component to rerender with new image
-      router.refresh();
+      // Update local state
+      setProfilePicture(urlData.publicUrl);
       toast.success('Profile picture updated');
       
+      // Force refresh to avoid stale data
+      router.refresh();
+      
     } catch (err: any) {
-      console.error('Profile picture upload failed:', err);
+      console.error('Upload error:', err);
       setError(err.message || 'Failed to upload profile picture');
-      toast.error('Failed to upload profile picture');
     } finally {
       setIsUploading(false);
     }
