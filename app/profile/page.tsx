@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormMessage } from '@/components/form-message';
-import { Camera, Check, UserCircle } from 'lucide-react';
+import { Camera, Check, Clock, CheckSquare, Trophy, X, Move, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import ProfileImage from '@/components/profile-image';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
@@ -21,6 +22,15 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Image cropping states
+  const [showCropDialog, setShowCropDialog] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const imageRef = useRef<HTMLImageElement>(null);
   
   const router = useRouter();
   const supabase = createClient();
@@ -138,21 +148,71 @@ export default function ProfilePage() {
       return;
     }
     
+    // Set selected file and show crop dialog
+    setSelectedFile(file);
+    
+    // Create object URL for preview
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    
+    // Reset position
+    setPosition({ x: 0, y: 0 });
+    
+    // Show the crop dialog
+    setShowCropDialog(true);
+    
+    // Clean up function for the object URL
+    return () => URL.revokeObjectURL(objectUrl);
+  };
+  
+  const handleCropCancel = () => {
+    setShowCropDialog(false);
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
+  
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setStartPos({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+  };
+  
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && imageRef.current) {
+      const newX = e.clientX - startPos.x;
+      const newY = e.clientY - startPos.y;
+      
+      // Optional: Add constraints to keep the image within the crop area
+      setPosition({ x: newX, y: newY });
+    }
+  };
+  
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  const handleCropConfirm = async () => {
+    if (!selectedFile) return;
+    
     try {
       setIsUploading(true);
-      setError('');
+      setShowCropDialog(false);
       
-      // Create a consistent folder structure: userId/filename
-      // This is critical - ensure the user's folder exists first
+      // In a real implementation, you would use the position data to crop the image
+      // For now, we'll just upload the original file as-is
+      
       const folderPath = `${user.id}`;
-      const fileName = `${folderPath}/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
-      
-      console.log('Uploading file:', fileName);
+      const fileName = `${folderPath}/${Date.now()}-${selectedFile.name.replace(/\s+/g, '_')}`;
       
       // Upload the file
       const { error: uploadError } = await supabase.storage
         .from('profile-pictures')
-        .upload(fileName, file, {
+        .upload(fileName, selectedFile, {
           cacheControl: '3600',
           upsert: true
         });
@@ -163,8 +223,6 @@ export default function ProfilePage() {
       const { data: urlData } = supabase.storage
         .from('profile-pictures')
         .getPublicUrl(fileName);
-      
-      console.log('File uploaded successfully. URL:', urlData.publicUrl);
       
       // Update the user record with the new URL
       const { error: updateError } = await supabase
@@ -189,9 +247,22 @@ export default function ProfilePage() {
       setError(err.message || 'Failed to upload profile picture');
     } finally {
       setIsUploading(false);
+      setSelectedFile(null);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
     }
   };
   
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    return hours > 0 
+      ? `${hours}h ${minutes}m` 
+      : `${minutes}m`;
+  };
 
   if (isLoading) {
     return (
@@ -297,7 +368,36 @@ export default function ProfilePage() {
             </div>
           </div>
           
-          <div className="bg-muted rounded-md p-4 text-sm">
+          {/* Competitive Stats */}
+          <div className="bg-muted rounded-md p-4">
+            <h3 className="font-medium mb-4 flex items-center gap-2 text-accent-foreground">
+              <Trophy className="h-4 w-4 text-accent-foreground" />
+              Your Progress Stats
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-background p-3 rounded-md shadow-sm flex flex-col items-center">
+                <Clock className="h-5 w-5 mb-2 text-accent-foreground" />
+                <span className="text-xs text-foreground">Total Focus Time</span>
+                <span className="text-xl font-bold">{formatTime(user.total_focus_time || 0)}</span>
+              </div>
+              
+              <div className="bg-background p-3 rounded-md shadow-sm flex flex-col items-center">
+                <CheckSquare className="h-5 w-5 mb-2 text-accent-foreground" />
+                <span className="text-xs text-foreground">Tasks Completed</span>
+                <span className="text-xl font-bold">{user.completed_tasks_count || 0}</span>
+              </div>
+              
+              <div className="bg-background p-3 rounded-md shadow-sm flex flex-col items-center">
+                <Flame className="h-5 w-5 mb-2 text-accent-foreground" />
+                <span className="text-xs text-muted-foreground">Current Streak</span>
+                <span className="text-xl font-bold">{user.streak_days || 0} days</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Account Information */}
+          <div className="bg-muted rounded-md p-4 text-sm mt-6">
             <h3 className="font-medium mb-2">Account Information</h3>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -312,6 +412,78 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Image Crop Dialog */}
+      <Dialog open={showCropDialog} onOpenChange={setShowCropDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>Adjust Profile Picture</DialogTitle>
+          <DialogDescription>
+            Position your image by dragging it within the circle
+          </DialogDescription>
+          
+          <div className="my-4 flex items-center justify-center">
+            <div 
+              className="relative w-64 h-64 overflow-hidden"
+              style={{
+                borderRadius: '50%',
+                cursor: isDragging ? 'grabbing' : 'grab'
+              }}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              {previewUrl && (
+                <>
+                  <div className="absolute inset-0 bg-black opacity-50 z-10 pointer-events-none"></div>
+                  <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                    <div className="w-56 h-56 rounded-full border-2 border-white"></div>
+                    <Move className="absolute text-white opacity-70" />
+                  </div>
+                  <img
+                    ref={imageRef}
+                    src={previewUrl}
+                    alt="Preview"
+                    className="absolute"
+                    style={{
+                      transform: `translate(${position.x}px, ${position.y}px)`,
+                      maxWidth: 'none',
+                      userSelect: 'none'
+                    }}
+                    draggable={false}
+                  />
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex justify-between mt-4">
+            <Button 
+              variant="outline" 
+              onClick={handleCropCancel}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCropConfirm}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <>
+                  <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-background"></div>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Apply
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

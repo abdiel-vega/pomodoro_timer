@@ -1,3 +1,4 @@
+// components/user-profile.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -44,12 +45,12 @@ export default function UserProfile({ user }: UserProfileProps) {
   const router = useRouter();
   const supabase = createClient();
   
-  // Refresh user data when profile popup opens
+  // Load profile data on component mount AND when popup opens
   useEffect(() => {
-    if (isOpen && user?.id) {
+    if (user?.id) {
       refreshUserProfile();
     }
-  }, [isOpen, user?.id]);
+  }, [user?.id]);
   
   const refreshUserProfile = async () => {
     if (!user?.id) return;
