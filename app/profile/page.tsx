@@ -6,8 +6,9 @@ import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider'; 
 import { FormMessage } from '@/components/form-message';
-import { Camera, Check, Clock, CheckSquare, Trophy, X, Move, Flame } from 'lucide-react';
+import { Camera, Check, Clock, CheckSquare, Trophy, X, Move, ZoomIn, ZoomOut, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import ProfileImage from '@/components/profile-image';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -16,21 +17,25 @@ export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState('');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [croppedImageFile, setCroppedImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Image cropping states
   const [showCropDialog, setShowCropDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [scale, setScale] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const imageRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const router = useRouter();
   const supabase = createClient();
@@ -103,11 +108,37 @@ export default function ProfilePage() {
         }
       }
       
+      // Upload profile picture if there's a cropped image
+      let profilePictureUrl = profilePicture;
+      
+      if (croppedImageFile) {
+        const folderPath = `${user.id}`;
+        const fileName = `${folderPath}/${Date.now()}-profile.jpg`;
+        
+        // Upload the cropped file
+        const { error: uploadError } = await supabase.storage
+          .from('profile-pictures')
+          .upload(fileName, croppedImageFile, {
+            cacheControl: '3600',
+            upsert: true
+          });
+          
+        if (uploadError) throw uploadError;
+        
+        // Get the public URL
+        const { data: urlData } = supabase.storage
+          .from('profile-pictures')
+          .getPublicUrl(fileName);
+          
+        profilePictureUrl = urlData.publicUrl;
+      }
+      
       // Update user profile
       const { error: updateError } = await supabase
         .from('users')
         .update({
           username,
+          profile_picture: profilePictureUrl,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -117,7 +148,9 @@ export default function ProfilePage() {
       }
       
       // Update the local state
-      setUser({ ...user, username });
+      setUser({ ...user, username, profile_picture: profilePictureUrl });
+      setProfilePicture(profilePictureUrl);
+      setCroppedImageFile(null); // Clear the cropped image state
       setMessage('Profile updated successfully');
       toast.success('Profile updated');
     } catch (err: any) {
@@ -143,8 +176,8 @@ export default function ProfilePage() {
       return;
     }
     
-    if (file.size > 2 * 1024 * 1024) { // 2MB limit
-      setError('File size must be less than 2MB');
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      setError('File size must be less than 5MB');
       return;
     }
     
@@ -155,14 +188,12 @@ export default function ProfilePage() {
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
     
-    // Reset position
+    // Reset position and scale
     setPosition({ x: 0, y: 0 });
+    setScale(1);
     
     // Show the crop dialog
     setShowCropDialog(true);
-    
-    // Clean up function for the object URL
-    return () => URL.revokeObjectURL(objectUrl);
   };
   
   const handleCropCancel = () => {
@@ -183,12 +214,35 @@ export default function ProfilePage() {
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && imageRef.current) {
+    if (isDragging && imageRef.current && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const imageRect = imageRef.current.getBoundingClientRect();
+      
+      // Calculate the scaled image dimensions
+      const scaledWidth = imageRect.width;
+      const scaledHeight = imageRect.height;
+      
+      // Calculate the maximum allowed position to keep the circle filled
+      const circleRadius = containerRect.width / 2;
+      
+      // Calculate new position
       const newX = e.clientX - startPos.x;
       const newY = e.clientY - startPos.y;
       
-      // Optional: Add constraints to keep the image within the crop area
-      setPosition({ x: newX, y: newY });
+      // Calculate boundaries to keep the image covering the circle
+      const minX = circleRadius - scaledWidth;
+      const maxX = circleRadius;
+      const minY = circleRadius - scaledHeight;
+      const maxY = circleRadius;
+      
+      // Apply constraints
+      const constrainedX = Math.min(maxX, Math.max(minX, newX));
+      const constrainedY = Math.min(maxY, Math.max(minY, newY));
+      
+      setPosition({
+        x: constrainedX,
+        y: constrainedY
+      });
     }
   };
   
@@ -196,62 +250,101 @@ export default function ProfilePage() {
     setIsDragging(false);
   };
   
+  const handleZoomChange = (values: number[]) => {
+    setScale(values[0]);
+  };
+  
+  const cropImage = (): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      if (!imageRef.current || !containerRef.current) {
+        reject(new Error('Image reference not available'));
+        return;
+      }
+      
+      try {
+        // Create a canvas for cropping
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas context not available'));
+          return;
+        }
+        
+        // Get container dimensions (this is our crop circle size)
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const cropSize = containerRect.width;
+        
+        // Set canvas size to the crop circle size
+        canvas.width = cropSize;
+        canvas.height = cropSize;
+        
+        // Create a circular clipping path
+        ctx.beginPath();
+        ctx.arc(cropSize / 2, cropSize / 2, cropSize / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        
+        // Draw the image with transformation
+        const img = imageRef.current;
+        
+        // Calculate the image drawing parameters
+        const scaledWidth = img.naturalWidth * scale;
+        const scaledHeight = img.naturalHeight * scale;
+        
+        // Draw the image at the correct position and scale
+        ctx.drawImage(
+          img,
+          -position.x - (scaledWidth - cropSize) / 2,
+          -position.y - (scaledHeight - cropSize) / 2,
+          scaledWidth,
+          scaledHeight
+        );
+        
+        // Convert the canvas to a Blob
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Failed to create image blob'));
+            return;
+          }
+          
+          // Create a File object from the Blob
+          const file = new File([blob], 'profile-picture.jpg', { type: 'image/jpeg' });
+          resolve(file);
+        }, 'image/jpeg', 0.95);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+  
   const handleCropConfirm = async () => {
     if (!selectedFile) return;
     
     try {
-      setIsUploading(true);
+      // Crop the image
+      const croppedFile = await cropImage();
+      
+      // Store the cropped file but don't upload yet
+      setCroppedImageFile(croppedFile);
+      
+      // Create a temporary preview URL
+      const tempPreviewUrl = URL.createObjectURL(croppedFile);
+      setProfilePicture(tempPreviewUrl);
+      
+      // Close the dialog
       setShowCropDialog(false);
       
-      // In a real implementation, you would use the position data to crop the image
-      // For now, we'll just upload the original file as-is
-      
-      const folderPath = `${user.id}`;
-      const fileName = `${folderPath}/${Date.now()}-${selectedFile.name.replace(/\s+/g, '_')}`;
-      
-      // Upload the file
-      const { error: uploadError } = await supabase.storage
-        .from('profile-pictures')
-        .upload(fileName, selectedFile, {
-          cacheControl: '3600',
-          upsert: true
-        });
-        
-      if (uploadError) throw uploadError;
-      
-      // Get the public URL
-      const { data: urlData } = supabase.storage
-        .from('profile-pictures')
-        .getPublicUrl(fileName);
-      
-      // Update the user record with the new URL
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          profile_picture: urlData.publicUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-        
-      if (updateError) throw updateError;
-      
-      // Update local state
-      setProfilePicture(urlData.publicUrl);
-      toast.success('Profile picture updated');
-      
-      // Force refresh to avoid stale data
-      router.refresh();
-      
+      toast.success('Image cropped. Click "Update Profile" to save changes.');
     } catch (err: any) {
-      console.error('Upload error:', err);
-      setError(err.message || 'Failed to upload profile picture');
+      console.error('Error cropping image:', err);
+      setError(err.message || 'Failed to crop image');
     } finally {
-      setIsUploading(false);
-      setSelectedFile(null);
+      // Clean up original preview URL
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
       }
+      setSelectedFile(null);
     }
   };
   
@@ -263,6 +356,9 @@ export default function ProfilePage() {
       ? `${hours}h ${minutes}m` 
       : `${minutes}m`;
   };
+
+  // Determine if we have changes to enable the update button
+  const hasChanges = username !== user?.username || croppedImageFile !== null;
 
   if (isLoading) {
     return (
@@ -360,7 +456,7 @@ export default function ProfilePage() {
                 <Button 
                   type="submit" 
                   className="mt-2" 
-                  disabled={isUpdating || username === user.username}
+                  disabled={isUpdating || !hasChanges}
                 >
                   {isUpdating ? 'Updating...' : 'Update Profile'}
                 </Button>
@@ -415,15 +511,17 @@ export default function ProfilePage() {
       
       {/* Image Crop Dialog */}
       <Dialog open={showCropDialog} onOpenChange={setShowCropDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md text-foreground">
           <DialogTitle>Adjust Profile Picture</DialogTitle>
-          <DialogDescription>
-            Position your image by dragging it within the circle
+          <DialogDescription className='text-foreground'>
+            Position and zoom your image to fit the circle
           </DialogDescription>
           
-          <div className="my-4 flex items-center justify-center">
+          <div className="my-4 flex flex-col items-center">
+            {/* Image container with crop circle */}
             <div 
-              className="relative w-64 h-64 overflow-hidden"
+              ref={containerRef}
+              className="relative w-64 h-64 overflow-hidden bg-black bg-opacity-5"
               style={{
                 borderRadius: '50%',
                 cursor: isDragging ? 'grabbing' : 'grab'
@@ -446,14 +544,42 @@ export default function ProfilePage() {
                     alt="Preview"
                     className="absolute"
                     style={{
-                      transform: `translate(${position.x}px, ${position.y}px)`,
+                      transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                      transformOrigin: 'center',
                       maxWidth: 'none',
                       userSelect: 'none'
                     }}
                     draggable={false}
+                    onLoad={(e) => {
+                      // Center the image when it loads
+                      if (imageRef.current && containerRef.current) {
+                        const container = containerRef.current;
+                        const img = imageRef.current;
+                        
+                        // Initial position to center the image
+                        const initialX = (container.clientWidth - img.clientWidth) / 2;
+                        const initialY = (container.clientHeight - img.clientHeight) / 2;
+                        
+                        setPosition({ x: initialX, y: initialY });
+                      }
+                    }}
                   />
                 </>
               )}
+            </div>
+            
+            {/* Zoom controls */}
+            <div className="mt-6 w-full max-w-xs flex items-center gap-4">
+              <ZoomOut className="text-accent-foreground" size={20} />
+              <Slider
+                value={[scale]}
+                min={0.5}
+                max={3}
+                step={0.1}
+                onValueChange={handleZoomChange}
+                className="flex-1"
+              />
+              <ZoomIn className="text-accent-foreground" size={20} />
             </div>
           </div>
           
@@ -466,20 +592,12 @@ export default function ProfilePage() {
               Cancel
             </Button>
             <Button 
+              variant="outline" 
               onClick={handleCropConfirm}
               disabled={isUploading}
             >
-              {isUploading ? (
-                <>
-                  <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-background"></div>
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Apply
-                </>
-              )}
+              <Check className="mr-2 h-4 w-4" />
+              Apply Crop
             </Button>
           </div>
         </DialogContent>
