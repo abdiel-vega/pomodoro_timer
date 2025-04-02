@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { UserCircle } from 'lucide-react';
 
 interface ProfileImageProps {
@@ -14,18 +15,15 @@ export default function ProfileImage({
   alt, 
   size = 96 
 }: ProfileImageProps) {
-  const [imgSrc, setImgSrc] = useState<string | null>(src);
-  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   
-  // Reset state when src changes
+  // Reset error state when src changes
   useEffect(() => {
-    setImgSrc(src);
-    setIsLoading(true);
     setHasError(false);
   }, [src]);
 
-  if (!imgSrc || hasError) {
+  // Render fallback for empty src or errors
+  if (!src || hasError) {
     return (
       <div 
         className="relative rounded-full overflow-hidden bg-muted flex items-center justify-center"
@@ -41,21 +39,14 @@ export default function ProfileImage({
       className="relative rounded-full overflow-hidden bg-muted"
       style={{ width: size, height: size }}
     >
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted">
-          <div className="w-5 h-5 border-2 border-t-transparent border-primary rounded-full animate-spin"></div>
-        </div>
-      )}
-      <img
-        src={imgSrc}
+      <Image
+        src={src}
         alt={alt}
-        className="w-full h-full object-cover"
-        onLoad={() => setIsLoading(false)}
-        onError={() => {
-          console.error(`Failed to load image: ${imgSrc}`);
-          setHasError(true);
-          setIsLoading(false);
-        }}
+        fill
+        sizes={`${size}px`}
+        className="object-cover"
+        onError={() => setHasError(true)}
+        priority={size > 64} // Prioritize larger images
       />
     </div>
   );

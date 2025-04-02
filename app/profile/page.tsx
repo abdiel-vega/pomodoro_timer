@@ -142,41 +142,35 @@ export default function ProfilePage() {
       setIsUploading(true);
       setError('');
       
-      // Create a consistent file path structure
-      const fileName = `${Date.now()}.${file.name.split('.').pop()}`;
-      const filePath = `${user.id}/${fileName}`;
+    // Create a consistent filename
+    const fileName = `${user.id}/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       
-      console.log('Uploading to path:', filePath);
+      console.log('Uploading to path:', fileName);
       
-      // Upload the file
-      const { error: uploadError } = await supabase.storage
-        .from('profile-pictures')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-        
-      if (uploadError) {
-        console.error('Upload error details:', uploadError);
-        throw uploadError;
-      }
-      
-      // Get the public URL
-      const { data } = supabase.storage
+      // Upload to Supabase
+    const { error: uploadError } = await supabase.storage
       .from('profile-pictures')
-      .getPublicUrl(filePath);
-    
-      console.log('Generated URL:', data.publicUrl);
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
       
-      // Update the user record
-      const { error: updateError } = await supabase
+    if (uploadError) throw uploadError;
+    
+    // Get the public URL
+    const { data } = supabase.storage
+      .from('profile-pictures')
+      .getPublicUrl(fileName);
+    
+    // Update the user profile with the new URL
+    const { error: updateError } = await supabase
       .from('users')
       .update({
         profile_picture: data.publicUrl,
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id);
-      
+
       if (updateError) throw updateError;
 
       // Update local state
