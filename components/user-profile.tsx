@@ -145,22 +145,22 @@ export default function UserProfile({ user }: UserProfileProps) {
             </div>
           </div>
           
-          <div className="border-t border-border pt-2">
-            <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+          <div className="border-t border-accent-foreground pt-2">
+            <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
               <Link href="/profile">
                 <UserIcon className="mr-2 h-4 w-4" />
                 Profile
               </Link>
             </Button>
             
-            <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+            <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
               <Link href="/settings">
                 <SettingsIcon className="mr-2 h-4 w-4" />
                 Settings
               </Link>
             </Button>
             
-            <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+            <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
               <Link href="/leaderboard">
                 <Sparkles className="mr-2 h-4 w-4" />
                 Leaderboard

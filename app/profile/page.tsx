@@ -416,7 +416,6 @@ export default function ProfilePage() {
                 onChange={handleFileChange}
               />
               <Button 
-                variant="outline" 
                 size="sm" 
                 onClick={handleProfilePictureClick}
                 disabled={isUploading}
@@ -455,7 +454,7 @@ export default function ProfilePage() {
                 
                 <Button 
                   type="submit" 
-                  className="mt-2" 
+                  className="mt-2 border border-foreground bg-background text-foreground hover:bg-muted hover:text-accent-foreground hover:border-accent-foreground" 
                   disabled={isUpdating || !hasChanges}
                 >
                   {isUpdating ? 'Updating...' : 'Update Profile'}
