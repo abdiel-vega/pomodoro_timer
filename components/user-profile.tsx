@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import ProfileImage from './profile-image';
 
 interface UserProfileProps {
   user: {
@@ -76,25 +77,13 @@ export default function UserProfile({ user }: UserProfileProps) {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="px-2 h-10"
-        >
+        <Button variant="ghost" size="sm" className="px-2 h-10">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-              {user?.profile_picture ? (
-                <img 
-                  src={user.profile_picture} 
-                  alt={user?.username || 'User'} 
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-xs font-medium">
-                  {user?.username ? user.username.substring(0, 2).toUpperCase() : 'U'}
-                </span>
-              )}
-            </div>
+            <ProfileImage 
+              src={profilePicture} 
+              alt={user?.username || 'User'} 
+              size={32} 
+            />
             <span className="text-sm text-foreground hover:text-accent-foreground hidden md:inline">
               {user?.username || 'User'}
             </span>
