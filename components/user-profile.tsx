@@ -1,4 +1,3 @@
-// components/user-profile.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,13 +21,25 @@ interface UserProfileProps {
     is_premium?: boolean;
     total_focus_time?: number;
     completed_tasks_count?: number;
-  };
+  } | null;
 }
-
 
 export default function UserProfile({ user }: UserProfileProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  
+  // Initialize with safe defaults when user might be null
+  const [profileData, setProfileData] = useState<User>({
+    id: user?.id || '',
+    email: user?.email || '',
+    username: user?.username || null,
+    profile_picture: user?.profile_picture || null,
+    is_premium: user?.is_premium || false,
+    total_focus_time: user?.total_focus_time || 0,
+    completed_tasks_count: user?.completed_tasks_count || 0,
+    created_at: '',
+    updated_at: ''
+  });
   
   const router = useRouter();
   const supabase = createClient();
@@ -41,6 +52,8 @@ export default function UserProfile({ user }: UserProfileProps) {
   }, [isOpen, user?.id]);
   
   const refreshUserProfile = async () => {
+    if (!user?.id) return;
+    
     try {
       const { data } = await supabase
         .from('users')
