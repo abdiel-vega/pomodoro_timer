@@ -9,13 +9,13 @@ import {
   DialogHeader, 
   DialogTitle
 } from '@/components/ui/dialog';
-import { UserPlus, RefreshCcw, Clock, CheckSquare, Flame } from 'lucide-react';
+import { UserPlus, RefreshCcw, Clock, CheckSquare, Flame, Users } from 'lucide-react';
 import ProfileImage from '@/components/profile-image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
-// Define the type for a Friend
+// Define Friend type
 interface Friend {
   id: string;
   username: string;
@@ -26,23 +26,9 @@ interface Friend {
   is_premium: boolean;
 }
 
-// Define the exact shape of the Supabase response
-interface SupabaseFriendResponse {
-  friend_id: string;
-  users: {
-    id: string;
-    username: string | null;
-    profile_picture: string | null;
-    total_focus_time: number | null;
-    completed_tasks_count: number | null;
-    streak_days: number | null;
-    is_premium: boolean | null;
-  } | null;
-}
-
 export default function FriendsList() {
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [friendUsername, setFriendUsername] = useState('');
@@ -55,58 +41,56 @@ export default function FriendsList() {
   }, []);
   
   const loadFriends = async () => {
+    if (isLoading) return;
     setIsLoading(true);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        setIsLoading(false);
+        setFriends([]);
         return;
       }
       
-      // Get friends list from the user_friends table
-      const { data, error } = await supabase
+      // Use a simpler query strategy with two separate queries
+      // First, get friend IDs the user has added
+      const { data: friendIdsData, error: friendIdsError } = await supabase
         .from('user_friends')
-        .select(`
-          friend_id,
-          users:friend_id(
-            id, 
-            username, 
-            profile_picture, 
-            total_focus_time, 
-            completed_tasks_count, 
-            streak_days,
-            is_premium
-          )
-        `)
+        .select('friend_id')
         .eq('user_id', user.id);
       
-      if (error) throw error;
+      if (friendIdsError) throw friendIdsError;
       
-      // Safely transform the data with proper typing
-      const friendsList: Friend[] = [];
-      
-      if (data) {
-        // Type assertion with any to bypass TypeScript's strict checking
-        // Then map over the data to create properly typed objects
-        (data as any[]).forEach(item => {
-          if (item.users) {
-            friendsList.push({
-              id: item.users.id,
-              username: item.users.username || 'Anonymous',
-              profile_picture: item.users.profile_picture,
-              total_focus_time: item.users.total_focus_time || 0,
-              completed_tasks_count: item.users.completed_tasks_count || 0,
-              streak_days: item.users.streak_days || 0,
-              is_premium: item.users.is_premium || false
-            });
-          }
-        });
+      if (!friendIdsData || friendIdsData.length === 0) {
+        setFriends([]);
+        return;
       }
       
+      // Extract just the friend IDs
+      const friendIds = friendIdsData.map(row => row.friend_id);
+      
+      // Then get user details for those friends
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+        .in('id', friendIds);
+      
+      if (usersError) throw usersError;
+      
+      // Now map the user data to our Friend type with safe defaults
+      const friendsList = usersData?.map(userData => ({
+        id: userData.id,
+        username: userData.username || 'Anonymous',
+        profile_picture: userData.profile_picture,
+        total_focus_time: userData.total_focus_time || 0,
+        completed_tasks_count: userData.completed_tasks_count || 0,
+        streak_days: userData.streak_days || 0,
+        is_premium: !!userData.is_premium
+      })) || [];
+      
       setFriends(friendsList);
-    } catch (err) {
-      console.error('Error loading friends:', err);
+    } catch (err: any) {
+      console.error('Friend loading error:', err?.message || 'Unknown error', err);
       toast.error('Failed to load friends');
     } finally {
       setIsLoading(false);
@@ -120,6 +104,7 @@ export default function FriendsList() {
     }
     
     setIsAdding(true);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -150,8 +135,9 @@ export default function FriendsList() {
       const { data: existing, error: checkError } = await supabase
         .from('user_friends')
         .select('id')
-        .match({ user_id: user.id, friend_id: userData.id })
-        .single();
+        .eq('user_id', user.id)
+        .eq('friend_id', userData.id)
+        .maybeSingle();
       
       if (existing) {
         toast.error('Already in your friends list');
@@ -170,7 +156,7 @@ export default function FriendsList() {
       toast.success(`Added ${userData.username} to friends`);
       setFriendUsername('');
       loadFriends();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding friend:', err);
       toast.error('Failed to add friend');
     } finally {
@@ -196,7 +182,10 @@ export default function FriendsList() {
     <div className="container mx-auto max-w-3xl py-8">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Friends</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Friends
+          </CardTitle>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
@@ -204,8 +193,8 @@ export default function FriendsList() {
               onClick={loadFriends}
               disabled={isLoading}
             >
-              <RefreshCcw className="h-4 w-4 mr-1" />
-              Refresh
+              <RefreshCcw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Loading...' : 'Refresh'}
             </Button>
           </div>
         </CardHeader>
@@ -223,14 +212,14 @@ export default function FriendsList() {
               disabled={isAdding || !friendUsername.trim()}
             >
               <UserPlus className="h-4 w-4 mr-1" />
-              Add
+              {isAdding ? 'Adding...' : 'Add'}
             </Button>
           </div>
           
           {/* Friends List */}
           {isLoading ? (
             <div className="flex justify-center py-6">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
             </div>
           ) : friends.length > 0 ? (
             <div className="space-y-3">
@@ -255,16 +244,16 @@ export default function FriendsList() {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {friend.completed_tasks_count || 0} tasks • {formatTime(friend.total_focus_time)} focus time
+                      {friend.completed_tasks_count} tasks • {formatTime(friend.total_focus_time)} focus time
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-6 text-muted-foreground">
+            <div className="text-center py-6 text-foreground">
               <p>No friends added yet.</p>
-              <p className="text-sm mt-1">Search by username to add friends.</p>
+              <p className="text-sm mt-1 text-muted-foreground">Search by username to add friends.</p>
             </div>
           )}
         </CardContent>
@@ -308,13 +297,13 @@ export default function FriendsList() {
                 <div className="bg-muted p-3 rounded-md flex flex-col items-center">
                   <CheckSquare className="h-5 w-5 mb-1" />
                   <span className="text-xs">Tasks</span>
-                  <span className="font-bold">{selectedFriend.completed_tasks_count || 0}</span>
+                  <span className="font-bold">{selectedFriend.completed_tasks_count}</span>
                 </div>
                 
                 <div className="bg-muted p-3 rounded-md flex flex-col items-center">
                   <Flame className="h-5 w-5 mb-1" />
                   <span className="text-xs">Streak</span>
-                  <span className="font-bold">{selectedFriend.streak_days || 0} days</span>
+                  <span className="font-bold">{selectedFriend.streak_days} days</span>
                 </div>
               </div>
             </div>
