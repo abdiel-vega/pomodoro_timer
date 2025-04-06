@@ -14,6 +14,7 @@ import ProfileImage from '@/components/profile-image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import FriendRequests from './friend-requests';
 
 // Define Friend type
 interface Friend {
@@ -113,11 +114,11 @@ export default function FriendsList() {
         return;
       }
       
-      // First, find the user by username
+      // First, find the user by username - USING ILIKE FOR CASE-INSENSITIVE SEARCH
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id, username')
-        .eq('username', friendUsername.trim())
+        .ilike('username', friendUsername.trim())
         .single();
       
       if (userError || !userData) {
@@ -144,21 +145,38 @@ export default function FriendsList() {
         return;
       }
       
-      // Add friend
+      // Check if request already exists
+      const { data: existingRequest, error: requestCheckError } = await supabase
+        .from('friend_requests')
+        .select('id, status')
+        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .or(`sender_id.eq.${userData.id},recipient_id.eq.${userData.id}`)
+        .eq('status', 'pending')
+        .maybeSingle();
+      
+      if (existingRequest) {
+        toast.error('A friend request already exists between you two');
+        return;
+      }
+      
+      // Create a friend request instead of directly adding
       const { error: addError } = await supabase
-        .from('user_friends')
+        .from('friend_requests')
         .insert([
-          { user_id: user.id, friend_id: userData.id }
+          { 
+            sender_id: user.id,
+            recipient_id: userData.id,
+            status: 'pending'
+          }
         ]);
       
       if (addError) throw addError;
       
-      toast.success(`Added ${userData.username} to friends`);
+      toast.success(`Friend request sent to ${userData.username}`);
       setFriendUsername('');
-      loadFriends();
     } catch (err: any) {
-      console.error('Error adding friend:', err);
-      toast.error('Failed to add friend');
+      console.error('Error sending friend request:', err);
+      toast.error('Failed to send friend request');
     } finally {
       setIsAdding(false);
     }
@@ -187,6 +205,7 @@ export default function FriendsList() {
             Friends
           </CardTitle>
           <div className="flex gap-2">
+            <FriendRequests />
             <Button 
               variant="outline" 
               size="sm"
@@ -212,7 +231,7 @@ export default function FriendsList() {
               disabled={isAdding || !friendUsername.trim()}
             >
               <UserPlus className="h-4 w-4 mr-1" />
-              {isAdding ? 'Adding...' : 'Add'}
+              {isAdding ? 'Sending...' : 'Send Request'}
             </Button>
           </div>
           
