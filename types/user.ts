@@ -21,7 +21,8 @@ export interface User {
     total_focus_time?: number;
     completed_tasks_count?: number;
     streak_days?: number;
-  }
+    is_premium?: boolean; // Add this property
+  }  
   
   // For partial updates
   export type UserUpdate = Partial<Omit<User, 'id' | 'created_at'>>;

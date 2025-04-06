@@ -8,7 +8,7 @@ import { User } from '@/types/user';
 import { Button } from '@/components/ui/button';
 import ProfileImage from './profile-image';
 import { 
-  UserIcon, SettingsIcon, LogOut, Sparkles, Clock, CheckSquare 
+  UserIcon, SettingsIcon, LogOut, Sparkles, Clock, CheckSquare, Trophy 
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EVENTS, ProfileUpdatePayload } from '@/utils/events';
@@ -183,6 +183,22 @@ export default function UserProfile({ user }: UserProfileProps) {
               </Link>
             </Button>
             
+            {profileData.is_premium ? (
+              <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
+                <Link href="/premium">
+                  <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
+                  Premium Settings
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
+                <Link href="/premium">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Purchase Premium
+                </Link>
+              </Button>
+            )}
+            
             <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
               <Link href="/settings">
                 <SettingsIcon className="mr-2 h-4 w-4" />
@@ -192,7 +208,7 @@ export default function UserProfile({ user }: UserProfileProps) {
             
             <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
               <Link href="/leaderboard">
-                <Sparkles className="mr-2 h-4 w-4" />
+                <Trophy className="mr-2 h-4 w-4" />
                 Leaderboard
               </Link>
             </Button>
