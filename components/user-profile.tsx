@@ -186,25 +186,18 @@ export default function UserProfile({ user }: UserProfileProps) {
             {profileData.is_premium ? (
               <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
                 <Link href="/premium">
-                  <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
+                  <Sparkles className="mr-2 h-4 w-4 text-foreground" />
                   Premium Settings
                 </Link>
               </Button>
             ) : (
               <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
                 <Link href="/premium">
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
                   Purchase Premium
                 </Link>
               </Button>
             )}
-            
-            <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
-              <Link href="/settings">
-                <SettingsIcon className="mr-2 h-4 w-4" />
-                Settings
-              </Link>
-            </Button>
             
             <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
               <Link href="/leaderboard">

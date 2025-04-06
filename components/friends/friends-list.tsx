@@ -15,15 +15,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
-// Friend type
+// Define the type for a Friend
 interface Friend {
   id: string;
   username: string;
   profile_picture: string | null;
-  total_focus_time?: number;
-  completed_tasks_count?: number;
-  streak_days?: number;
-  is_premium?: boolean;
+  total_focus_time: number;
+  completed_tasks_count: number;
+  streak_days: number;
+  is_premium: boolean;
+}
+
+// Define the exact shape of the Supabase response
+interface SupabaseFriendResponse {
+  friend_id: string;
+  users: {
+    id: string;
+    username: string | null;
+    profile_picture: string | null;
+    total_focus_time: number | null;
+    completed_tasks_count: number | null;
+    streak_days: number | null;
+    is_premium: boolean | null;
+  } | null;
 }
 
 export default function FriendsList() {
@@ -51,7 +65,7 @@ export default function FriendsList() {
       }
       
       // Get friends list from the user_friends table
-      const { data: friendData, error } = await supabase
+      const { data, error } = await supabase
         .from('user_friends')
         .select(`
           friend_id,
@@ -69,23 +83,26 @@ export default function FriendsList() {
       
       if (error) throw error;
       
-      // Transform the nested data structure properly
-      const friendsList = friendData
-        .map(item => {
-          // Check if users property exists and return the object with correct type
-          if (!item.users) return null;
-          
-          return {
-            id: item.users.id,
-            username: item.users.username,
-            profile_picture: item.users.profile_picture,
-            total_focus_time: item.users.total_focus_time,
-            completed_tasks_count: item.users.completed_tasks_count,
-            streak_days: item.users.streak_days,
-            is_premium: item.users.is_premium
-          } as Friend;
-        })
-        .filter((friend): friend is Friend => friend !== null); // Type guard to ensure non-null values
+      // Safely transform the data with proper typing
+      const friendsList: Friend[] = [];
+      
+      if (data) {
+        // Type assertion with any to bypass TypeScript's strict checking
+        // Then map over the data to create properly typed objects
+        (data as any[]).forEach(item => {
+          if (item.users) {
+            friendsList.push({
+              id: item.users.id,
+              username: item.users.username || 'Anonymous',
+              profile_picture: item.users.profile_picture,
+              total_focus_time: item.users.total_focus_time || 0,
+              completed_tasks_count: item.users.completed_tasks_count || 0,
+              streak_days: item.users.streak_days || 0,
+              is_premium: item.users.is_premium || false
+            });
+          }
+        });
+      }
       
       setFriends(friendsList);
     } catch (err) {
@@ -95,7 +112,6 @@ export default function FriendsList() {
       setIsLoading(false);
     }
   };
-  
   
   const handleAddFriend = async () => {
     if (!friendUsername.trim()) {
@@ -214,7 +230,7 @@ export default function FriendsList() {
           {/* Friends List */}
           {isLoading ? (
             <div className="flex justify-center py-6">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
             </div>
           ) : friends.length > 0 ? (
             <div className="space-y-3">
