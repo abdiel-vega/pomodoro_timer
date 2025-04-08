@@ -15,8 +15,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import FriendRequests from './friend-requests';
+import { useFriendRequests } from '@/hooks/useFriendRequests';
 
-// Define Friend type
+// Friend type definition
 interface Friend {
   id: string;
   username: string;
@@ -34,6 +35,9 @@ export default function FriendsList() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [friendUsername, setFriendUsername] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  
+  // Use our custom hook
+  const { isSearching, isSubmitting, searchUser, sendFriendRequest } = useFriendRequests();
   
   const supabase = createClient();
   
@@ -111,46 +115,25 @@ export default function FriendsList() {
       return;
     }
     
-    setIsAdding(true);
+    const foundUser = await searchUser(friendUsername);
     
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast.error('You need to be signed in');
-        return;
-      }
-      
-      // Log the exact search term
-      console.log('Searching for username:', friendUsername.trim());
-      
-      // Use a partial match with % wildcards for more flexible searching
-      const { data: userData, error: userError } = await supabase
+    if (!foundUser) {
+      // Show available users for debugging
+      const { data: availableUsers } = await supabase
         .from('users')
-        .select('id, username')
-        .ilike('username', `%${friendUsername.trim()}%`) // Partial match with wildcards
-        .maybeSingle();
-      
-      console.log('Search results:', { userData, userError });
-      
-      if (!userData) {
-        // Debug: Check what users actually exist in the database
-        const { data: sampleUsers } = await supabase
-          .from('users')
-          .select('username')
-          .limit(5);
+        .select('username')
+        .limit(10);
         
-        console.log('Sample users in database:', sampleUsers);
-        toast.error('User not found');
-        return;
-      }
-      
-      // Rest of your function remains the same...
-    } catch (err) {
-      console.error('Error sending friend request:', err);
-      toast.error('Failed to send friend request');
-    } finally {
-      setIsAdding(false);
+      console.log('Available users:', availableUsers);
+      toast.error('User not found. Try one of the available users.');
+      return;
+    }
+    
+    const success = await sendFriendRequest(foundUser.id);
+    
+    if (success) {
+      toast.success(`Friend request sent to ${foundUser.username}`);
+      setFriendUsername('');
     }
   };
   
