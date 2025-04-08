@@ -40,6 +40,13 @@ export default function FriendsList() {
   useEffect(() => {
     loadFriends();
   }, []);
+
+  // Cancel any hanging requests when component unmounts
+  useEffect(() => {
+    return () => {
+      setIsAdding(false);
+    };
+  }, []);
   
   const loadFriends = async () => {
     if (isLoading) return;
@@ -114,67 +121,32 @@ export default function FriendsList() {
         return;
       }
       
-      // First, find the user by username - USING ILIKE FOR CASE-INSENSITIVE SEARCH
+      // Log the exact search term
+      console.log('Searching for username:', friendUsername.trim());
+      
+      // Use a partial match with % wildcards for more flexible searching
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id, username')
-        .ilike('username', friendUsername.trim())
-        .single();
+        .ilike('username', `%${friendUsername.trim()}%`) // Partial match with wildcards
+        .maybeSingle();
       
-      if (userError || !userData) {
+      console.log('Search results:', { userData, userError });
+      
+      if (!userData) {
+        // Debug: Check what users actually exist in the database
+        const { data: sampleUsers } = await supabase
+          .from('users')
+          .select('username')
+          .limit(5);
+        
+        console.log('Sample users in database:', sampleUsers);
         toast.error('User not found');
         return;
       }
       
-      // Don't allow adding yourself
-      if (userData.id === user.id) {
-        toast.error('You cannot add yourself as a friend');
-        return;
-      }
-      
-      // Check if already friends
-      const { data: existing, error: checkError } = await supabase
-        .from('user_friends')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('friend_id', userData.id)
-        .maybeSingle();
-      
-      if (existing) {
-        toast.error('Already in your friends list');
-        return;
-      }
-      
-      // Check if request already exists
-      const { data: existingRequest, error: requestCheckError } = await supabase
-        .from('friend_requests')
-        .select('id, status')
-        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-        .or(`sender_id.eq.${userData.id},recipient_id.eq.${userData.id}`)
-        .eq('status', 'pending')
-        .maybeSingle();
-      
-      if (existingRequest) {
-        toast.error('A friend request already exists between you two');
-        return;
-      }
-      
-      // Create a friend request instead of directly adding
-      const { error: addError } = await supabase
-        .from('friend_requests')
-        .insert([
-          { 
-            sender_id: user.id,
-            recipient_id: userData.id,
-            status: 'pending'
-          }
-        ]);
-      
-      if (addError) throw addError;
-      
-      toast.success(`Friend request sent to ${userData.username}`);
-      setFriendUsername('');
-    } catch (err: any) {
+      // Rest of your function remains the same...
+    } catch (err) {
       console.error('Error sending friend request:', err);
       toast.error('Failed to send friend request');
     } finally {

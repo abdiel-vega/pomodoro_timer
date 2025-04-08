@@ -29,15 +29,16 @@ interface FriendRequest {
 
 // Proper interface for the joined data structure
 interface RequestWithSender extends FriendRequest {
-    sender?: {
-      username: string | null;
-      profile_picture: string | null;
-    };
-    recipient?: {
-      username: string | null;
-      profile_picture: string | null;
-    };
-  }
+  sender: {
+    username: string | null;
+    profile_picture: string | null;
+  } | null; // Note: it's an object, not an array
+  
+  recipient: {
+    username: string | null;
+    profile_picture: string | null;
+  } | null;
+}
 
 export default function FriendRequests() {
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([]);
@@ -89,14 +90,22 @@ export default function FriendRequests() {
       
       if (sentError) throw sentError;
       
-      const formattedReceivedRequests = receivedData.map((request: RequestWithSender) => ({
-        ...request,
+      const formattedReceivedRequests = receivedData.map((request: any) => ({
+        id: request.id,
+        sender_id: request.sender_id,
+        recipient_id: request.recipient_id,
+        status: request.status,
+        created_at: request.created_at,
         sender_username: request.sender?.username || null,
         sender_profile_picture: request.sender?.profile_picture || null,
       }));
       
-      const formattedSentRequests = sentData.map((request: RequestWithSender) => ({
-        ...request,
+      const formattedSentRequests = sentData.map((request: any) => ({
+        id: request.id,
+        sender_id: request.sender_id,
+        recipient_id: request.recipient_id,
+        status: request.status,
+        created_at: request.created_at,
         recipient_username: request.recipient?.username || null,
         recipient_profile_picture: request.recipient?.profile_picture || null,
       }));      
