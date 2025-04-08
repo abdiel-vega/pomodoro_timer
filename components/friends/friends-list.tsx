@@ -114,6 +114,8 @@ export default function FriendsList() {
       toast.error('Please enter a username');
       return;
     }
+
+    console.log("Attempting to find user:", friendUsername);
     
     const foundUser = await searchUser(friendUsername);
     
@@ -125,7 +127,20 @@ export default function FriendsList() {
         .limit(10);
         
       console.log('Available users:', availableUsers);
-      toast.error('User not found. Try one of the available users.');
+      toast.error('User not found');
+      return;
+    }
+
+    if (!foundUser) {
+      // Show ALL users in the database (not just 10)
+      const { data: allUsers } = await supabase
+        .from('users')
+        .select('id, username');
+        
+      const usernames = allUsers?.map(u => u.username).join(', ');
+      console.log('All available users:', usernames);
+      
+      toast.error(`User "${friendUsername}" not found. Try one of these: ${usernames || 'None found'}`);
       return;
     }
     
@@ -193,7 +208,7 @@ export default function FriendsList() {
           {/* Friends List */}
           {isLoading ? (
             <div className="flex justify-center py-6">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
             </div>
           ) : friends.length > 0 ? (
             <div className="space-y-3">

@@ -206,7 +206,7 @@ export default function FriendRequests() {
           Requests
           {totalRequests > 0 && (
             <Badge
-              variant="destructive"
+              variant="default"
               className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 p-0"
             >
               {totalRequests}
@@ -220,7 +220,7 @@ export default function FriendRequests() {
             <TabsTrigger value="received" className="relative">
               Received
               {receivedRequests.length > 0 && (
-                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-accent-foreground">
                   {receivedRequests.length}
                 </span>
               )}
@@ -238,12 +238,12 @@ export default function FriendRequests() {
           <TabsContent value="received" className="max-h-80 overflow-y-auto">
             {isLoading ? (
               <div className="flex justify-center py-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-primary"></div>
+                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
               </div>
             ) : receivedRequests.length > 0 ? (
               <div className="space-y-2 py-2">
                 {receivedRequests.map(request => (
-                  <div key={request.id} className="flex items-center justify-between p-2 bg-muted/40 rounded-md">
+                  <div key={request.id} className="flex items-center justify-between p-2 bg-card rounded-md">
                     <div className="flex items-center gap-2">
                       <ProfileImage
                         src={request.sender_profile_picture || null}
@@ -287,7 +287,7 @@ export default function FriendRequests() {
           <TabsContent value="sent" className="max-h-80 overflow-y-auto">
             {isLoading ? (
               <div className="flex justify-center py-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-primary"></div>
+                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
               </div>
             ) : sentRequests.length > 0 ? (
               <div className="space-y-2 py-2">

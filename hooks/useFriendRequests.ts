@@ -35,29 +35,53 @@ export function useFriendRequests() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error('Authentication required');
 
+      console.log('Current user:', user.id);
       console.log('Searching for username:', username.trim());
 
-      // Search with exact match first, then try partial match if needed
-      const { data: userData } = await supabase
+      // Get your own username first
+      const { data: currentUser } = await supabase
         .from('users')
-        .select('id, username')
-        .ilike('username', username.trim())
-        .neq('id', user.id) // Exclude current user
-        .maybeSingle();
+        .select('username')
+        .eq('id', user.id)
+        .single();
 
-      if (!userData) {
-        // Try a more flexible search
-        const { data: flexibleMatch } = await supabase
-          .from('users')
-          .select('id, username')
-          .ilike('username', `%${username.trim()}%`)
-          .neq('id', user.id)
-          .maybeSingle();
+      console.log('Your username:', currentUser?.username);
 
-        return flexibleMatch;
+      if (currentUser?.username === username.trim()) {
+        console.log('Cannot add yourself as friend');
+        return null;
       }
 
-      return userData;
+      // Search with exact match using proper filter syntax
+      const { data: exactMatch, error } = await supabase
+        .from('users')
+        .select('id, username')
+        .eq('username', username.trim()) // Use exact match with eq()
+        .maybeSingle();
+
+      if (error) {
+        console.error('Search error:', error);
+      }
+
+      if (exactMatch) {
+        console.log('Found exact match:', exactMatch);
+        return exactMatch;
+      }
+
+      // Try partial match as fallback
+      const { data: partialMatch, error: partialError } = await supabase
+        .from('users')
+        .select('id, username')
+        .like('username', `%${username.trim()}%`) // Use LIKE with % wildcards
+        .not('id', 'eq', user.id) // Exclude yourself
+        .maybeSingle();
+
+      if (partialError) {
+        console.error('Partial search error:', partialError);
+      }
+
+      console.log('Search result:', partialMatch);
+      return partialMatch;
     } catch (error) {
       console.error('Search error:', error);
       return null;
