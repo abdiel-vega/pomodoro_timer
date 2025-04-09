@@ -9,7 +9,7 @@ import {
   DialogHeader, 
   DialogTitle
 } from '@/components/ui/dialog';
-import { UserPlus, RefreshCcw, Clock, CheckSquare, Flame, Users } from 'lucide-react';
+import { UserPlus, RefreshCcw, Clock, CheckSquare, Flame, Users, Sparkle, Sparkles } from 'lucide-react';
 import ProfileImage from '@/components/profile-image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -250,21 +250,21 @@ export default function FriendsList() {
       
       {/* Friend Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-card">
           <DialogHeader>
-            <DialogTitle>{selectedFriend?.username}</DialogTitle>
+            <DialogTitle className='text-foreground'>Friend Profile</DialogTitle>
           </DialogHeader>
           
           {selectedFriend && (
             <div className="py-4">
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-4 mb-6 p-2 rounded-md bg-muted">
                 <ProfileImage 
                   src={selectedFriend.profile_picture} 
                   alt={selectedFriend.username} 
                   size={64} 
                 />
                 <div>
-                  <h3 className="font-medium text-lg flex items-center">
+                  <h3 className="font-medium text-lg flex items-center text-accent-foreground">
                     {selectedFriend.username}
                     {selectedFriend.is_premium && (
                       <span className="ml-1 text-yellow-500" title="Premium User">
@@ -276,23 +276,23 @@ export default function FriendsList() {
               </div>
               
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-muted p-3 rounded-md flex flex-col items-center">
-                  <Clock className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Focus Time</span>
-                  <span className="font-bold">{formatTime(selectedFriend.total_focus_time)}</span>
+              <div className="grid grid-cols-3 gap-2 rounded-md bg-muted p-2">
+                <div className="bg-background p-3 rounded-md flex flex-col items-center">
+                  <Clock className="h-5 w-5 mb-1 text-accent-foreground" />
+                  <span className="text-xs text-muted-foreground">Focus Time</span>
+                  <span className="font-bold text-foreground">{formatTime(selectedFriend.total_focus_time)}</span>
                 </div>
                 
-                <div className="bg-muted p-3 rounded-md flex flex-col items-center">
-                  <CheckSquare className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Tasks</span>
-                  <span className="font-bold">{selectedFriend.completed_tasks_count}</span>
+                <div className="bg-background p-3 rounded-md flex flex-col items-center">
+                  <CheckSquare className="h-5 w-5 mb-1 text-accent-foreground" />
+                  <span className="text-xs text-muted-foreground">Tasks</span>
+                  <span className="font-bold text-foreground">{selectedFriend.completed_tasks_count}</span>
                 </div>
                 
-                <div className="bg-muted p-3 rounded-md flex flex-col items-center">
-                  <Flame className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Streak</span>
-                  <span className="font-bold">{selectedFriend.streak_days} days</span>
+                <div className="bg-background p-3 rounded-md flex flex-col items-center">
+                  <Flame className="h-5 w-5 mb-1 text-accent-foreground" />
+                  <span className="text-xs text-muted-foreground">Streak</span>
+                  <span className="font-bold text-foreground">{selectedFriend.streak_days} days</span>
                 </div>
               </div>
             </div>

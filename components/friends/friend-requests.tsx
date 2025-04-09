@@ -124,31 +124,40 @@ export default function FriendRequests() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
-      // Start a transaction
-      // 1. Update the request status to 'accepted'
+      // Start a transaction - get the request details first
       const { data: requestData, error: requestError } = await supabase
         .from('friend_requests')
-        .update({ status: 'accepted' })
+        .select('sender_id, recipient_id')
         .eq('id', requestId)
-        .select('sender_id')
         .single();
       
       if (requestError) throw requestError;
       
-      // 2. Add friend relationship
+      // Update the request status
+      const { error: updateError } = await supabase
+        .from('friend_requests')
+        .update({ status: 'accepted' })
+        .eq('id', requestId);
+      
+      if (updateError) throw updateError;
+      
+      // Add friend relationship with better error handling
       const { error: friendError } = await supabase
         .from('user_friends')
         .insert([
           { user_id: user.id, friend_id: requestData.sender_id },
-          { user_id: requestData.sender_id, friend_id: user.id } // Add bidirectional relationship
+          { user_id: requestData.sender_id, friend_id: user.id }
         ]);
       
-      if (friendError) throw friendError;
+      if (friendError) {
+        console.error('Failed to create friendship:', friendError.message);
+        throw friendError;
+      }
       
       // Update UI
       setReceivedRequests(prev => prev.filter(req => req.id !== requestId));
       toast.success('Friend request accepted');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error accepting friend request:', err);
       toast.error('Failed to accept request');
     }

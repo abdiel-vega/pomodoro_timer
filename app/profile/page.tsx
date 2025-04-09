@@ -579,7 +579,7 @@ export default function ProfilePage() {
               
               <div className="bg-background p-3 rounded-md shadow-sm flex flex-col items-center">
                 <Flame className="h-5 w-5 mb-2 text-accent-foreground" />
-                <span className="text-xs text-muted-foreground">Current Streak</span>
+                <span className="text-xs text-foreground">Current Streak</span>
                 <span className="text-xl font-bold">{user.streak_days || 0} days</span>
               </div>
             </div>

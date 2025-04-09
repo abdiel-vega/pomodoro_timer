@@ -99,44 +99,48 @@ export function useFriendRequests() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error('Authentication required');
 
-      // Check if already friends or request exists
-      const { data: existing } = await supabase
-        .from('user_friends')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('friend_id', recipientId)
-        .maybeSingle();
-
-      if (existing) {
-        toast.error('Already in your friends list');
-        return false;
-      }
-
-      // Check existing requests
+      // Check for ANY existing request between these users (in either direction)
       const { data: existingRequest } = await supabase
         .from('friend_requests')
-        .select('id')
-        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-        .or(`sender_id.eq.${recipientId},recipient_id.eq.${recipientId}`)
-        .eq('status', 'pending')
+        .select('id, status')
+        .or(
+          `and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id})`
+        )
         .maybeSingle();
 
+      // Handle existing requests with clear messaging
       if (existingRequest) {
-        toast.error('A friend request already exists between you two');
+        if (existingRequest.status === 'pending') {
+          toast.error('A friend request already exists between you two');
+        } else if (existingRequest.status === 'accepted') {
+          toast.error('You are already friends with this user');
+        } else {
+          toast.error('Cannot send request at this time');
+        }
         return false;
       }
 
-      // Send request
-      const { error } = await supabase.from('friend_requests').insert([
-        {
-          sender_id: user.id,
-          recipient_id: recipientId,
-          status: 'pending',
-        },
-      ]);
+      // Send the friend request with try/catch for constraint errors
+      try {
+        const { error } = await supabase.from('friend_requests').insert([
+          {
+            sender_id: user.id,
+            recipient_id: recipientId,
+            status: 'pending',
+          },
+        ]);
 
-      if (error) throw error;
-      return true;
+        if (error) throw error;
+        return true;
+      } catch (insertError: any) {
+        // Handle the unique constraint violation specifically
+        if (insertError.code === '23505') {
+          toast.error('A friend request already exists');
+        } else {
+          throw insertError; // Re-throw other errors
+        }
+        return false;
+      }
     } catch (error) {
       console.error('Request error:', error);
       return false;
