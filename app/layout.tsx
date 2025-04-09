@@ -15,7 +15,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon, Sparkles, Users } from 'lucide-react';
+import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon, Sparkles, Users, Trophy } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import './globals.css';
 import { SignOutButton } from '@/components/sign-out-button';
@@ -188,8 +188,8 @@ export default function RootLayout({
                       </Link>
                     </Button>
                     <Button variant="ghost" asChild>
-                      <Link href="/friends" className="flex items-center text-foreground hover:text-accent-foreground">
-                        <Users className="mr-2 h-4 w-4" /> Friends
+                      <Link href="/leaderboard" className="flex items-center text-foreground hover:text-accent-foreground">
+                        <Trophy className="mr-2 h-4 w-4" /> Leaderboard
                       </Link>
                     </Button>
                     <Button variant="ghost" asChild>

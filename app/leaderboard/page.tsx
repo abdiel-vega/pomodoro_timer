@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -9,25 +10,15 @@ import ProfileImage from '@/components/profile-image';
 import { Clock, CheckSquare, Trophy, Users, Globe } from 'lucide-react';
 
 export default function LeaderboardPage() {
-  const [focusLeaders, setFocusLeaders] = useState<LeaderboardUser[]>([]);
-  const [taskLeaders, setTaskLeaders] = useState<LeaderboardUser[]>([]);
-  const [friendFocusLeaders, setFriendFocusLeaders] = useState<LeaderboardUser[]>([]);
-  const [friendTaskLeaders, setFriendTaskLeaders] = useState<LeaderboardUser[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeLeaderboard, setActiveLeaderboard] = useState('global');
+
   const supabase = createClient();
   
-  useEffect(() => {
-    loadLeaderboards();
-  }, []);
-  
-  const loadLeaderboards = async () => {
-    setIsLoading(true);
+  const fetchLeaderboardData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       // Fetch global leaderboards
-      // In the loadLeaderboards function in the updated-leaderboard.tsx
       const [focusData, taskData] = await Promise.all([
         supabase.from('users')
           .select('id, username, profile_picture, total_focus_time, streak_days, is_premium')
@@ -39,23 +30,30 @@ export default function LeaderboardPage() {
           .limit(10)
       ]);
 
-      // Use proper type assertion
-      setFocusLeaders((focusData.data || []) as LeaderboardUser[]);
-      setTaskLeaders((taskData.data || []) as LeaderboardUser[]);
+      const result: {
+        focusLeaders: LeaderboardUser[];
+        taskLeaders: LeaderboardUser[];
+        friendFocusLeaders: LeaderboardUser[];
+        friendTaskLeaders: LeaderboardUser[];
+      } = {
+        focusLeaders: (focusData.data || []) as LeaderboardUser[],
+        taskLeaders: (taskData.data || []) as LeaderboardUser[],
+        friendFocusLeaders: [],
+        friendTaskLeaders: []
+      };
       
       // If user is authenticated, fetch friends leaderboards
       if (user) {
-        // Get list of friends first
+        // Get list of friends
         const { data: friendsData } = await supabase
           .from('user_friends')
           .select('friend_id')
           .eq('user_id', user.id);
         
         if (friendsData && friendsData.length > 0) {
-          // Extract friend IDs
           const friendIds = friendsData.map(f => f.friend_id);
           
-          // Also include current user in the friends leaderboard
+          // Include current user
           friendIds.push(user.id);
           
           // Fetch friend leaderboards
@@ -70,16 +68,32 @@ export default function LeaderboardPage() {
               .order('completed_tasks_count', { ascending: false })
           ]);
           
-          setFriendFocusLeaders(friendFocusData.data as LeaderboardUser[] || []);
-          setFriendTaskLeaders(friendTaskData.data as LeaderboardUser[] || []);
+          result.friendFocusLeaders = friendFocusData.data as LeaderboardUser[] || [];
+          result.friendTaskLeaders = friendTaskData.data as LeaderboardUser[] || [];
         }
       }
+      
+      return result;
     } catch (error) {
       console.error('Error loading leaderboards:', error);
-    } finally {
-      setIsLoading(false);
+      return {
+        focusLeaders: [],
+        taskLeaders: [],
+        friendFocusLeaders: [],
+        friendTaskLeaders: []
+      };
     }
-  };
+  }, [supabase]);
+
+  // Use the hook
+  const { isLoading, data, refresh: loadLeaderboards } = useVisibilityAwareLoading(fetchLeaderboardData);
+
+  // Extract state from the data
+  const focusLeaders = data?.focusLeaders || [];
+  const taskLeaders = data?.taskLeaders || [];
+  const friendFocusLeaders = data?.friendFocusLeaders || [];
+  const friendTaskLeaders = data?.friendTaskLeaders || []; 
+
   
   const formatTime = (seconds: number = 0): string => {
     const hours = Math.floor(seconds / 3600);

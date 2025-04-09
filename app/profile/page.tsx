@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,10 +20,9 @@ export default function ProfilePage() {
   const [username, setUsername] = useState('');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [croppedImageFile, setCroppedImageFile] = useState<File | null>(null);
+  const [error, setError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,43 +41,46 @@ export default function ProfilePage() {
   const router = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !authUser) {
-          router.push('/sign-in');
-          return;
-        }
-        
-        // Fetch the user profile from the users table
-        const { data: userData, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', authUser.id)
-          .single();
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
           
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          setError('Failed to load profile');
-          setIsLoading(false);
-          return;
-        }
-        
-        setUser(userData);
-        setUsername(userData.username || '');
-        setProfilePicture(userData.profile_picture);
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Error in profile page:', err);
-        setError('An unexpected error occurred');
-        setIsLoading(false);
+      if (authError || !authUser) {
+        router.push('/sign-in');
+        throw new Error('Authentication required');
       }
-    };
+      
+      // Fetch the user profile from the users table
+      const { data: userData, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+        
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        throw new Error('Failed to load profile');
+      }
     
-    fetchUserProfile();
-  }, [router, supabase]);
+      return userData;
+    } catch (error) {
+      // Rethrow as proper Error object
+      if (error instanceof Error) throw error;
+      throw new Error(String(error));
+    }
+  }, [supabase, router]);  
+  
+  // Use the hook
+  const { isLoading, data: userData, error: profileError } = useVisibilityAwareLoading(fetchUserProfile);
+  
+  // Set derived state based on the loaded user data
+  useEffect(() => {
+    if (userData) {
+      setUser(userData);
+      setUsername(userData.username || '');
+      setProfilePicture(userData.profile_picture);
+    }
+  }, [userData]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PremiumPurchase from '@/components/premium/premium-purchase';
@@ -15,18 +16,16 @@ import Link from 'next/link';
 
 export default function PremiumPage() {
   const { isPremium, refreshUserSettings } = usePomodoroTimer();
-  const [isLoading, setIsLoading] = useState(true);
   
-  useEffect(() => {
-    // Refresh premium status when the component mounts
-    const loadPremiumStatus = async () => {
-      setIsLoading(true);
-      await refreshUserSettings();
-      setIsLoading(false);
-    };
-    
-    loadPremiumStatus();
-  }, [refreshUserSettings]);
+  const fetchPremiumStatus = useCallback(async () => {
+    // Return true or false based on premium status
+    await refreshUserSettings();
+    return isPremium;
+  }, [refreshUserSettings, isPremium]);
+  
+  // Use the hook
+  const { isLoading, refresh: refreshPremiumStatus } = useVisibilityAwareLoading(fetchPremiumStatus);
+  
 
   if (isLoading) {
     return (

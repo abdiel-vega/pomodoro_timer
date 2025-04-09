@@ -8,8 +8,16 @@ import { User } from '@/types/user';
 import { Button } from '@/components/ui/button';
 import ProfileImage from './profile-image';
 import { 
-  UserIcon, SettingsIcon, LogOut, Sparkles, Clock, CheckSquare, Trophy 
+  UserIcon, SettingsIcon, LogOut, Sparkles, Clock, CheckSquare, Users 
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EVENTS, ProfileUpdatePayload } from '@/utils/events';
 
@@ -28,6 +36,7 @@ interface UserProfileProps {
 export default function UserProfile({ user }: UserProfileProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [showSignOutConfirmation, setShowSignOutConfirmation] = useState(false);
   
   // Initialize with safe defaults when user might be null
   const [profileData, setProfileData] = useState<User>({
@@ -98,6 +107,10 @@ export default function UserProfile({ user }: UserProfileProps) {
     } catch (error) {
       console.error('Error fetching profile data:', error);
     }
+  };
+
+  const requestSignOut = () => {
+    setShowSignOutConfirmation(true);
   };
   
   const handleSignOut = async () => {
@@ -182,6 +195,13 @@ export default function UserProfile({ user }: UserProfileProps) {
                 Profile
               </Link>
             </Button>
+
+            <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
+              <Link href="/friends">
+                <Users className="mr-2 h-4 w-4" />
+                Friends
+              </Link>
+            </Button>
             
             {profileData.is_premium ? (
               <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
@@ -198,27 +218,49 @@ export default function UserProfile({ user }: UserProfileProps) {
                 </Link>
               </Button>
             )}
-            
-            <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
-              <Link href="/leaderboard">
-                <Trophy className="mr-2 h-4 w-4" />
-                Leaderboard
-              </Link>
-            </Button>
           </div>
           
           <Button 
             variant="destructive" 
             size="sm" 
             className="w-full justify-start"
-            onClick={handleSignOut}
+            onClick={requestSignOut}
             disabled={isSigningOut}
           >
             <LogOut className="mr-2 h-4 w-4" />
             {isSigningOut ? 'Signing out...' : 'Sign out'}
           </Button>
         </div>
+        <Dialog open={showSignOutConfirmation} onOpenChange={setShowSignOutConfirmation}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Sign Out Confirmation</DialogTitle>
+              <DialogDescription>
+                Do you wish to continue signing out?
+              </DialogDescription>
+            </DialogHeader>
+            
+            <DialogFooter className="flex flex-row justify-end gap-2 sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowSignOutConfirmation(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                className='border border-destructive-foreground bg-background'
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+              >
+                {isSigningOut ? "Signing out..." : "Sign Out"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </PopoverContent>
-    </Popover>
+    </Popover>    
   );
 }

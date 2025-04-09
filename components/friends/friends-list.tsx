@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 import { createClient } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { 
@@ -29,21 +30,14 @@ interface Friend {
 }
 
 export default function FriendsList() {
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [friendUsername, setFriendUsername] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   
-  // Use our custom hook
-  const { isSearching, isSubmitting, searchUser, sendFriendRequest } = useFriendRequests();
-  
   const supabase = createClient();
-  
-  useEffect(() => {
-    loadFriends();
-  }, []);
+  const { searchUser, sendFriendRequest } = useFriendRequests();
+
 
   // Cancel any hanging requests when component unmounts
   useEffect(() => {
@@ -52,20 +46,14 @@ export default function FriendsList() {
     };
   }, []);
   
-  const loadFriends = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
-    
+  const fetchFriends = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        setFriends([]);
-        return;
+        return [];
       }
       
-      // Use a simpler query strategy with two separate queries
-      // First, get friend IDs the user has added
       const { data: friendIdsData, error: friendIdsError } = await supabase
         .from('user_friends')
         .select('friend_id')
@@ -74,14 +62,11 @@ export default function FriendsList() {
       if (friendIdsError) throw friendIdsError;
       
       if (!friendIdsData || friendIdsData.length === 0) {
-        setFriends([]);
-        return;
+        return [];
       }
       
-      // Extract just the friend IDs
       const friendIds = friendIdsData.map(row => row.friend_id);
       
-      // Then get user details for those friends
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
@@ -89,8 +74,7 @@ export default function FriendsList() {
       
       if (usersError) throw usersError;
       
-      // Now map the user data to our Friend type with safe defaults
-      const friendsList = usersData?.map(userData => ({
+      return usersData?.map(userData => ({
         id: userData.id,
         username: userData.username || 'Anonymous',
         profile_picture: userData.profile_picture,
@@ -99,16 +83,14 @@ export default function FriendsList() {
         streak_days: userData.streak_days || 0,
         is_premium: !!userData.is_premium
       })) || [];
-      
-      setFriends(friendsList);
-    } catch (err: any) {
-      console.error('Friend loading error:', err?.message || 'Unknown error', err);
-      toast.error('Failed to load friends');
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      console.error('Friend loading error:', err);
+      return [];
     }
-  };
+  }, [supabase]);
   
+  const { isLoading, data: friends, refresh: loadFriends } = useVisibilityAwareLoading<Friend[]>(fetchFriends);
+
   const handleAddFriend = async () => {
     if (!friendUsername.trim()) {
       toast.error('Please enter a username');
@@ -210,9 +192,9 @@ export default function FriendsList() {
             <div className="flex justify-center py-6">
               <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
             </div>
-          ) : friends.length > 0 ? (
+          ) : friends?.length ? (
             <div className="space-y-3">
-              {friends.map(friend => (
+              {friends.map(friend => (          
                 <div
                   key={friend.id} 
                   className="flex items-center p-3 bg-background rounded-md hover:bg-muted cursor-pointer transition-colors"
