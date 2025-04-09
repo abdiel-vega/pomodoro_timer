@@ -67,7 +67,7 @@ export default function PremiumPurchase() {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <p className="text-2xl font-bold">$7.99</p>
+          <p className="text-2xl font-bold">$2.99</p>
           <p className="text-sm text-muted-foreground">One-time payment, no subscriptions</p>
           
           <div className="space-y-3">
@@ -104,7 +104,7 @@ export default function PremiumPurchase() {
           onClick={handlePurchase}
           disabled={isProcessing}
         >
-          {isProcessing ? "Processing..." : "Purchase Premium ($7.99)"}
+          {isProcessing ? "Processing..." : "Purchase Premium ($2.99)"}
         </Button>
       </CardFooter>
     </Card>

@@ -321,7 +321,7 @@ export default function ProductivityHeatmap() {
             {renderLegend()}
             
             <div className="mt-4 flex justify-center">
-              <Button variant="ghost" size="sm" onClick={goToToday}>
+              <Button variant="ghost" size="sm" onClick={goToToday} className='hover:bg-background'>
                 Today
               </Button>
             </div>

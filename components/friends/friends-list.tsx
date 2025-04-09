@@ -215,7 +215,7 @@ export default function FriendsList() {
               {friends.map(friend => (
                 <div
                   key={friend.id} 
-                  className="flex items-center p-3 border border-muted rounded-md hover:bg-muted cursor-pointer transition-colors"
+                  className="flex items-center p-3 bg-background rounded-md hover:bg-muted cursor-pointer transition-colors"
                   onClick={() => handleFriendClick(friend)}
                 >
                   <ProfileImage 
@@ -257,7 +257,7 @@ export default function FriendsList() {
           
           {selectedFriend && (
             <div className="py-4">
-              <div className="flex items-center gap-4 mb-6 p-2 rounded-md bg-muted">
+              <div className="flex items-center gap-4 mb-6 p-2 rounded-md bg-background hover:bg-muted transition-colors">
                 <ProfileImage 
                   src={selectedFriend.profile_picture} 
                   alt={selectedFriend.username} 

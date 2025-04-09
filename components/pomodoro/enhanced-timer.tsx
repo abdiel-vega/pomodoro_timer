@@ -5,7 +5,6 @@ import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { testNotifications } from '@/utils/notifications';
 import { Sparkles } from 'lucide-react';
 import { PlayIcon, PauseIcon, RotateCcwIcon, BrainIcon, CoffeeIcon, CupSodaIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -559,14 +558,6 @@ export default function EnhancedTimer() {
             >
               <RotateCcwIcon className="h-5 w-5 text-accent-foreground" />
             </Button>
-            <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={testNotifications} 
-            className="mt-2"
-          >
-            Test Notification
-          </Button>
           </div>
           
           {/* Timer Type Selection */}

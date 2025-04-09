@@ -92,7 +92,7 @@ export default function LeaderboardPage() {
   
   return (
     <div className="container mx-auto max-w-3xl py-8">
-      <h1 className="text-3xl font-bold mb-6">Leaderboard</h1>
+      <h1 className="text-3xl font-bold mb-6 text-foreground">Leaderboard</h1>
       
       <Tabs defaultValue="global" value={activeLeaderboard} onValueChange={setActiveLeaderboard}>
         <TabsList className="w-full mb-6">
@@ -131,10 +131,10 @@ export default function LeaderboardPage() {
                 <CardContent>
                   {isLoading ? (
                     <div className="flex justify-center py-8">
-                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
                     </div>
                   ) : (
-                    <div className="divide-y">
+                    <div className="divide-y divide-muted">
                       {focusLeaders.map((user, index) => (
                         <div key={user.id} className="py-3 flex items-center">
                           <div className="w-8 text-center font-bold text-lg">
@@ -186,10 +186,10 @@ export default function LeaderboardPage() {
                 <CardContent>
                   {isLoading ? (
                     <div className="flex justify-center py-8">
-                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
                     </div>
                   ) : (
-                    <div className="divide-y">
+                    <div className="divide-y divide-muted">
                       {taskLeaders.map((user, index) => (
                         <div key={user.id} className="py-3 flex items-center">
                           <div className="w-8 text-center font-bold text-lg">
@@ -257,10 +257,10 @@ export default function LeaderboardPage() {
                 <CardContent>
                   {isLoading ? (
                     <div className="flex justify-center py-8">
-                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
                     </div>
                   ) : friendFocusLeaders.length > 0 ? (
-                    <div className="divide-y">
+                    <div className="divide-y divide-muted">
                       {friendFocusLeaders.map((user, index) => (
                         <div key={user.id} className="py-3 flex items-center">
                           <div className="w-8 text-center font-bold text-lg">
@@ -311,10 +311,10 @@ export default function LeaderboardPage() {
                 <CardContent>
                   {isLoading ? (
                     <div className="flex justify-center py-8">
-                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
                     </div>
                   ) : friendTaskLeaders.length > 0 ? (
-                    <div className="divide-y">
+                    <div className="divide-y divide-muted">
                       {friendTaskLeaders.map((user, index) => (
                         <div key={user.id} className="py-3 flex items-center">
                           <div className="w-8 text-center font-bold text-lg">
