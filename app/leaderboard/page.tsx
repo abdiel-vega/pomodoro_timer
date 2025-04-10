@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LeaderboardUser } from '@/types/user';
 import ProfileImage from '@/components/profile-image';
-import RankedProfileImage from '@/components/ranked-pfp';
 import { Clock, CheckSquare, Trophy, Users, Globe } from 'lucide-react';
 
 export default function LeaderboardPage() {
@@ -104,6 +103,77 @@ export default function LeaderboardPage() {
       ? `${hours}h ${minutes}m` 
       : `${minutes}m`;
   };
+
+  // Function to render rank indicator (crown for top 3)
+  const renderRankIndicator = (rank: number) => {
+    if (rank <= 3) {
+      // Crown for top 3 with rank number inside
+      let crownColor: string;
+      let crownFill: string;
+      
+      if (rank === 1) {
+        crownColor = "#FFF2C0"; // Gold
+        crownFill = "#FFD30F";
+      } else if (rank === 2) {
+        crownColor = "#EEEEEE"; // Silver
+        crownFill = "#CBCBCB";
+      } else {
+        crownColor = "#FFB06B"; // Bronze
+        crownFill = "#FF9436";
+      }
+      
+      return (
+        <div className="relative h-10 w-10 flex items-center justify-center mr-0.5">
+          {/* Crown with border effect */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={crownColor}
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="absolute inset-0 m-auto drop-shadow-md"
+          >
+            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+          </svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill={crownFill}
+            stroke={crownFill}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="absolute inset-0 m-auto drop-shadow-sm"
+          >
+            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+          </svg>
+          
+          {/* Rank number positioned in center of crown */}
+          <span 
+            className="absolute inset-0 flex items-center justify-center text-xs font-bold"
+            style={{ marginBottom:'2px', color: rank === 1 ? '#8B6914' : rank === 2 ? '#6F6F6F' : '#8B4513' }}
+          >
+            {rank}
+          </span>
+        </div>
+      );
+    } else {
+      // Regular number for rank 4+
+      return (
+        <div className="h-10 w-10 flex items-center justify-center mr-0.5">
+          <span className="text-sm font-semibold">
+            {rank}
+          </span>
+        </div>
+      );
+    }
+  };  
   
   return (
     <div className="container mx-auto max-w-3xl py-8">
@@ -139,7 +209,7 @@ export default function LeaderboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+                    <Trophy className="mr-2 mt-1 h-6 w-6 text-accent-foreground" />
                     Top Focused Users
                   </CardTitle>
                 </CardHeader>
@@ -152,25 +222,15 @@ export default function LeaderboardPage() {
                     <div className="divide-y divide-muted">
                       {focusLeaders.map((user, index) => (
                         <div key={user.id} className="py-3 flex items-center">
-                          {/* Rank indicator with proper styling */}
-                          <div className="w-8 text-center font-bold text-lg">
-                            {index < 3 ? (
-                              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full 
-                                ${index === 0 ? 'bg-amber-100 text-amber-700' : 
-                                  index === 1 ? 'bg-gray-100 text-gray-700' : 
-                                  'bg-orange-100 text-orange-700'}`}>
-                                {index + 1}
-                              </span>
-                            ) : (
-                              index + 1
-                            )}
+                          {/* Rank indicator (crown for top 3) */}
+                          <div className="flex items-center">
+                            {renderRankIndicator(index + 1)}
+                            <ProfileImage 
+                              src={user.profile_picture} 
+                              alt={user.username || 'User'} 
+                              size={40}
+                            />
                           </div>
-                          <RankedProfileImage 
-                            src={user.profile_picture} 
-                            alt={user.username || 'User'} 
-                            size={40}
-                            rank={index < 3 ? index + 1 : undefined}
-                          />
                           <div className="ml-3 flex-1">
                             <div className="font-medium flex items-center">
                               {user.username || 'Anonymous'}
@@ -205,7 +265,7 @@ export default function LeaderboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+                    <Trophy className="mr-2 mt-1 h-6 w-6 text-accent-foreground" />
                     Top Task Completers
                   </CardTitle>
                 </CardHeader>
@@ -218,27 +278,15 @@ export default function LeaderboardPage() {
                     <div className="divide-y divide-muted">
                       {taskLeaders.map((user, index) => (
                         <div key={user.id} className="py-3 flex items-center">
-                        {/* Rank indicator with proper styling */}
-                        <div className="w-8 text-center font-bold text-lg">
-                          {index < 3 ? (
-                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full 
-                              ${index === 0 ? 'bg-amber-100 text-amber-700' : 
-                                index === 1 ? 'bg-gray-100 text-gray-700' : 
-                                'bg-orange-100 text-orange-700'}`}>
-                              {index + 1}
-                            </span>
-                          ) : (
-                            index + 1
-                          )}
-                        </div>
-                        
-                        {/* User profile image with crown if in top 3 */}
-                        <RankedProfileImage 
-                          src={user.profile_picture} 
-                          alt={user.username || 'User'} 
-                          size={40}
-                          rank={index < 3 ? index + 1 : undefined}
-                        />
+                          {/* Rank indicator (crown for top 3) */}
+                          <div className="flex items-center">
+                            {renderRankIndicator(index + 1)}
+                            <ProfileImage 
+                              src={user.profile_picture} 
+                              alt={user.username || 'User'} 
+                              size={40}
+                            />
+                          </div>
                           <div className="ml-3 flex-1">
                             <div className="font-medium flex items-center">
                               {user.username || 'Anonymous'}
@@ -289,7 +337,7 @@ export default function LeaderboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+                    <Trophy className="mr-2 mt-1 h-6 w-6 text-accent-foreground" />
                     Friends Focus Leaderboard
                   </CardTitle>
                 </CardHeader>
@@ -302,27 +350,15 @@ export default function LeaderboardPage() {
                     <div className="divide-y divide-muted">
                       {friendFocusLeaders.map((user, index) => (
                         <div key={user.id} className="py-3 flex items-center">
-                        {/* Rank indicator with proper styling */}
-                        <div className="w-8 text-center font-bold text-lg">
-                          {index < 3 ? (
-                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full 
-                              ${index === 0 ? 'bg-amber-100 text-amber-700' : 
-                                index === 1 ? 'bg-gray-100 text-gray-700' : 
-                                'bg-orange-100 text-orange-700'}`}>
-                              {index + 1}
-                            </span>
-                          ) : (
-                            index + 1
-                          )}
-                        </div>
-                        
-                        {/* User profile image with crown if in top 3 */}
-                        <RankedProfileImage 
-                          src={user.profile_picture} 
-                          alt={user.username || 'User'} 
-                          size={40}
-                          rank={index < 3 ? index + 1 : undefined}
-                        />
+                          {/* Rank indicator (crown for top 3) */}
+                          <div className="flex items-center">
+                            {renderRankIndicator(index + 1)}
+                            <ProfileImage 
+                              src={user.profile_picture} 
+                              alt={user.username || 'User'} 
+                              size={40}
+                            />
+                          </div>
                           <div className="ml-3 flex-1">
                             <div className="font-medium flex items-center">
                               {user.username || 'Anonymous'}
@@ -356,7 +392,7 @@ export default function LeaderboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+                    <Trophy className="mr-2 mt-1 h-6 w-6 text-accent-foreground" />
                     Friends Task Leaderboard
                   </CardTitle>
                 </CardHeader>
@@ -369,27 +405,15 @@ export default function LeaderboardPage() {
                     <div className="divide-y divide-muted">
                       {friendTaskLeaders.map((user, index) => (
                         <div key={user.id} className="py-3 flex items-center">
-                        {/* Rank indicator with proper styling */}
-                        <div className="w-8 text-center font-bold text-lg">
-                          {index < 3 ? (
-                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full 
-                              ${index === 0 ? 'bg-amber-100 text-amber-700' : 
-                                index === 1 ? 'bg-gray-100 text-gray-700' : 
-                                'bg-orange-100 text-orange-700'}`}>
-                              {index + 1}
-                            </span>
-                          ) : (
-                            index + 1
-                          )}
-                        </div>
-                        
-                        {/* User profile image with crown if in top 3 */}
-                        <RankedProfileImage 
-                          src={user.profile_picture} 
-                          alt={user.username || 'User'} 
-                          size={40}
-                          rank={index < 3 ? index + 1 : undefined}
-                        />
+                          {/* Rank indicator (crown for top 3) */}
+                          <div className="flex items-center">
+                            {renderRankIndicator(index + 1)}
+                            <ProfileImage 
+                              src={user.profile_picture} 
+                              alt={user.username || 'User'} 
+                              size={40}
+                            />
+                          </div>
                           <div className="ml-3 flex-1">
                             <div className="font-medium flex items-center">
                               {user.username || 'Anonymous'}
