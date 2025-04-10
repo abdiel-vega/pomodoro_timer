@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon, Sparkles, Users, Trophy } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import './globals.css';
-import { SignOutButton } from '@/components/sign-out-button';
+import PokeNotification from '@/components/poke-notifs';
 import VignetteEffect from '@/components/premium/vignette-effect';
 import UserProfile from '@/components/user-profile';
 
@@ -171,65 +171,66 @@ export default function RootLayout({
       <body className={cn('min-h-screen bg-background font-sans antialiased', fontSans.variable)}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <PomodoroProvider>
-            <VignetteEffect />
-            <div className="flex min-h-screen flex-col">
-              <header className="sticky top-0 z-10 w-full border-b border-accent bg-background non-essential">
-                <div className="container flex h-16 items-center justify-between py-4">
-                  <div className="flex items-center gap-2">
-                    <Link href="/" className="font-bold text-xl text-foreground flex items-center">
-                      <ClockIcon className="mr-2 h-6 w-6" />
-                      <span>Pomodoro</span>
-                    </Link>
-                  </div>
-                  <nav className="flex items-center gap-4">
-                    <Button variant="ghost" asChild>
-                      <Link href="/" className="flex items-center text-foreground hover:text-accent-foreground">
-                        <ClockIcon className="mr-2 h-4 w-4" /> Timer
+            <PokeNotification />
+              <VignetteEffect />
+              <div className="flex min-h-screen flex-col">
+                <header className="sticky top-0 z-10 w-full border-b border-accent bg-background non-essential">
+                  <div className="container flex h-16 items-center justify-between py-4">
+                    <div className="flex items-center gap-2">
+                      <Link href="/" className="font-bold text-xl text-foreground flex items-center">
+                        <ClockIcon className="mr-2 h-6 w-6" />
+                        <span>Pomodoro</span>
                       </Link>
-                    </Button>
-                    <Button variant="ghost" asChild>
-                      <Link href="/leaderboard" className="flex items-center text-foreground hover:text-accent-foreground">
-                        <Trophy className="mr-2 h-4 w-4" /> Leaderboard
-                      </Link>
-                    </Button>
-                    <Button variant="ghost" asChild>
-                      <Link href="/settings" className="flex items-center text-foreground hover:text-accent-foreground">
-                        <SettingsIcon className="mr-2 h-4 w-4" /> Settings
-                      </Link>
-                    </Button>
-                    
-                    {isAuthenticated === null ? (
-                      // Loading state
-                      <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
-                    ) : isAuthenticated ? (
-                      // User is authenticated
-                      <UserProfile user={user} />
-                    ) : (
-                      // User is not authenticated
-                      <Button variant="outline" className='border-foreground' size="sm" asChild>
-                        <Link href="/sign-in" className="flex items-center text-foreground hover:text-accent-foreground">
-                          <LogInIcon className="mr-2 h-4 w-4 text-foreground hover:text-accent-foreground" /> Sign In
+                    </div>
+                    <nav className="flex items-center gap-4">
+                      <Button variant="ghost" asChild>
+                        <Link href="/" className="flex items-center text-foreground hover:text-accent-foreground">
+                          <ClockIcon className="mr-2 h-4 w-4" /> Timer
                         </Link>
                       </Button>
-                    )}
-                  </nav>
-                </div>
-              </header>
-              <main className="flex-1 container py-8">
-                {children}
-              </main>
-              <footer className="border-t border-accent py-6 non-essential">
-                <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-                  <p className="text-sm text-muted-foreground text-center md:text-left">
-                    &copy; {new Date().getFullYear()} pomodoro. all rights reserved.
-                  </p>
-                </div>
-              </footer>
-            </div>
-            <Toaster />
-          </PomodoroProvider>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
-}
+                      <Button variant="ghost" asChild>
+                        <Link href="/leaderboard" className="flex items-center text-foreground hover:text-accent-foreground">
+                          <Trophy className="mr-2 h-4 w-4" /> Leaderboard
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" asChild>
+                        <Link href="/settings" className="flex items-center text-foreground hover:text-accent-foreground">
+                          <SettingsIcon className="mr-2 h-4 w-4" /> Settings
+                        </Link>
+                      </Button>
+                      
+                      {isAuthenticated === null ? (
+                        // Loading state
+                        <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
+                      ) : isAuthenticated ? (
+                        // User is authenticated
+                        <UserProfile user={user} />
+                      ) : (
+                        // User is not authenticated
+                        <Button variant="outline" className='border-foreground' size="sm" asChild>
+                          <Link href="/sign-in" className="flex items-center text-foreground hover:text-accent-foreground">
+                            <LogInIcon className="mr-2 h-4 w-4 text-foreground hover:text-accent-foreground" /> Sign In
+                          </Link>
+                        </Button>
+                      )}
+                    </nav>
+                  </div>
+                </header>
+                <main className="flex-1 container py-8">
+                  {children}
+                </main>
+                <footer className="border-t border-accent py-6 non-essential">
+                  <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
+                    <p className="text-sm text-muted-foreground text-center md:text-left">
+                      &copy; {new Date().getFullYear()} pomodoro. all rights reserved.
+                    </p>
+                  </div>
+                </footer>
+              </div>
+              <Toaster />
+            </PomodoroProvider>
+          </ThemeProvider>
+        </body>
+      </html>
+    );
+  }

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LeaderboardUser } from '@/types/user';
 import ProfileImage from '@/components/profile-image';
+import RankedProfileImage from '@/components/ranked-pfp';
 import { Clock, CheckSquare, Trophy, Users, Globe } from 'lucide-react';
 
 export default function LeaderboardPage() {
@@ -94,6 +95,25 @@ export default function LeaderboardPage() {
   const friendFocusLeaders = data?.friendFocusLeaders || [];
   const friendTaskLeaders = data?.friendTaskLeaders || []; 
 
+  const countUserCrowns = (userId: string) => {
+    let crowns = 0;
+    
+    // Check global focus leaderboard
+    if (focusLeaders.length > 0 && focusLeaders[0].id === userId) crowns++;
+    if (focusLeaders.length > 1 && focusLeaders[1].id === userId) crowns++;
+    if (focusLeaders.length > 2 && focusLeaders[2].id === userId) crowns++;
+    
+    // Check global task leaderboard
+    if (taskLeaders.length > 0 && taskLeaders[0].id === userId) crowns++;
+    if (taskLeaders.length > 1 && taskLeaders[1].id === userId) crowns++;
+    if (taskLeaders.length > 2 && taskLeaders[2].id === userId) crowns++;
+    
+    // Check friend leaderboards (only top position)
+    if (friendFocusLeaders.length > 0 && friendFocusLeaders[0].id === userId) crowns++;
+    if (friendTaskLeaders.length > 0 && friendTaskLeaders[0].id === userId) crowns++;
+    
+    return crowns;
+  };  
   
   const formatTime = (seconds: number = 0): string => {
     const hours = Math.floor(seconds / 3600);
@@ -154,10 +174,12 @@ export default function LeaderboardPage() {
                           <div className="w-8 text-center font-bold text-lg">
                             {index + 1}
                           </div>
-                          <ProfileImage 
+                          <RankedProfileImage 
                             src={user.profile_picture} 
                             alt={user.username || 'User'} 
-                            size={40} 
+                            size={40}
+                            rank={index < 3 ? index + 1 : undefined}
+                            totalCrowns={countUserCrowns(user.id)}
                           />
                           <div className="ml-3 flex-1">
                             <div className="font-medium flex items-center">
@@ -209,10 +231,12 @@ export default function LeaderboardPage() {
                           <div className="w-8 text-center font-bold text-lg">
                             {index + 1}
                           </div>
-                          <ProfileImage 
+                          <RankedProfileImage 
                             src={user.profile_picture} 
                             alt={user.username || 'User'} 
-                            size={40} 
+                            size={40}
+                            rank={index < 3 ? index + 1 : undefined}
+                            totalCrowns={countUserCrowns(user.id)}
                           />
                           <div className="ml-3 flex-1">
                             <div className="font-medium flex items-center">
@@ -280,10 +304,12 @@ export default function LeaderboardPage() {
                           <div className="w-8 text-center font-bold text-lg">
                             {index + 1}
                           </div>
-                          <ProfileImage 
+                          <RankedProfileImage 
                             src={user.profile_picture} 
                             alt={user.username || 'User'} 
-                            size={40} 
+                            size={40}
+                            isFriendTop={index === 0}
+                            totalCrowns={countUserCrowns(user.id)}
                           />
                           <div className="ml-3 flex-1">
                             <div className="font-medium flex items-center">
@@ -334,10 +360,12 @@ export default function LeaderboardPage() {
                           <div className="w-8 text-center font-bold text-lg">
                             {index + 1}
                           </div>
-                          <ProfileImage 
+                          <RankedProfileImage 
                             src={user.profile_picture} 
                             alt={user.username || 'User'} 
-                            size={40} 
+                            size={40}
+                            isFriendTop={index === 0}
+                            totalCrowns={countUserCrowns(user.id)}
                           />
                           <div className="ml-3 flex-1">
                             <div className="font-medium flex items-center">

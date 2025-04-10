@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 import { createClient } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import {
   DialogHeader, 
   DialogTitle
 } from '@/components/ui/dialog';
-import { UserPlus, RefreshCcw, Clock, CheckSquare, Flame, Users, Sparkle, Sparkles } from 'lucide-react';
+import { UserPlus, RefreshCcw, Clock, CheckSquare, Flame, Users, UserMinus, Send } from 'lucide-react';
 import ProfileImage from '@/components/profile-image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -34,10 +34,56 @@ export default function FriendsList() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [friendUsername, setFriendUsername] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [pokeCount, setPokeCount] = useState(0);
+  const [lastPokeTime, setLastPokeTime] = useState<number | null>(null);
+  const pokeTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const supabase = createClient();
   const { searchUser, sendFriendRequest } = useFriendRequests();
 
+  // Initialize poke limits from localStorage
+  useEffect(() => {
+    // Load poke state from localStorage
+    const storedCount = localStorage.getItem('pokeCount');
+    const storedTime = localStorage.getItem('pokeLastTime');
+    
+    if (storedCount && storedTime) {
+      const count = parseInt(storedCount);
+      const time = parseInt(storedTime);
+      
+      setPokeCount(count);
+      setLastPokeTime(time);
+      
+      // Check if we need to reset the poke counter (after 5 minutes)
+      const now = Date.now();
+      if (now - time > 5 * 60 * 1000) {
+        resetPokeLimits();
+      } else {
+        // Set timer to reset after remaining time
+        const remainingTime = 5 * 60 * 1000 - (now - time);
+        pokeTimerRef.current = setTimeout(resetPokeLimits, remainingTime);
+      }
+    }
+    
+    return () => {
+      if (pokeTimerRef.current) {
+        clearTimeout(pokeTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Function to reset poke limits
+  const resetPokeLimits = () => {
+    setPokeCount(0);
+    setLastPokeTime(null);
+    localStorage.removeItem('pokeCount');
+    localStorage.removeItem('pokeLastTime');
+    
+    if (pokeTimerRef.current) {
+      clearTimeout(pokeTimerRef.current);
+      pokeTimerRef.current = null;
+    }
+  };
 
   // Cancel any hanging requests when component unmounts
   useEffect(() => {
@@ -96,47 +142,131 @@ export default function FriendsList() {
       toast.error('Please enter a username');
       return;
     }
-
-    console.log("Attempting to find user:", friendUsername);
     
-    const foundUser = await searchUser(friendUsername);
+    setIsAdding(true);
     
-    if (!foundUser) {
-      // Show available users for debugging
-      const { data: availableUsers } = await supabase
-        .from('users')
-        .select('username')
-        .limit(10);
-        
-      console.log('Available users:', availableUsers);
-      toast.error('User not found');
-      return;
-    }
-
-    if (!foundUser) {
-      // Show ALL users in the database (not just 10)
-      const { data: allUsers } = await supabase
-        .from('users')
-        .select('id, username');
-        
-      const usernames = allUsers?.map(u => u.username).join(', ');
-      console.log('All available users:', usernames);
+    try {
+      const foundUser = await searchUser(friendUsername);
       
-      toast.error(`User "${friendUsername}" not found. Try one of these: ${usernames || 'None found'}`);
-      return;
-    }
-    
-    const success = await sendFriendRequest(foundUser.id);
-    
-    if (success) {
-      toast.success(`Friend request sent to ${foundUser.username}`);
-      setFriendUsername('');
+      if (!foundUser) {
+        toast.error('User not found');
+        return;
+      }
+  
+      const success = await sendFriendRequest(foundUser.id);
+      
+      if (success) {
+        toast.success(`Friend request sent to ${foundUser.username}`);
+        setFriendUsername('');
+      }
+    } finally {
+      setIsAdding(false);
     }
   };
   
   const handleFriendClick = (friend: Friend) => {
     setSelectedFriend(friend);
     setIsDialogOpen(true);
+  };
+
+  // Function to handle poking a friend
+  const handlePokeFriend = async (friend: Friend) => {
+    // Check if we've reached the limit
+    if (pokeCount >= 5) {
+      const now = Date.now();
+      const timeElapsed = lastPokeTime ? now - lastPokeTime : 0;
+      const timeRemaining = Math.ceil((5 * 60 * 1000 - timeElapsed) / 1000 / 60);
+      
+      toast.error(`Poke limit reached. Try again in ${timeRemaining} minutes.`);
+      return;
+    }
+    
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('You must be signed in to poke friends');
+        return;
+      }
+      
+      // Increment poke count
+      const newCount = pokeCount + 1;
+      setPokeCount(newCount);
+      
+      // Set or update last poke time
+      const now = Date.now();
+      setLastPokeTime(now);
+      
+      // Store in localStorage
+      localStorage.setItem('pokeCount', newCount.toString());
+      localStorage.setItem('pokeLastTime', now.toString());
+      
+      // Set timer to reset after 5 minutes if this is the first poke
+      if (newCount === 1) {
+        pokeTimerRef.current = setTimeout(resetPokeLimits, 5 * 60 * 1000);
+      }
+      
+      // Store the poke in the database
+      const { error } = await supabase.from('pokes').insert({
+        from_user_id: user.id,
+        to_user_id: friend.id,
+        created_at: new Date().toISOString()
+      });
+      
+      if (error) throw error;
+      
+      // Show toast to current user
+      toast.success(`You poked ${friend.username}!`, {
+        description: `${5 - newCount} pokes remaining`,
+      });
+    } catch (error) {
+      console.error('Failed to poke friend:', error);
+      toast.error('Failed to poke friend');
+    }
+  };
+
+  // Function to remove a friend
+  const handleRemoveFriend = async (friend: Friend) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('You must be signed in to remove friends');
+        return;
+      }
+      
+      // Delete both friendship entries
+      const promises = [
+        // Delete current user -> friend relationship
+        supabase
+          .from('user_friends')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('friend_id', friend.id),
+          
+        // Delete friend -> current user relationship
+        supabase
+          .from('user_friends')
+          .delete()
+          .eq('user_id', friend.id)
+          .eq('friend_id', user.id)
+      ];
+      
+      const [result1, result2] = await Promise.all(promises);
+      
+      if (result1.error) throw result1.error;
+      if (result2.error) throw result2.error;
+      
+      // Close dialog and refresh friends list
+      setIsDialogOpen(false);
+      toast.success(`Removed ${friend.username} from your friends`);
+      
+      // Refresh friends list
+      loadFriends();
+      
+    } catch (error) {
+      console.error('Failed to remove friend:', error);
+      toast.error('Failed to remove friend');
+    }
   };
   
   const formatTime = (seconds: number = 0): string => {
@@ -276,6 +406,32 @@ export default function FriendsList() {
                   <span className="text-xs text-muted-foreground">Streak</span>
                   <span className="font-bold text-foreground">{selectedFriend.streak_days} days</span>
                 </div>
+              </div>
+              
+              {/* Action buttons for removing and poking */}
+              <div className="flex justify-between mt-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePokeFriend(selectedFriend)}
+                  disabled={pokeCount >= 5}
+                  className="bg-background hover:bg-muted"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {pokeCount >= 5 
+                    ? "Poke limit reached" 
+                    : `Poke (${5 - pokeCount} left)`}
+                </Button>
+                
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleRemoveFriend(selectedFriend)}
+                  className="bg-background border border-foreground"
+                >
+                  <UserMinus className="h-4 w-4 mr-2" />
+                  Remove Friend
+                </Button>
               </div>
             </div>
           )}
