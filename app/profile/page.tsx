@@ -9,11 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider'; 
 import { FormMessage } from '@/components/form-message';
-import { Camera, Check, Clock, CheckSquare, Trophy, X, Move, ZoomIn, ZoomOut, Flame } from 'lucide-react';
+import { Camera, Check, Clock, CheckSquare, Trophy, X, Move, ZoomIn, ZoomOut, Flame, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import ProfileImage from '@/components/profile-image';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { dispatchProfileUpdate } from '@/utils/events';
+import { calculateUserRank, formatTime, calculateProgressToNextRank, RANKS } from '@/utils/rank';
+import RankBadge from '@/components/rank-badge';
+import Link from 'next/link';
+import { Progress } from '@/components/ui/progress';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
@@ -26,6 +30,14 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Rank state
+  const [userRank, setUserRank] = useState(RANKS.bronze);
+  const [rankProgress, setRankProgress] = useState({
+    focusTimePercent: 0,
+    tasksPercent: 0,
+    nextRank: null as typeof RANKS.bronze | null
+  });
   
   // Image cropping states
   const [showCropDialog, setShowCropDialog] = useState(false);
@@ -79,6 +91,16 @@ export default function ProfilePage() {
       setUser(userData);
       setUsername(userData.username || '');
       setProfilePicture(userData.profile_picture);
+      
+      // Calculate user rank based on focus time and tasks
+      const focusTime = userData.total_focus_time || 0;
+      const completedTasks = userData.completed_tasks_count || 0;
+      const calculatedRank = calculateUserRank(focusTime, completedTasks);
+      setUserRank(calculatedRank);
+      
+      // Calculate progress to next rank
+      const progress = calculateProgressToNextRank(focusTime, completedTasks, calculatedRank);
+      setRankProgress(progress);
     }
   }, [userData]);
 
@@ -444,15 +466,6 @@ export default function ProfilePage() {
     // Clear any temporary cropped image data
     setCroppedImageFile(null);
   };
-  
-  const formatTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    return hours > 0 
-      ? `${hours}h ${minutes}m` 
-      : `${minutes}m`;
-  };
 
   // Determine if we have changes to enable the update button
   const hasChanges = username !== user?.username || croppedImageFile !== null;
@@ -542,7 +555,7 @@ export default function ProfilePage() {
                   </label>
                   <Input
                     id="email"
-                    value={user.email}
+                    value={user?.email || ''}
                     disabled
                     className="bg-muted/50"
                   />
@@ -560,6 +573,60 @@ export default function ProfilePage() {
             </div>
           </div>
           
+          {/* Rank information */}
+          <div className="bg-muted rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <RankBadge rank={userRank} size="lg" showTooltip={false} />
+              <div>
+                <h3 className="font-medium text-lg" style={{ color: userRank.color }}>
+                  {userRank.name} Rank
+                </h3>
+                <Link 
+                  href="/rank-info" 
+                  className="text-sm text-accent-foreground hover:underline inline-flex items-center"
+                >
+                  <Trophy className="h-3 w-3 mr-1" />
+                  View all ranks
+                </Link>
+              </div>
+            </div>
+            
+            {rankProgress.nextRank && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium flex items-center">
+                  <Award className="h-4 w-4 mr-1" />
+                  Progress to {rankProgress.nextRank.name} Rank
+                </h4>
+                
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground flex items-center">
+                      <Clock className="h-3 w-3 mr-1" /> 
+                      Focus Time
+                    </span>
+                    <span className="font-medium">
+                      {formatTime(user?.total_focus_time || 0)} / {formatTime(rankProgress.nextRank.focusTimeRequired)}
+                    </span>
+                  </div>
+                  <Progress value={rankProgress.focusTimePercent} />
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground flex items-center">
+                      <CheckSquare className="h-3 w-3 mr-1" />
+                      Tasks Completed
+                    </span>
+                    <span className="font-medium">
+                      {user?.completed_tasks_count || 0} / {rankProgress.nextRank.tasksRequired}
+                    </span>
+                  </div>
+                  <Progress value={rankProgress.tasksPercent} />
+                </div>
+              </div>
+            )}
+          </div>
+          
           {/* Competitive Stats */}
           <div className="bg-muted rounded-md p-4">
             <h3 className="font-medium mb-4 flex items-center gap-2 text-accent-foreground">
@@ -571,19 +638,19 @@ export default function ProfilePage() {
               <div className="bg-background p-3 rounded-md shadow-sm flex flex-col items-center">
                 <Clock className="h-5 w-5 mb-2 text-accent-foreground" />
                 <span className="text-xs text-foreground">Total Focus Time</span>
-                <span className="text-xl font-bold">{formatTime(user.total_focus_time || 0)}</span>
+                <span className="text-xl font-bold">{formatTime(user?.total_focus_time || 0)}</span>
               </div>
               
               <div className="bg-background p-3 rounded-md shadow-sm flex flex-col items-center">
                 <CheckSquare className="h-5 w-5 mb-2 text-accent-foreground" />
                 <span className="text-xs text-foreground">Tasks Completed</span>
-                <span className="text-xl font-bold">{user.completed_tasks_count || 0}</span>
+                <span className="text-xl font-bold">{user?.completed_tasks_count || 0}</span>
               </div>
               
               <div className="bg-background p-3 rounded-md shadow-sm flex flex-col items-center">
                 <Flame className="h-5 w-5 mb-2 text-accent-foreground" />
                 <span className="text-xs text-foreground">Current Streak</span>
-                <span className="text-xl font-bold">{user.streak_days || 0} days</span>
+                <span className="text-xl font-bold">{user?.streak_days || 0} days</span>
               </div>
             </div>
           </div>
@@ -594,11 +661,11 @@ export default function ProfilePage() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="text-muted-foreground">Member since</p>
-                <p>{new Date(user.created_at).toLocaleDateString()}</p>
+                <p>{user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Subscription</p>
-                <p>{user.is_premium ? 'Premium' : 'Free'}</p>
+                <p>{user?.is_premium ? 'Premium' : 'Free'}</p>
               </div>
             </div>
           </div>

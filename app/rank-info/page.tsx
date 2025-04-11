@@ -62,7 +62,7 @@ export default function RankInfoPage() {
   
   return (
     <div className="container mx-auto max-w-3xl py-8">
-      <h1 className="text-3xl font-bold mb-6">Rank System</h1>
+      <h1 className="text-3xl font-bold mb-6 text-foreground">Rank System</h1>
       
       <div className="grid gap-6 mb-8">
         {/* Current Rank Card */}
@@ -154,7 +154,7 @@ export default function RankInfoPage() {
           <CardContent>
             <div className="space-y-6">
               {Object.values(RANKS).map((rank) => (
-                <div key={rank.tier} className="flex items-start gap-4 py-3 border-b last:border-0">
+                <div key={rank.tier} className="flex items-start gap-4 py-3 border-b border-muted-foreground last:border-0">
                   <Image 
                     src={rank.imagePath}
                     alt={rank.name}
