@@ -7,25 +7,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LeaderboardUser } from '@/types/user';
 import ProfileImage from '@/components/profile-image';
-import { Clock, CheckSquare, Trophy, Users, Globe } from 'lucide-react';
+import RankBadge from '@/components/rank-badge';
+import { calculateUserRank, RANKS, formatTime } from '@/utils/rank';
+import { Button } from '@/components/ui/button';
+import { Clock, CheckSquare, Trophy, Users, Globe, Info } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LeaderboardPage() {
   const [activeLeaderboard, setActiveLeaderboard] = useState('global');
-
   const supabase = createClient();
   
   const fetchLeaderboardData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Fetch global leaderboards
+      // Fetch global leaderboards with all needed fields
       const [focusData, taskData] = await Promise.all([
         supabase.from('users')
-          .select('id, username, profile_picture, total_focus_time, streak_days, is_premium')
+          .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
           .order('total_focus_time', { ascending: false })
           .limit(10),
         supabase.from('users')
-          .select('id, username, profile_picture, completed_tasks_count, streak_days, is_premium')
+          .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
           .order('completed_tasks_count', { ascending: false })
           .limit(10)
       ]);
@@ -35,11 +38,13 @@ export default function LeaderboardPage() {
         taskLeaders: LeaderboardUser[];
         friendFocusLeaders: LeaderboardUser[];
         friendTaskLeaders: LeaderboardUser[];
+        currentUserId: string | null;
       } = {
         focusLeaders: (focusData.data || []) as LeaderboardUser[],
         taskLeaders: (taskData.data || []) as LeaderboardUser[],
         friendFocusLeaders: [],
-        friendTaskLeaders: []
+        friendTaskLeaders: [],
+        currentUserId: user?.id || null
       };
       
       // If user is authenticated, fetch friends leaderboards
@@ -56,14 +61,14 @@ export default function LeaderboardPage() {
           // Include current user
           friendIds.push(user.id);
           
-          // Fetch friend leaderboards
+          // Fetch friend leaderboards with all needed fields
           const [friendFocusData, friendTaskData] = await Promise.all([
             supabase.from('users')
-              .select('id, username, profile_picture, total_focus_time, streak_days, is_premium')
+              .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
               .in('id', friendIds)
               .order('total_focus_time', { ascending: false }),
             supabase.from('users')
-              .select('id, username, profile_picture, completed_tasks_count, streak_days, is_premium')
+              .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
               .in('id', friendIds)
               .order('completed_tasks_count', { ascending: false })
           ]);
@@ -80,29 +85,21 @@ export default function LeaderboardPage() {
         focusLeaders: [],
         taskLeaders: [],
         friendFocusLeaders: [],
-        friendTaskLeaders: []
+        friendTaskLeaders: [],
+        currentUserId: null
       };
     }
   }, [supabase]);
 
-  // Use the hook
+  // Use the hook to manage loading state and data refresh
   const { isLoading, data, refresh: loadLeaderboards } = useVisibilityAwareLoading(fetchLeaderboardData);
 
   // Extract state from the data
   const focusLeaders = data?.focusLeaders || [];
   const taskLeaders = data?.taskLeaders || [];
   const friendFocusLeaders = data?.friendFocusLeaders || [];
-  const friendTaskLeaders = data?.friendTaskLeaders || []; 
-
-  
-  const formatTime = (seconds: number = 0): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    return hours > 0 
-      ? `${hours}h ${minutes}m` 
-      : `${minutes}m`;
-  };
+  const friendTaskLeaders = data?.friendTaskLeaders || [];
+  const currentUserId = data?.currentUserId || null;
 
   // Function to render rank indicator (crown for top 3)
   const renderRankIndicator = (rank: number) => {
@@ -173,11 +170,80 @@ export default function LeaderboardPage() {
         </div>
       );
     }
-  };  
+  };
+
+  // Render a user row with their stats and rank
+  const renderUserRow = (user: LeaderboardUser, index: number, showFocusTime: boolean = true) => {
+    // Calculate user rank based on their stats
+    const userRank = calculateUserRank(
+      user.total_focus_time || 0,
+      user.completed_tasks_count || 0
+    );
+    
+    // Check if this is the current user
+    const isCurrentUser = user.id === currentUserId;
+    
+    return (
+      <div 
+        key={user.id} 
+        className={`py-3 flex items-center ${isCurrentUser ? 'bg-muted/50 rounded-md' : ''}`}
+      >
+        {/* Rank position (1st, 2nd, etc.) */}
+        <div className="flex items-center">
+          {renderRankIndicator(index + 1)}
+          <ProfileImage 
+            src={user.profile_picture} 
+            alt={user.username || 'User'} 
+            size={40}
+          />
+        </div>
+        
+        <div className="ml-3 flex-1 flex items-center">
+          <div className="flex-1">
+            <div className="font-medium flex items-center">
+              {user.username || 'Anonymous'}
+              {user.is_premium && (
+                <span className="ml-1 text-yellow-500" title="Premium User">
+                  ✦
+                </span>
+              )}
+              {isCurrentUser && (
+                <span className="ml-1 text-xs text-muted-foreground">(You)</span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {user.streak_days ? `${user.streak_days} day streak` : 'Just getting started'}
+            </div>
+          </div>
+          
+          {/* Rank badge */}
+          <div className="flex items-center gap-2 mr-4">
+            <RankBadge rank={userRank} size="sm" />
+          </div>
+          
+          {/* Focus time or task count */}
+          <div className="font-semibold text-right min-w-20">
+            {showFocusTime 
+              ? formatTime(user.total_focus_time || 0)
+              : `${user.completed_tasks_count || 0} tasks`
+            }
+          </div>
+        </div>
+      </div>
+    );
+  };
   
   return (
     <div className="container mx-auto max-w-3xl py-8">
-      <h1 className="text-3xl font-bold mb-6 text-foreground">Leaderboard</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-foreground">Leaderboard</h1>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/rank-info">
+            <Info className="h-4 w-4 mr-2" />
+            Rank Info
+          </Link>
+        </Button>
+      </div>
       
       <Tabs defaultValue="global" value={activeLeaderboard} onValueChange={setActiveLeaderboard}>
         <TabsList className="w-full mb-6">
@@ -221,33 +287,7 @@ export default function LeaderboardPage() {
                   ) : (
                     <div className="divide-y divide-muted">
                       {focusLeaders.map((user, index) => (
-                        <div key={user.id} className="py-3 flex items-center">
-                          {/* Rank indicator (crown for top 3) */}
-                          <div className="flex items-center">
-                            {renderRankIndicator(index + 1)}
-                            <ProfileImage 
-                              src={user.profile_picture} 
-                              alt={user.username || 'User'} 
-                              size={40}
-                            />
-                          </div>
-                          <div className="ml-3 flex-1">
-                            <div className="font-medium flex items-center">
-                              {user.username || 'Anonymous'}
-                              {user.is_premium && (
-                                <span className="ml-1 text-yellow-500" title="Premium User">
-                                  ✦
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {user.streak_days ? `${user.streak_days} day streak` : 'Just getting started'}
-                            </div>
-                          </div>
-                          <div className="font-semibold">
-                            {formatTime(user.total_focus_time)}
-                          </div>
-                        </div>
+                        renderUserRow(user, index, true)
                       ))}
                       
                       {focusLeaders.length === 0 && (
@@ -277,33 +317,7 @@ export default function LeaderboardPage() {
                   ) : (
                     <div className="divide-y divide-muted">
                       {taskLeaders.map((user, index) => (
-                        <div key={user.id} className="py-3 flex items-center">
-                          {/* Rank indicator (crown for top 3) */}
-                          <div className="flex items-center">
-                            {renderRankIndicator(index + 1)}
-                            <ProfileImage 
-                              src={user.profile_picture} 
-                              alt={user.username || 'User'} 
-                              size={40}
-                            />
-                          </div>
-                          <div className="ml-3 flex-1">
-                            <div className="font-medium flex items-center">
-                              {user.username || 'Anonymous'}
-                              {user.is_premium && (
-                                <span className="ml-1 text-yellow-500" title="Premium User">
-                                  ✦
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {user.streak_days ? `${user.streak_days} day streak` : 'Just getting started'}
-                            </div>
-                          </div>
-                          <div className="font-semibold">
-                            {user.completed_tasks_count || 0} tasks
-                          </div>
-                        </div>
+                        renderUserRow(user, index, false)
                       ))}
                       
                       {taskLeaders.length === 0 && (
@@ -349,33 +363,7 @@ export default function LeaderboardPage() {
                   ) : friendFocusLeaders.length > 0 ? (
                     <div className="divide-y divide-muted">
                       {friendFocusLeaders.map((user, index) => (
-                        <div key={user.id} className="py-3 flex items-center">
-                          {/* Rank indicator (crown for top 3) */}
-                          <div className="flex items-center">
-                            {renderRankIndicator(index + 1)}
-                            <ProfileImage 
-                              src={user.profile_picture} 
-                              alt={user.username || 'User'} 
-                              size={40}
-                            />
-                          </div>
-                          <div className="ml-3 flex-1">
-                            <div className="font-medium flex items-center">
-                              {user.username || 'Anonymous'}
-                              {user.is_premium && (
-                                <span className="ml-1 text-yellow-500" title="Premium User">
-                                  ✦
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {user.streak_days ? `${user.streak_days} day streak` : 'Just getting started'}
-                            </div>
-                          </div>
-                          <div className="font-semibold">
-                            {formatTime(user.total_focus_time)}
-                          </div>
-                        </div>
+                        renderUserRow(user, index, true)
                       ))}
                     </div>
                   ) : (
@@ -404,33 +392,7 @@ export default function LeaderboardPage() {
                   ) : friendTaskLeaders.length > 0 ? (
                     <div className="divide-y divide-muted">
                       {friendTaskLeaders.map((user, index) => (
-                        <div key={user.id} className="py-3 flex items-center">
-                          {/* Rank indicator (crown for top 3) */}
-                          <div className="flex items-center">
-                            {renderRankIndicator(index + 1)}
-                            <ProfileImage 
-                              src={user.profile_picture} 
-                              alt={user.username || 'User'} 
-                              size={40}
-                            />
-                          </div>
-                          <div className="ml-3 flex-1">
-                            <div className="font-medium flex items-center">
-                              {user.username || 'Anonymous'}
-                              {user.is_premium && (
-                                <span className="ml-1 text-yellow-500" title="Premium User">
-                                  ✦
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {user.streak_days ? `${user.streak_days} day streak` : 'Just getting started'}
-                            </div>
-                          </div>
-                          <div className="font-semibold">
-                            {user.completed_tasks_count || 0} tasks
-                          </div>
-                        </div>
+                        renderUserRow(user, index, false)
                       ))}
                     </div>
                   ) : (

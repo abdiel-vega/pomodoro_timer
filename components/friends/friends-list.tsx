@@ -17,8 +17,10 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import FriendRequests from './friend-requests';
 import { useFriendRequests } from '@/hooks/useFriendRequests';
+import { calculateUserRank, RankInfo, formatTime } from '@/utils/rank';
+import RankBadge from '@/components/rank-badge';
 
-// Friend type definition
+// Enhanced Friend interface with rank
 interface Friend {
   id: string;
   username: string;
@@ -27,6 +29,7 @@ interface Friend {
   completed_tasks_count: number;
   streak_days: number;
   is_premium: boolean;
+  rank: RankInfo; // Added rank property
 }
 
 export default function FriendsList() {
@@ -120,15 +123,24 @@ export default function FriendsList() {
       
       if (usersError) throw usersError;
       
-      return usersData?.map(userData => ({
-        id: userData.id,
-        username: userData.username || 'Anonymous',
-        profile_picture: userData.profile_picture,
-        total_focus_time: userData.total_focus_time || 0,
-        completed_tasks_count: userData.completed_tasks_count || 0,
-        streak_days: userData.streak_days || 0,
-        is_premium: !!userData.is_premium
-      })) || [];
+      return usersData?.map(userData => {
+        // Calculate rank for each friend
+        const rank = calculateUserRank(
+          userData.total_focus_time || 0,
+          userData.completed_tasks_count || 0
+        );
+        
+        return {
+          id: userData.id,
+          username: userData.username || 'Anonymous',
+          profile_picture: userData.profile_picture,
+          total_focus_time: userData.total_focus_time || 0,
+          completed_tasks_count: userData.completed_tasks_count || 0,
+          streak_days: userData.streak_days || 0,
+          is_premium: !!userData.is_premium,
+          rank // Add rank to friend object
+        };
+      }) || [];
     } catch (err) {
       console.error('Friend loading error:', err);
       return [];
@@ -268,15 +280,6 @@ export default function FriendsList() {
       toast.error('Failed to remove friend');
     }
   };
-  
-  const formatTime = (seconds: number = 0): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    return hours > 0 
-      ? `${hours}h ${minutes}m` 
-      : `${minutes}m`;
-  };
 
   return (
     <div className="container mx-auto max-w-3xl py-8">
@@ -338,6 +341,8 @@ export default function FriendsList() {
                   <div className="ml-3 flex-1">
                     <div className="font-medium flex items-center">
                       {friend.username}
+                      {/* Add rank badge next to name */}
+                      <RankBadge rank={friend.rank} size="sm" />
                       {friend.is_premium && (
                         <span className="ml-1 text-yellow-500" title="Premium User">
                           ✦
@@ -378,6 +383,8 @@ export default function FriendsList() {
                 <div>
                   <h3 className="font-medium text-lg flex items-center text-accent-foreground">
                     {selectedFriend.username}
+                    {/* Add rank badge to friend dialog */}
+                    <RankBadge rank={selectedFriend.rank} size="sm" />
                     {selectedFriend.is_premium && (
                       <span className="ml-1 text-yellow-500" title="Premium User">
                         ✦

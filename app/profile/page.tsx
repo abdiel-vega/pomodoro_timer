@@ -118,7 +118,7 @@ export default function ProfilePage() {
       setIsUpdating(true);
       
       // Only check for duplicate username if it has changed
-      if (username !== user.username) {
+      if (username !== user?.username) {
         // Check if username is already taken
         const { data: existingUser } = await supabase
           .from('users')
@@ -207,7 +207,7 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   };
 
-  // Image cropping related functions and hooks - replace your current implementation
+  // Image cropping related functions
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -230,7 +230,7 @@ export default function ProfilePage() {
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
     
-    // Reset position and scale (don't set initial values here, we'll do it in onLoad)
+    // Reset position and scale
     setPosition({ x: 0, y: 0 });
     setScale(1);
     
@@ -238,7 +238,7 @@ export default function ProfilePage() {
     setShowCropDialog(true);
   };
 
-  // Improved mouse event handlers for dragging
+  // Mouse event handlers for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!imageRef.current) return;
     
@@ -262,7 +262,7 @@ export default function ProfilePage() {
     setPosition(constrainedPosition);
   };
 
-  // Separate function to apply constraints
+  // Calculate minimum zoom
   const calculateMinZoom = (img: HTMLImageElement, container: HTMLDivElement): number => {
     const containerWidth = container.offsetWidth;
     const containerHeight = container.offsetHeight;
@@ -275,7 +275,7 @@ export default function ProfilePage() {
     return Math.max(scaleX, scaleY);
   };
   
-  // 2. Update zoom handler to zoom relative to center
+  // Zoom handler
   const handleZoomChange = (values: number[]) => {
     if (!imageRef.current || !containerRef.current) return;
     
@@ -305,7 +305,7 @@ export default function ProfilePage() {
     setPosition(constrainPosition(newX, newY, newScale));
   };
   
-  // 3. Improved constraint function to prevent zooming out too far
+  // Constraint function
   const constrainPosition = (x: number, y: number, currentScale: number) => {
     if (!imageRef.current || !containerRef.current) return { x, y };
     
@@ -344,7 +344,7 @@ export default function ProfilePage() {
     return { x: constrainedX, y: constrainedY };
   };
   
-  // 4. Fixed cropImage function with correct coordinate mapping
+  // Crop image function
   const cropImage = (): Promise<File> => {
     return new Promise((resolve, reject) => {
       if (!imageRef.current || !containerRef.current) {

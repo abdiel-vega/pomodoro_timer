@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EVENTS, ProfileUpdatePayload } from '@/utils/events';
+import { calculateUserRank } from '@/utils/rank';
+import RankBadge from './rank-badge';
 
 interface UserProfileProps {
   user: {
@@ -50,6 +52,9 @@ export default function UserProfile({ user }: UserProfileProps) {
     created_at: '',
     updated_at: ''
   });
+  
+  // Add user rank state
+  const [userRank, setUserRank] = useState(calculateUserRank(0, 0));
   
   const router = useRouter();
   const supabase = createClient();
@@ -103,6 +108,11 @@ export default function UserProfile({ user }: UserProfileProps) {
         
       if (data) {
         setProfileData(data as User);
+        
+        // Calculate user rank based on focus time and completed tasks
+        const focusTime = data.total_focus_time || 0;
+        const completedTasks = data.completed_tasks_count || 0;
+        setUserRank(calculateUserRank(focusTime, completedTasks));
       }
     } catch (error) {
       console.error('Error fetching profile data:', error);
@@ -147,6 +157,13 @@ export default function UserProfile({ user }: UserProfileProps) {
             />
             <span className="text-sm hidden md:inline">
               {profileData.username || 'User'}
+              {/* Add rank badge next to username */}
+              {profileData.id && (
+                <RankBadge 
+                  rank={userRank}
+                  size="sm"
+                />
+              )}
             </span>
             {profileData.is_premium && (
               <span title="Premium User">
@@ -165,7 +182,11 @@ export default function UserProfile({ user }: UserProfileProps) {
               size={40} 
             />
             <div>
-              <div className="font-medium">{profileData.username || 'User'}</div>
+              <div className="font-medium flex items-center">
+                {profileData.username || 'User'}
+                {/* Add rank badge in dropdown */}
+                <RankBadge rank={userRank} size="sm" />
+              </div>
               <div className="text-xs text-muted-foreground truncate">{profileData.email}</div>
             </div>
           </div>
@@ -200,6 +221,14 @@ export default function UserProfile({ user }: UserProfileProps) {
               <Link href="/friends">
                 <Users className="mr-2 h-4 w-4" />
                 Friends
+              </Link>
+            </Button>
+            
+            {/* Add Rank Info link here */}
+            <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
+              <Link href="/rank-info">
+                <Users className="mr-2 h-4 w-4" />
+                Rank Info
               </Link>
             </Button>
             
