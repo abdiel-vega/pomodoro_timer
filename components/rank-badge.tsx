@@ -30,12 +30,14 @@ export default function RankBadge({
         minHeight: dimensions.height
       }}
     >
-      <Image
+      <Image 
         src={rank.imagePath}
         alt={rank.name}
         width={dimensions.width}
         height={dimensions.height}
         className="object-contain"
+        priority={size === 'lg'} // Prioritize loading large badges
+        sizes={`(max-width: 768px) ${dimensions.width}px, ${dimensions.width}px`}
       />
     </div>
   );

@@ -46,7 +46,7 @@ export const RANKS: Record<RankTier, RankInfo> = {
     color: '#9C27B0',
     focusTimeRequired: 60 * 60 * 60, // 60 hours
     tasksRequired: 150,
-    imagePath: '/ranks/focus-master.png',
+    imagePath: '/ranks/focus_master.png',
   },
   'productivity-legend': {
     tier: 'productivity-legend',
@@ -54,7 +54,7 @@ export const RANKS: Record<RankTier, RankInfo> = {
     color: '#4CAF50',
     focusTimeRequired: 100 * 60 * 60, // 100 hours
     tasksRequired: 300,
-    imagePath: '/ranks/productivity-legend.png',
+    imagePath: '/ranks/productivity_legend.png',
   },
 };
 
