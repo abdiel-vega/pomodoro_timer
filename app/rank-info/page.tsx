@@ -1,4 +1,3 @@
-// app/rank-info/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,6 +18,23 @@ export default function RankInfoPage() {
     tasksPercent: 0,
     nextRank: null as RankInfo | null
   });
+
+  const lightenColor = (hex: string, percent: number): string => {
+    hex = hex.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    const lightenValue = (value: number): number => {
+      return Math.min(255, Math.floor(value + (255 - value) * (percent / 100)));
+    };
+    
+    const rNew = lightenValue(r).toString(16).padStart(2, '0');
+    const gNew = lightenValue(g).toString(16).padStart(2, '0');
+    const bNew = lightenValue(b).toString(16).padStart(2, '0');
+    
+    return `#${rNew}${gNew}${bNew}`;
+  };
   
   const supabase = createClient();
   
@@ -78,14 +94,21 @@ export default function RankInfoPage() {
             ) : (
               <div className="flex flex-col items-center md:flex-row md:items-start gap-6">
                 <div className="flex flex-col items-center">
-                  <Image 
-                    src={userRank.imagePath}
-                    alt={userRank.name}
-                    width={90}
-                    height={90}
-                    className="mb-2"
-                  />
-                  <span className="text-xl font-bold" style={{ color: userRank.color }}>
+                  <div style={{ filter: `drop-shadow(0 0 4px ${lightenColor(userRank.color, 30)})` }}>
+                    <Image 
+                      src={userRank.imagePath}
+                      alt={userRank.name}
+                      width={90}
+                      height={90}
+                      className="mb-2"
+                    />
+                  </div>
+                  <span 
+                    className="text-xl font-bold" 
+                    style={{ 
+                      color: userRank.color,
+                    }}
+                  >
                     {userRank.name}
                   </span>
                 </div>
@@ -155,15 +178,23 @@ export default function RankInfoPage() {
             <div className="space-y-6">
               {Object.values(RANKS).map((rank) => (
                 <div key={rank.tier} className="flex items-start gap-4 py-3 border-b border-muted-foreground last:border-0">
-                  <Image 
-                    src={rank.imagePath}
-                    alt={rank.name}
-                    width={60}
-                    height={60}
-                  />
+                  <div style={{ filter: `drop-shadow(0 0 4px ${lightenColor(rank.color, 30)})` }}>
+                    <Image 
+                      src={rank.imagePath}
+                      alt={rank.name}
+                      width={60}
+                      height={60}
+                    />
+                  </div>
                   
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold" style={{ color: rank.color }}>
+                    <h3 
+                      className="text-lg font-bold" 
+                      style={{ 
+                        color: rank.color,
+                        textShadow: '0 0 1px hsl(var(--foreground)), 0 0 1px hsl(var(--foreground)), 0 0 1px hsl(var(--foreground)), 0 0 1px hsl(var(--foreground))' 
+                      }}
+                    >
                       {rank.name}
                     </h3>
                     

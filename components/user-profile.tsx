@@ -157,13 +157,7 @@ export default function UserProfile({ user }: UserProfileProps) {
             />
             <span className="text-sm hidden md:inline">
               {profileData.username || 'User'}
-              {/* Add rank badge next to username */}
-              {profileData.id && (
-                <RankBadge 
-                  rank={userRank}
-                  size="sm"
-                />
-              )}
+
             </span>
             {profileData.is_premium && (
               <span title="Premium User">

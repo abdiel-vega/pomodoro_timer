@@ -10,7 +10,7 @@ import {
   DialogHeader, 
   DialogTitle
 } from '@/components/ui/dialog';
-import { UserPlus, RefreshCcw, Clock, CheckSquare, Flame, Users, UserMinus, Send } from 'lucide-react';
+import { UserPlus, RefreshCcw, Clock, CheckSquare, Flame, Users, UserMinus, Pointer } from 'lucide-react';
 import ProfileImage from '@/components/profile-image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -384,7 +384,7 @@ export default function FriendsList() {
                   <h3 className="font-medium text-lg flex items-center text-accent-foreground">
                     {selectedFriend.username}
                     {/* Add rank badge to friend dialog */}
-                    <RankBadge rank={selectedFriend.rank} size="sm" />
+                    <RankBadge rank={selectedFriend.rank} size="md" />
                     {selectedFriend.is_premium && (
                       <span className="ml-1 text-yellow-500" title="Premium User">
                         ✦
@@ -424,7 +424,7 @@ export default function FriendsList() {
                   disabled={pokeCount >= 5}
                   className="bg-background hover:bg-muted"
                 >
-                  <Send className="h-4 w-4 mr-2" />
+                  <Pointer className="h-4 w-4 mr-2" />
                   {pokeCount >= 5 
                     ? "Poke limit reached" 
                     : `Poke (${5 - pokeCount} left)`}

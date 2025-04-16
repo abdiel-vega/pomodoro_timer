@@ -151,7 +151,7 @@ export default function LeaderboardPage() {
             <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
           </svg>
           
-          {/* Rank number positioned in center of crown */}
+          {/* Leaderboard number positioned in center of crown */}
           <span 
             className="absolute inset-0 flex items-center justify-center text-xs font-bold"
             style={{ marginBottom:'2px', color: rank === 1 ? '#8B6914' : rank === 2 ? '#6F6F6F' : '#8B4513' }}
@@ -188,7 +188,7 @@ export default function LeaderboardPage() {
         key={user.id} 
         className={`py-3 flex items-center ${isCurrentUser ? 'bg-muted/50 rounded-md' : ''}`}
       >
-        {/* Rank position (1st, 2nd, etc.) */}
+        {/* Leaderboard position (1st, 2nd, etc.) */}
         <div className="flex items-center">
           {renderRankIndicator(index + 1)}
           <ProfileImage 
@@ -217,12 +217,12 @@ export default function LeaderboardPage() {
           </div>
           
           {/* Rank badge */}
-          <div className="flex items-center gap-2 mr-4">
+          <div className="flex items-center mr-2">
             <RankBadge rank={userRank} size="sm" />
           </div>
           
           {/* Focus time or task count */}
-          <div className="font-semibold text-right min-w-20">
+          <div className="font-semibold text-right">
             {showFocusTime 
               ? formatTime(user.total_focus_time || 0)
               : `${user.completed_tasks_count || 0} tasks`

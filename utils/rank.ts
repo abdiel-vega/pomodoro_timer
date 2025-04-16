@@ -19,7 +19,7 @@ export const RANKS: Record<RankTier, RankInfo> = {
   bronze: {
     tier: 'bronze',
     name: 'Bronze',
-    color: '#CD7F32',
+    color: '#EE8D2C',
     focusTimeRequired: 0, // Starting rank
     tasksRequired: 0,
     imagePath: '/ranks/bronze.png',
@@ -27,7 +27,7 @@ export const RANKS: Record<RankTier, RankInfo> = {
   silver: {
     tier: 'silver',
     name: 'Silver',
-    color: '#C0C0C0',
+    color: '#D7D7D7',
     focusTimeRequired: 10 * 60 * 60, // 10 hours in seconds
     tasksRequired: 25,
     imagePath: '/ranks/silver.png',
@@ -35,7 +35,7 @@ export const RANKS: Record<RankTier, RankInfo> = {
   gold: {
     tier: 'gold',
     name: 'Gold',
-    color: '#FFD700',
+    color: '#FFDD1E',
     focusTimeRequired: 30 * 60 * 60, // 30 hours
     tasksRequired: 75,
     imagePath: '/ranks/gold.png',
@@ -43,7 +43,7 @@ export const RANKS: Record<RankTier, RankInfo> = {
   'focus-master': {
     tier: 'focus-master',
     name: 'Focus Master',
-    color: '#9C27B0',
+    color: '#69DCFF',
     focusTimeRequired: 60 * 60 * 60, // 60 hours
     tasksRequired: 150,
     imagePath: '/ranks/focus_master.png',
@@ -51,7 +51,7 @@ export const RANKS: Record<RankTier, RankInfo> = {
   'productivity-legend': {
     tier: 'productivity-legend',
     name: 'Productivity Legend',
-    color: '#4CAF50',
+    color: '#CF56FF',
     focusTimeRequired: 100 * 60 * 60, // 100 hours
     tasksRequired: 300,
     imagePath: '/ranks/productivity_legend.png',

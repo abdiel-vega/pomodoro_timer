@@ -578,12 +578,17 @@ export default function ProfilePage() {
             <div className="flex items-center gap-4 mb-4">
               <RankBadge rank={userRank} size="lg" showTooltip={false} />
               <div>
-                <h3 className="font-medium text-lg" style={{ color: userRank.color }}>
-                  {userRank.name} Rank
-                </h3>
+              <h3 
+                className="font-medium text-lg" 
+                style={{ 
+                  color: userRank.color,
+                }}
+              >
+                {userRank.name} Rank
+              </h3>
                 <Link 
                   href="/rank-info" 
-                  className="text-sm text-accent-foreground hover:underline inline-flex items-center"
+                  className="text-sm text-secondary-foreground hover:underline inline-flex items-center"
                 >
                   <Trophy className="h-3 w-3 mr-1" />
                   View all ranks
@@ -593,7 +598,7 @@ export default function ProfilePage() {
             
             {rankProgress.nextRank && (
               <div className="space-y-3">
-                <h4 className="text-sm font-medium flex items-center">
+                <h4 className="text-sm font-medium flex items-center text-accent-foreground">
                   <Award className="h-4 w-4 mr-1" />
                   Progress to {rankProgress.nextRank.name} Rank
                 </h4>
