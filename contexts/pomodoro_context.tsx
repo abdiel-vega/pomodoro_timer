@@ -108,8 +108,15 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   
   // Function to refresh user settings, including premium status
   const refreshUserSettings = useCallback(async () => {
+    // Create unique ID for this request
+    const requestId = Date.now();
+    const currentRequestId = requestId;
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      
+      // Ensure component is still mounted and request is current
+      if (requestId !== currentRequestId) return;
       
       if (user) {
         // Get user settings
@@ -134,8 +141,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to refresh user settings:', error);
     }
-    // No return value to match Promise<void>
-  }, [supabase, isPremium]);
+  }, [supabase, isPremium]);  
 
   // Set up auth listener and premium status sync
   useEffect(() => {

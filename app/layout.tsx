@@ -26,6 +26,15 @@ const fontSans = FontSans({
   variable: '--font-sans',
 });
 
+type UserType = {
+  id: string;
+  email: string;
+  username?: string | null;
+  profile_picture?: string | null;
+  is_premium?: boolean;
+  [key: string]: any; // For any additional properties
+} | null;
+
 export default function RootLayout({
   children,
 }: {
@@ -101,65 +110,58 @@ export default function RootLayout({
       async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.email);
         
-        // Handle specific auth events
+        // Set immediate flag for auth state to avoid loading lag
         if (event === 'SIGNED_IN') {
-          console.log("Sign-in detected, updating UI");
+          // Set auth state immediately before async operations
           setIsAuthenticated(true);
-          
-          // Fetch full user profile
           if (session?.user) {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-              
-            if (!userError && userData) {
-              setUser(userData);
-              setIsPremium(userData.is_premium || false);
-            } else {
-              // Fallback to just auth user data
-              setUser(session.user);
-              
-              // Check premium status on sign in
-              const { data: premiumData } = await supabase
+            // Set minimal user data right away
+            setUser((prev: UserType) => prev || session.user);
+          }
+          
+          console.log("Sign-in detected, updating UI");
+          
+          try {
+            // Fetch full user profile
+            if (session?.user) {
+              const { data: userData, error: userError } = await supabase
                 .from('users')
-                .select('is_premium')
+                .select('*')
                 .eq('id', session.user.id)
                 .single();
                 
-              setIsPremium(premiumData?.is_premium || false);
+              if (!userError && userData) {
+                setUser(userData);
+                setIsPremium(userData.is_premium || false);
+              } else {
+                // Ensure user state is updated even on partial error
+                setUser(session.user);
+                
+                // Check premium status on sign in
+                const { data: premiumData } = await supabase
+                  .from('users')
+                  .select('is_premium')
+                  .eq('id', session.user.id)
+                  .single();
+                  
+                setIsPremium(premiumData?.is_premium || false);
+              }
+            }
+          } catch (error) {
+            console.error("Error updating user profile:", error);
+            // Ensure basic user data is set even on error
+            if (session?.user) {
+              setUser(session.user);
             }
           }
-        }      
-        else if (event === 'SIGNED_OUT') {
-          console.log("Sign-out detected, updating UI");
+        } else if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           setUser(null);
           setIsPremium(false);
         }
-        else if (event === 'USER_UPDATED') {
-          // User data was updated, refresh our state
-          if (session) {
-            setIsAuthenticated(true);
-            
-            // Fetch updated user profile
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-              
-            if (!userError && userData) {
-              setUser(userData);
-              setIsPremium(userData.is_premium || false);
-            } else {
-              setUser(session.user);
-            }
-          }
-        }
       }
     );
+    
     
     // Clean up listener
     return () => subscription.unsubscribe();
