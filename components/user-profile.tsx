@@ -26,12 +26,11 @@ import RankBadge from './rank-badge';
 interface UserProfileProps {
   user: {
     id: string;
-    email: string;
+    email?: string; // Make email optional to match AuthState
     username?: string | null;
     profile_picture?: string | null;
     is_premium?: boolean;
-    total_focus_time?: number;
-    completed_tasks_count?: number;
+    [key: string]: any;
   } | null;
 }
 

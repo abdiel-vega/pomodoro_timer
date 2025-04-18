@@ -15,157 +15,112 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon, Sparkles, Users, Trophy } from 'lucide-react';
+import { ClockIcon, SettingsIcon, LogInIcon, Trophy } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import './globals.css';
 import VignetteEffect from '@/components/premium/vignette-effect';
 import UserProfile from '@/components/user-profile';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 
 const fontSans = FontSans({
   subsets: ['latin'],
   variable: '--font-sans',
 });
 
-type UserType = {
-  id: string;
-  email: string;
-  username?: string | null;
-  profile_picture?: string | null;
-  is_premium?: boolean;
-  [key: string]: any; // For any additional properties
-} | null;
+type AuthState = {
+  isAuthenticated: boolean;
+  user: {
+    id: string;
+    email?: string;
+    username?: string | null;
+    profile_picture?: string | null;
+    is_premium?: boolean;
+    total_focus_time?: number;
+    completed_tasks_count?: number;
+    [key: string]: any;
+  } | null;
+  isPremium: boolean;
+};
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [user, setUser] = useState<any>(null);
   const supabase = createClient();
-  const [isPremium, setIsPremium] = useState(false);
 
-  useEffect(() => {
-    // Define function to check auth status
-    const checkAuth = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Session error:", error);
-          setIsAuthenticated(false);
-          setUser(null);
-          setIsPremium(false);
-          return;
-        }
-        
-        if (data && data.session) {
-          console.log("Initial auth check: User is signed in", data.session.user.email);
-          setIsAuthenticated(true);
+  // Define the auth check function for the visibility-aware hook
+  const checkAuthStatus = async (): Promise<AuthState> => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Session error:", error);
+        return { isAuthenticated: false, user: null, isPremium: false };
+      }
+      
+      if (data && data.session) {
+        // Fetch full user profile from the users table
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', data.session.user.id)
+          .single();
           
-          // Fetch full user profile from the users table
-          const { data: userData, error: userError } = await supabase
+        if (!userError && userData) {
+          return { 
+            isAuthenticated: true, 
+            user: userData, 
+            isPremium: userData.is_premium || false 
+          };
+        } else {
+          // Fallback to just auth user data if we can't get the profile
+          const { data: premiumData } = await supabase
             .from('users')
-            .select('*')
+            .select('is_premium')
             .eq('id', data.session.user.id)
             .single();
-            
-          if (!userError && userData) {
-            setUser(userData);
-            setIsPremium(userData.is_premium || false);
-          } else {
-            // Fallback to just auth user data if we can't get the profile
-            setUser(data.session.user);
-            
-            // Fetch premium status from database
-            const { data: premiumData, error: premiumError } = await supabase
-              .from('users')
-              .select('is_premium')
-              .eq('id', data.session.user.id)
-              .single();
               
-            if (!premiumError && premiumData) {
-              setIsPremium(premiumData.is_premium || false);
-            }
-          }
-        } else {
-          console.log("Initial auth check: No active session");
-          setIsAuthenticated(false);
-          setUser(null);
-          setIsPremium(false);
+          return { 
+            isAuthenticated: true, 
+            user: data.session.user, 
+            isPremium: premiumData?.is_premium || false 
+          };
         }
-      } catch (err) {
-        console.error("Auth check failed:", err);
-        setIsAuthenticated(false);
-        setUser(null);
-        setIsPremium(false);
+      } else {
+        return { isAuthenticated: false, user: null, isPremium: false };
       }
-    };  
-    
-    // Check auth status immediately
-    checkAuth();
-    
-    // Set up auth state listener with improved handling
+    } catch (err) {
+      console.error("Auth check failed:", err);
+      return { isAuthenticated: false, user: null, isPremium: false };
+    }
+  };
+
+  // Use the visibility-aware loading hook
+  const { 
+    isLoading, 
+    data: authState,
+    refresh: refreshAuth 
+  } = useVisibilityAwareLoading<AuthState>(checkAuthStatus);
+
+  // Set up auth state listener
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.email);
         
-        // Set immediate flag for auth state to avoid loading lag
-        if (event === 'SIGNED_IN') {
-          // Set auth state immediately before async operations
-          setIsAuthenticated(true);
-          if (session?.user) {
-            // Set minimal user data right away
-            setUser((prev: UserType) => prev || session.user);
-          }
-          
-          console.log("Sign-in detected, updating UI");
-          
-          try {
-            // Fetch full user profile
-            if (session?.user) {
-              const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-                
-              if (!userError && userData) {
-                setUser(userData);
-                setIsPremium(userData.is_premium || false);
-              } else {
-                // Ensure user state is updated even on partial error
-                setUser(session.user);
-                
-                // Check premium status on sign in
-                const { data: premiumData } = await supabase
-                  .from('users')
-                  .select('is_premium')
-                  .eq('id', session.user.id)
-                  .single();
-                  
-                setIsPremium(premiumData?.is_premium || false);
-              }
-            }
-          } catch (error) {
-            console.error("Error updating user profile:", error);
-            // Ensure basic user data is set even on error
-            if (session?.user) {
-              setUser(session.user);
-            }
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setIsAuthenticated(false);
-          setUser(null);
-          setIsPremium(false);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          refreshAuth();
         }
       }
     );
     
-    
-    // Clean up listener
     return () => subscription.unsubscribe();
-  }, []);  
+  }, [refreshAuth, supabase.auth]);
+
+  const isAuthenticated = authState?.isAuthenticated ?? false;
+  const user = authState?.user ?? null;
+  const isPremium = authState?.isPremium ?? false;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -199,7 +154,7 @@ export default function RootLayout({
                         </Link>
                       </Button>
                       
-                      {isAuthenticated === null ? (
+                      {isLoading ? (
                         // Loading state
                         <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div>
                       ) : isAuthenticated ? (
