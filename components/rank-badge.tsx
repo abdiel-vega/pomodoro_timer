@@ -60,10 +60,6 @@ export default function RankBadge({
           <p>
             <span 
               className="font-bold" 
-              style={{ 
-                color: rank.color,
-                textShadow: '0 0 1px hsl(var(--foreground)), 0 0 1px hsl(var(--foreground)), 0 0 1px hsl(var(--foreground)), 0 0 1px hsl(var(--foreground))' 
-              }}
             >
               {rank.name}
             </span> Rank

@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { ClockIcon, SettingsIcon, LogOutIcon, LogInIcon, Sparkles, Users, Trophy } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import './globals.css';
-import PokeNotification from '@/components/poke-notifs';
 import VignetteEffect from '@/components/premium/vignette-effect';
 import UserProfile from '@/components/user-profile';
 
@@ -171,7 +170,6 @@ export default function RootLayout({
       <body className={cn('min-h-screen bg-background font-sans antialiased', fontSans.variable)}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <PomodoroProvider>
-            <PokeNotification />
               <VignetteEffect />
               <div className="flex min-h-screen flex-col">
                 <header className="sticky top-0 z-10 w-full border-b border-accent bg-background non-essential">
