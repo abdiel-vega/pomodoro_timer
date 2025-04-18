@@ -314,15 +314,6 @@ export default function RankInfoPage() {
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Improved progression indicator */}
-                  {index < Object.values(RANKS).length - 1 && (
-                    <div className="flex justify-center py-3">
-                      <div className="flex flex-col items-center">
-                        <ArrowDown className="text-accent-foreground w-5 h-5 animate-bounce opacity-70" />
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
