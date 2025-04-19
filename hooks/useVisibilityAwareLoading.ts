@@ -26,12 +26,19 @@ export function useVisibilityAwareLoading<T>(
   const {
     refreshOnVisibility = false,
     refreshInterval = 0,
-    loadingTimeout = 5000, // Default 5 second safety timeout
+    loadingTimeout = 5000,
   } = options;
 
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  // Add this to force re-renders when needed
+  const [updateKey, setUpdateKey] = useState(0);
+
+  // Force an update function
+  const forceUpdate = useCallback(() => {
+    setUpdateKey((prev) => prev + 1);
+  }, []);
 
   const isMountedRef = useRef(true);
   const activeRequestRef = useRef<number>(0);
@@ -51,53 +58,43 @@ export function useVisibilityAwareLoading<T>(
       setIsLoading(true);
     }
 
-    const requestId = Date.now();
-    activeRequestRef.current = requestId;
-
-    // Safety timeout to prevent infinite loading
-    loadingTimeoutRef.current = setTimeout(() => {
-      if (
-        isMountedRef.current &&
-        activeRequestRef.current === requestId &&
-        isLoading
-      ) {
-        console.warn('Loading timeout reached. Forcing completion.');
-        setIsLoading(false);
-
-        // If we don't have data yet, set a default empty value
-        if (!data) {
-          setData(null);
-        }
-      }
-    }, loadingTimeout);
-
+    // Ensure Supabase client is ready
     try {
-      console.log(`[${requestId}] Starting data fetch`);
-      const result = await Promise.race([
-        loadDataFn(),
-        // Add a Promise timeout as additional safety
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error('Fetch timeout')),
-            loadingTimeout * 1.2
-          )
-        ),
-      ]);
+      const requestId = Date.now();
+      activeRequestRef.current = requestId;
 
-      console.log(`[${requestId}] Data fetch completed`, result);
+      // Safety timeout to prevent infinite loading
+      loadingTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current && activeRequestRef.current === requestId) {
+          console.warn('Loading timeout reached. Forcing completion.');
+          setIsLoading(false);
+          forceUpdate(); // Force a re-render
+        }
+      }, loadingTimeout);
+
+      const result = await loadDataFn();
       lastRefreshTime.current = Date.now();
 
       if (isMountedRef.current && activeRequestRef.current === requestId) {
+        // Staged updates to ensure proper rendering
         setData(result);
         setError(null);
         setIsLoading(false);
+
+        // Force an update after a short delay to ensure rendering
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            forceUpdate();
+          }
+        }, 50);
       }
     } catch (err) {
-      console.error(`[${requestId}] Error fetching data:`, err);
+      console.error('Data fetch error:', err);
 
-      if (isMountedRef.current && activeRequestRef.current === requestId) {
+      if (isMountedRef.current) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsLoading(false);
+        forceUpdate(); // Force a re-render
       }
     } finally {
       if (loadingTimeoutRef.current) {
@@ -105,7 +102,7 @@ export function useVisibilityAwareLoading<T>(
         loadingTimeoutRef.current = null;
       }
     }
-  }, [loadDataFn, data, isLoading, loadingTimeout]);
+  }, [loadDataFn, data, isLoading, loadingTimeout, forceUpdate]);
 
   // Initial data loading effect
   useEffect(() => {
@@ -168,6 +165,11 @@ export function useVisibilityAwareLoading<T>(
       if (periodicRefreshTimer) clearInterval(periodicRefreshTimer);
     };
   }, [loadData, refreshOnVisibility, refreshInterval]);
+
+  useEffect(() => {
+    // This is just to ensure the component re-renders when updateKey changes
+    // No actual logic needed here
+  }, [updateKey]);
 
   return {
     isLoading,
