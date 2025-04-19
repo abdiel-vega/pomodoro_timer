@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User } from '@supabase/supabase-js';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LeaderboardUser } from '@/types/user';
 import ProfileImage from '@/components/profile-image';
@@ -13,74 +14,101 @@ import { Button } from '@/components/ui/button';
 import { Clock, CheckSquare, Trophy, Users, Globe, Info } from 'lucide-react';
 import Link from 'next/link';
 
+
 export default function LeaderboardPage() {
   const [activeLeaderboard, setActiveLeaderboard] = useState('global');
   const supabase = createClient();
   
   const fetchLeaderboardData = useCallback(async () => {
+    console.log('Fetching leaderboard data');
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Add timeout protection
+      const timeout = new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error("Fetch timeout")), 4000)
+      );
       
-      // Fetch global leaderboards with all needed fields
+      // Get auth user with timeout
+      const authPromise = supabase.auth.getUser().then(res => res.data.user);
+      const user = await Promise.race<User | null>([authPromise, timeout])
+        .catch(() => null);
+      
+      // Safe fetch with timeout pattern
+      const safeFetch = async (query: any) => {
+        try {
+          const result = await Promise.race([query, timeout]);
+          return result.data || [];
+        } catch (e) {
+          console.warn('Query timeout:', e);
+          return [];
+        }
+      };
+  
+      // Parallel data fetching with timeout protection
       const [focusData, taskData] = await Promise.all([
-        supabase.from('users')
-          .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-          .order('total_focus_time', { ascending: false })
-          .limit(10),
-        supabase.from('users')
-          .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-          .order('completed_tasks_count', { ascending: false })
-          .limit(10)
+        safeFetch(
+          supabase.from('users')
+            .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+            .order('total_focus_time', { ascending: false })
+            .limit(10)
+        ),
+        safeFetch(
+          supabase.from('users')
+            .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+            .order('completed_tasks_count', { ascending: false })
+            .limit(10)
+        )
       ]);
-
-      const result: {
-        focusLeaders: LeaderboardUser[];
-        taskLeaders: LeaderboardUser[];
-        friendFocusLeaders: LeaderboardUser[];
-        friendTaskLeaders: LeaderboardUser[];
-        currentUserId: string | null;
-      } = {
-        focusLeaders: (focusData.data || []) as LeaderboardUser[],
-        taskLeaders: (taskData.data || []) as LeaderboardUser[],
+  
+      // Initialize with safe default structure even when empty
+      const result = {
+        focusLeaders: focusData || [],
+        taskLeaders: taskData || [],
         friendFocusLeaders: [],
         friendTaskLeaders: [],
         currentUserId: user?.id || null
       };
       
-      // If user is authenticated, fetch friends leaderboards
+      // Only fetch friends data if user is authenticated
       if (user) {
-        // Get list of friends
-        const { data: friendsData } = await supabase
-          .from('user_friends')
-          .select('friend_id')
-          .eq('user_id', user.id);
+        // Get list of friends with timeout protection
+        const friendsData = await safeFetch(
+          supabase.from('user_friends')
+            .select('friend_id')
+            .eq('user_id', user.id)
+        );
         
         if (friendsData && friendsData.length > 0) {
-          const friendIds = friendsData.map(f => f.friend_id);
+          const friendIds = friendsData.map((f: any) => f.friend_id);
           
           // Include current user
           friendIds.push(user.id);
           
-          // Fetch friend leaderboards with all needed fields
+          // Fetch friend leaderboards with timeout protection
           const [friendFocusData, friendTaskData] = await Promise.all([
-            supabase.from('users')
-              .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-              .in('id', friendIds)
-              .order('total_focus_time', { ascending: false }),
-            supabase.from('users')
-              .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-              .in('id', friendIds)
-              .order('completed_tasks_count', { ascending: false })
+            safeFetch(
+              supabase.from('users')
+                .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+                .in('id', friendIds)
+                .order('total_focus_time', { ascending: false })
+            ),
+            safeFetch(
+              supabase.from('users')
+                .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+                .in('id', friendIds)
+                .order('completed_tasks_count', { ascending: false })
+            )
           ]);
           
-          result.friendFocusLeaders = friendFocusData.data as LeaderboardUser[] || [];
-          result.friendTaskLeaders = friendTaskData.data as LeaderboardUser[] || [];
+          result.friendFocusLeaders = friendFocusData || [];
+          result.friendTaskLeaders = friendTaskData || [];
         }
       }
       
+      console.log('Leaderboard data fetched successfully');
       return result;
     } catch (error) {
       console.error('Error loading leaderboards:', error);
+      // Return safe default data to prevent loading failures
       return {
         focusLeaders: [],
         taskLeaders: [],
@@ -97,7 +125,8 @@ export default function LeaderboardPage() {
     data, 
     refresh: loadLeaderboards 
   } = useVisibilityAwareLoading(fetchLeaderboardData, { 
-    refreshOnVisibility: false
+    refreshOnVisibility: false,
+    loadingTimeout: 4000 // 4 second max loading time
   });
 
   // Extract state from the data
@@ -238,6 +267,14 @@ export default function LeaderboardPage() {
       </div>
     );
   };
+
+  const renderFocusLeaderRow = (user: LeaderboardUser, index: number) => {
+    return renderUserRow(user, index, true);
+  };
+  
+  const renderTaskLeaderRow = (user: LeaderboardUser, index: number) => {
+    return renderUserRow(user, index, false);
+  };
   
   return (
     <div className="container mx-auto max-w-3xl py-8">
@@ -292,9 +329,7 @@ export default function LeaderboardPage() {
                     </div>
                   ) : (
                     <div className="divide-y divide-muted">
-                      {focusLeaders.map((user, index) => (
-                        renderUserRow(user, index, true)
-                      ))}
+                      {focusLeaders.map(renderFocusLeaderRow)}
                       
                       {focusLeaders.length === 0 && (
                         <div className="py-8 text-center text-muted-foreground">
@@ -322,9 +357,7 @@ export default function LeaderboardPage() {
                     </div>
                   ) : (
                     <div className="divide-y divide-muted">
-                      {taskLeaders.map((user, index) => (
-                        renderUserRow(user, index, false)
-                      ))}
+                      {taskLeaders.map(renderTaskLeaderRow)}
                       
                       {taskLeaders.length === 0 && (
                         <div className="py-8 text-center text-muted-foreground">

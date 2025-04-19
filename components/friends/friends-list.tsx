@@ -49,34 +49,54 @@ export default function FriendsList() {
   }, []);
   
   const fetchFriends = useCallback(async () => {
+    console.log('Fetching friends list');
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Safety timeout
+      const timeout = new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error("Fetch timeout")), 3500)
+      );
+      
+      // Get user with timeout
+      const authPromise = supabase.auth.getUser();
+      const authResult = await Promise.race([authPromise, timeout]);
+      const user = authResult.data.user;
       
       if (!user) {
-        return [];
+        return []; // Return empty array for unauthenticated users
       }
       
-      const { data: friendIdsData, error: friendIdsError } = await supabase
-        .from('user_friends')
-        .select('friend_id')
-        .eq('user_id', user.id);
+      // Safe fetch with timeout helper
+      const safeFetch = async (query: any) => {
+        try {
+          const result = await Promise.race([query, timeout]);
+          return result.data || [];
+        } catch (e) {
+          console.warn('Query timeout:', e);
+          return [];
+        }
+      };
       
-      if (friendIdsError) throw friendIdsError;
+      // Fetch friend IDs with timeout protection
+      const friendIdsData = await safeFetch(
+        supabase.from('user_friends')
+          .select('friend_id')
+          .eq('user_id', user.id)
+      );
       
       if (!friendIdsData || friendIdsData.length === 0) {
         return [];
       }
       
-      const friendIds = friendIdsData.map(row => row.friend_id);
+      const friendIds = friendIdsData.map((row: any) => row.friend_id);
       
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-        .in('id', friendIds);
+      // Fetch friend details with timeout protection
+      const usersData = await safeFetch(
+        supabase.from('users')
+          .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+          .in('id', friendIds)
+      );
       
-      if (usersError) throw usersError;
-      
-      return usersData?.map(userData => {
+      return (usersData || []).map((userData: any) => {
         // Calculate rank for each friend
         const rank = calculateUserRank(
           userData.total_focus_time || 0,
@@ -91,21 +111,22 @@ export default function FriendsList() {
           completed_tasks_count: userData.completed_tasks_count || 0,
           streak_days: userData.streak_days || 0,
           is_premium: !!userData.is_premium,
-          rank // Add rank to friend object
+          rank
         };
-      }) || [];
+      });
     } catch (err) {
       console.error('Friend loading error:', err);
-      return [];
+      return []; // Return empty array on error
     }
-  }, [supabase]);
+  }, [supabase]);  
   
   const { 
     isLoading, 
     data: friends, 
     refresh: loadFriends 
   } = useVisibilityAwareLoading<Friend[]>(fetchFriends, {
-    refreshOnVisibility: false
+    refreshOnVisibility: false,
+    loadingTimeout: 4000
   });
 
   const handleAddFriend = async () => {

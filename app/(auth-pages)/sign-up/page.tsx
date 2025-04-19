@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { SmtpMessage } from "../smtp-message";
 import { Eye, EyeOff, User as UserIcon } from "lucide-react";
 import { createClient } from '@/utils/supabase/client';
 import { FormMessage } from '@/components/form-message';

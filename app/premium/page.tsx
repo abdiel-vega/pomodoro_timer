@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
+import { createClient } from '@/utils/supabase/client';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PremiumPurchase from '@/components/premium/premium-purchase';
@@ -16,12 +17,50 @@ import Link from 'next/link';
 
 export default function PremiumPage() {
   const { isPremium, refreshUserSettings } = usePomodoroTimer();
+
+  const supabase = createClient();
   
   const fetchPremiumStatus = useCallback(async () => {
-    // Return true or false based on premium status
-    await refreshUserSettings();
-    return isPremium;
-  }, [refreshUserSettings, isPremium]);
+    console.log('Fetching premium status');
+    try {
+      // Apply timeout to prevent hanging
+      const timeout = new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error("Premium status timeout")), 3500)
+      );
+      
+      // Refresh user settings first with timeout
+      const refreshPromise = refreshUserSettings();
+      await Promise.race([refreshPromise, timeout])
+        .catch(() => console.warn('Settings refresh timed out'));
+      
+      // Get auth status with timeout
+      const authPromise = supabase.auth.getUser();
+      const authResult = await Promise.race([authPromise, timeout])
+        .catch(() => ({ data: { user: null } }));
+      
+      if (!authResult.data.user) {
+        return false; // Not premium if not authenticated
+      }
+      
+      // Get premium status with timeout
+      const statusPromise = supabase
+        .from('users')
+        .select('is_premium')
+        .eq('id', authResult.data.user.id)
+        .single();
+        
+      const statusResult = await Promise.race([statusPromise, timeout])
+        .catch(() => ({ data: null }));
+      
+      // Return premium status or false if fetch failed
+      return !!statusResult?.data?.is_premium;
+    } catch (error) {
+      console.error('Failed to check premium status:', error);
+      // Return current state from context as fallback
+      return isPremium;
+    }
+  }, [refreshUserSettings, supabase, isPremium]);
+  
   
   // Use the hook
   const { 
@@ -29,7 +68,8 @@ export default function PremiumPage() {
     data: premiumStatus,
     refresh: refreshPremium
   } = useVisibilityAwareLoading(fetchPremiumStatus, {
-    refreshOnVisibility: false
+    refreshOnVisibility: false,
+    loadingTimeout: 3500
   });
   
 

@@ -234,7 +234,7 @@ export default function FocusAnalytics() {
       <CardContent>
         {loading ? (
           <div className="flex justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
+            <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
           </div>
         ) : (
           <div className="space-y-6">

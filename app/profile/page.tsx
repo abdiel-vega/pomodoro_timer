@@ -54,31 +54,76 @@ export default function ProfilePage() {
   const supabase = createClient();
 
   const fetchUserProfile = useCallback(async () => {
+    console.log('Fetching user profile');
     try {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-          
-      if (authError || !authUser) {
+      // Safety timeout
+      const timeout = new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error("Auth fetch timeout")), 3500)
+      );
+      
+      // Auth check with timeout
+      const authResult = await Promise.race([
+        supabase.auth.getUser(),
+        timeout
+      ]);
+      
+      const authUser = authResult.data.user;
+      
+      if (!authUser) {
         router.push('/sign-in');
         throw new Error('Authentication required');
       }
       
-      // Fetch the user profile from the users table
-      const { data: userData, error: profileError } = await supabase
+      // Fetch user profile with timeout
+      const profilePromise = supabase
         .from('users')
         .select('*')
         .eq('id', authUser.id)
         .single();
         
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        throw new Error('Failed to load profile');
+      const profileResult = await Promise.race([
+        profilePromise,
+        new Promise<any>((_, reject) => 
+          setTimeout(() => reject(new Error("Profile fetch timeout")), 3500)
+        )
+      ]);
+      
+      // Handle errors explicitly
+      if (profileResult.error) {
+        console.error('Error fetching profile:', profileResult.error);
+        
+        // Return minimal valid data to avoid loading state
+        return {
+          id: authUser.id,
+          email: authUser.email,
+          username: authUser.user_metadata?.username || 'User',
+          created_at: authUser.created_at,
+          updated_at: new Date().toISOString(),
+          total_focus_time: 0,
+          completed_tasks_count: 0
+        };
       }
     
-      return userData;
+      return profileResult.data;
     } catch (error) {
-      // Rethrow as proper Error object
-      if (error instanceof Error) throw error;
-      throw new Error(String(error));
+      // Proper error handling with safe fallback
+      console.error('Profile fetch error:', error);
+      
+      // If this is an auth error, let the router push happen
+      if (error instanceof Error && error.message === 'Authentication required') {
+        throw error;
+      }
+      
+      // For other errors, return minimal data to avoid loading state
+      return {
+        id: 'temp',
+        email: '',
+        username: 'Error loading profile',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        total_focus_time: 0,
+        completed_tasks_count: 0
+      };
     }
   }, [supabase, router]);  
   
@@ -88,7 +133,8 @@ export default function ProfilePage() {
     data: userData, 
     error: profileError 
   } = useVisibilityAwareLoading(fetchUserProfile, {
-    refreshOnVisibility: false
+    refreshOnVisibility: false,
+    loadingTimeout: 4000
   });
   
   // Set derived state based on the loaded user data
