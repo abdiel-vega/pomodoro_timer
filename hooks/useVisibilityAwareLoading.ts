@@ -6,35 +6,63 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { acquireLoadingLock, releaseLoadingLock } from '@/lib/loading-state';
 
-export function useVisibilityAwareLoading<T>(loadDataFn: () => Promise<T>): {
+// Define proper type for options with defaults
+interface LoadingOptions {
+  refreshOnVisibility?: boolean;
+  refreshInterval?: number;
+}
+
+export function useVisibilityAwareLoading<T>(
+  loadDataFn: () => Promise<T>,
+  options: LoadingOptions = {}
+): {
   isLoading: boolean;
   data: T | null;
   error: Error | null;
   refresh: () => Promise<void>;
 } {
+  // Destructure with defaults
+  const { refreshOnVisibility = false, refreshInterval = 0 } = options;
+
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  // Add request tracking
   const isMountedRef = useRef(true);
   const activeRequestRef = useRef<number>(0);
+  const lastRefreshTime = useRef<number>(Date.now());
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Function to load data with request ID tracking
   const loadData = useCallback(async () => {
     if (!isMountedRef.current) return;
 
-    // Generate unique request ID for this call
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+
+    // Only set loading true if we don't already have data
+    if (!data) {
+      setIsLoading(true);
+    }
+
     const requestId = Date.now();
     activeRequestRef.current = requestId;
 
-    setIsLoading(true);
+    // Set a max timeout
+    loadingTimeoutRef.current = setTimeout(() => {
+      if (isLoading && isMountedRef.current) {
+        setIsLoading(false);
+        console.warn(
+          'Loading timeout reached. Check your data fetching logic.'
+        );
+      }
+    }, 10000);
+
     try {
       const result = await loadDataFn();
+      lastRefreshTime.current = Date.now();
 
-      // Only update state if this is still the latest request
       if (isMountedRef.current && activeRequestRef.current === requestId) {
         setData(result);
         setError(null);
@@ -43,13 +71,17 @@ export function useVisibilityAwareLoading<T>(loadDataFn: () => Promise<T>): {
     } catch (err) {
       console.error('Failed to load data:', err);
 
-      // Only update error state if this is still the latest request
       if (isMountedRef.current && activeRequestRef.current === requestId) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsLoading(false);
       }
+    } finally {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     }
-  }, [loadDataFn]);
+  }, [loadDataFn, data, isLoading]);
 
   // Initial data loading
   useEffect(() => {
@@ -57,32 +89,63 @@ export function useVisibilityAwareLoading<T>(loadDataFn: () => Promise<T>): {
 
     return () => {
       isMountedRef.current = false;
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
     };
   }, [loadData]);
 
-  // Set up visibility change handler with debounce
+  // Visibility change handler
   useEffect(() => {
-    let debounceTimer: NodeJS.Timeout | null = null;
+    // Early return if the feature is disabled
+    if (!refreshOnVisibility && !refreshInterval) return;
+
+    let visibilityDebounceTimer: NodeJS.Timeout | null = null;
+    let periodicRefreshTimer: NodeJS.Timeout | null = null;
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        if (debounceTimer) clearTimeout(debounceTimer);
+      if (!refreshOnVisibility) return;
 
-        debounceTimer = setTimeout(() => {
-          if (isMountedRef.current && acquireLoadingLock()) {
-            loadData().finally(() => releaseLoadingLock());
+      if (document.visibilityState === 'visible') {
+        // Avoid frequent refreshes
+        const timeSinceLastRefresh = Date.now() - lastRefreshTime.current;
+        if (timeSinceLastRefresh < 60000) return;
+
+        if (visibilityDebounceTimer) clearTimeout(visibilityDebounceTimer);
+
+        visibilityDebounceTimer = setTimeout(() => {
+          if (isMountedRef.current) {
+            loadData();
           }
         }, 500);
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Only set up periodic refresh if interval is specified and > 0
+    if (refreshInterval > 0) {
+      periodicRefreshTimer = setInterval(() => {
+        if (document.visibilityState === 'visible' && isMountedRef.current) {
+          loadData();
+        }
+      }, refreshInterval);
+    }
+
+    // Only add visibility listener if feature is enabled
+    if (refreshOnVisibility) {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (debounceTimer) clearTimeout(debounceTimer);
+      if (refreshOnVisibility) {
+        document.removeEventListener(
+          'visibilitychange',
+          handleVisibilityChange
+        );
+      }
+      if (visibilityDebounceTimer) clearTimeout(visibilityDebounceTimer);
+      if (periodicRefreshTimer) clearInterval(periodicRefreshTimer);
     };
-  }, [loadData]);
+  }, [loadData, refreshOnVisibility, refreshInterval]);
 
   return {
     isLoading,

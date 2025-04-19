@@ -138,7 +138,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const { 
     data: premiumStatus,
     refresh: refreshPremium
-  } = useVisibilityAwareLoading(checkPremiumStatus);
+  } = useVisibilityAwareLoading(checkPremiumStatus, {
+    refreshOnVisibility: false
+  });
   
   // Update premium status when the data changes
   useEffect(() => {

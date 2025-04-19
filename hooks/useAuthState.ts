@@ -77,7 +77,9 @@ export function useAuthState() {
     isLoading,
     data: authData,
     refresh: refreshAuth,
-  } = useVisibilityAwareLoading(checkAuthStatus);
+  } = useVisibilityAwareLoading(checkAuthStatus, {
+    refreshOnVisibility: false,
+  });
 
   // Update state when auth data changes
   useEffect(() => {

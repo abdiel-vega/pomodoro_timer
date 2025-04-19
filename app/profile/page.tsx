@@ -83,7 +83,13 @@ export default function ProfilePage() {
   }, [supabase, router]);  
   
   // Use the hook
-  const { isLoading, data: userData, error: profileError } = useVisibilityAwareLoading(fetchUserProfile);
+  const { 
+    isLoading, 
+    data: userData, 
+    error: profileError 
+  } = useVisibilityAwareLoading(fetchUserProfile, {
+    refreshOnVisibility: false
+  });
   
   // Set derived state based on the loaded user data
   useEffect(() => {

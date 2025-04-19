@@ -100,7 +100,13 @@ export default function FriendsList() {
     }
   }, [supabase]);
   
-  const { isLoading, data: friends, refresh: loadFriends } = useVisibilityAwareLoading<Friend[]>(fetchFriends);
+  const { 
+    isLoading, 
+    data: friends, 
+    refresh: loadFriends 
+  } = useVisibilityAwareLoading<Friend[]>(fetchFriends, {
+    refreshOnVisibility: false
+  });
 
   const handleAddFriend = async () => {
     if (!friendUsername.trim()) {

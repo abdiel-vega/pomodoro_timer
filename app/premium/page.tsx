@@ -24,7 +24,13 @@ export default function PremiumPage() {
   }, [refreshUserSettings, isPremium]);
   
   // Use the hook
-  const { isLoading, refresh: refreshPremiumStatus } = useVisibilityAwareLoading(fetchPremiumStatus);
+  const { 
+    isLoading, 
+    data: premiumStatus,
+    refresh: refreshPremium
+  } = useVisibilityAwareLoading(fetchPremiumStatus, {
+    refreshOnVisibility: false
+  });
   
 
   if (isLoading) {

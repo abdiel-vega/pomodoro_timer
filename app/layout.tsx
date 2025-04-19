@@ -101,7 +101,10 @@ export default function RootLayout({
     isLoading, 
     data: authState,
     refresh: refreshAuth 
-  } = useVisibilityAwareLoading<AuthState>(checkAuthStatus);
+  } = useVisibilityAwareLoading<AuthState>(checkAuthStatus, { 
+    refreshOnVisibility: false // Disable refresh on tab visibility change
+  });
+  
 
   // Set up auth state listener
   useEffect(() => {

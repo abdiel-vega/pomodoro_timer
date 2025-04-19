@@ -92,7 +92,13 @@ export default function LeaderboardPage() {
   }, [supabase]);
 
   // Use the hook to manage loading state and data refresh
-  const { isLoading, data, refresh: loadLeaderboards } = useVisibilityAwareLoading(fetchLeaderboardData);
+  const { 
+    isLoading, 
+    data, 
+    refresh: loadLeaderboards 
+  } = useVisibilityAwareLoading(fetchLeaderboardData, { 
+    refreshOnVisibility: false
+  });
 
   // Extract state from the data
   const focusLeaders = data?.focusLeaders || [];
