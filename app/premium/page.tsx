@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/utils/supabase/supabase_wrapper';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PremiumPurchase from '@/components/premium/premium-purchase';
@@ -17,8 +17,6 @@ import Link from 'next/link';
 
 export default function PremiumPage() {
   const { isPremium, refreshUserSettings } = usePomodoroTimer();
-
-  const supabase = createClient();
   
   const fetchPremiumStatus = useCallback(async () => {
     console.log('Fetching premium status');
@@ -28,13 +26,16 @@ export default function PremiumPage() {
         setTimeout(() => reject(new Error("Premium status timeout")), 3500)
       );
       
+      // Get initialized client
+      const supabase = await getSupabaseClient();
+      
       // Refresh user settings first with timeout
       const refreshPromise = refreshUserSettings();
       await Promise.race([refreshPromise, timeout])
         .catch(() => console.warn('Settings refresh timed out'));
       
       // Get auth status with timeout
-      const authPromise = supabase.auth.getUser();
+      const authPromise = supabase.auth.getUser();  
       const authResult = await Promise.race([authPromise, timeout])
         .catch(() => ({ data: { user: null } }));
       
@@ -59,7 +60,7 @@ export default function PremiumPage() {
       // Return current state from context as fallback
       return isPremium;
     }
-  }, [refreshUserSettings, supabase, isPremium]);
+  }, [refreshUserSettings, isPremium]);
   
   
   // Use the hook

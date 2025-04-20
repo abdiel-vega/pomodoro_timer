@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/utils/supabase/supabase_wrapper';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,7 +51,6 @@ export default function ProfilePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const router = useRouter();
-  const supabase = createClient();
 
   const fetchUserProfile = useCallback(async () => {
     console.log('Fetching user profile');
@@ -61,11 +60,14 @@ export default function ProfilePage() {
         setTimeout(() => reject(new Error("Auth fetch timeout")), 3500)
       );
       
+      // Get initialized client
+      const supabase = await getSupabaseClient();
+      
       // Auth check with timeout
       const authResult = await Promise.race([
         supabase.auth.getUser(),
         timeout
-      ]);
+      ]);  
       
       const authUser = authResult.data.user;
       
@@ -125,7 +127,7 @@ export default function ProfilePage() {
         completed_tasks_count: 0
       };
     }
-  }, [supabase, router]);  
+  }, [router]);  
   
   // Use the hook
   const { 
@@ -168,6 +170,9 @@ export default function ProfilePage() {
     
     try {
       setIsUpdating(true);
+      
+      // Get initialized client
+      const supabase = await getSupabaseClient();  
       
       // Only check for duplicate username if it has changed
       if (username !== user?.username) {

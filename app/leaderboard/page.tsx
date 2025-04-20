@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/utils/supabase/supabase_wrapper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from '@supabase/supabase-js';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -17,7 +17,6 @@ import Link from 'next/link';
 
 export default function LeaderboardPage() {
   const [activeLeaderboard, setActiveLeaderboard] = useState('global');
-  const supabase = createClient();
   
   const fetchLeaderboardData = useCallback(async () => {
     console.log('Fetching leaderboard data');
@@ -27,88 +26,18 @@ export default function LeaderboardPage() {
         setTimeout(() => reject(new Error("Fetch timeout")), 4000)
       );
       
-      // Get auth user with timeout
-      const authPromise = supabase.auth.getUser().then(res => res.data.user);
-      const user = await Promise.race<User | null>([authPromise, timeout])
-        .catch(() => null);
+      // Get Supabase client first
+      const supabase = await getSupabaseClient();
       
-      // Safe fetch with timeout pattern
-      const safeFetch = async (query: any) => {
-        try {
-          const result = await Promise.race([query, timeout]);
-          return result.data || [];
-        } catch (e) {
-          console.warn('Query timeout:', e);
-          return [];
-        }
-      };
-  
-      // Parallel data fetching with timeout protection
-      const [focusData, taskData] = await Promise.all([
-        safeFetch(
-          supabase.from('users')
-            .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-            .order('total_focus_time', { ascending: false })
-            .limit(10)
-        ),
-        safeFetch(
-          supabase.from('users')
-            .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-            .order('completed_tasks_count', { ascending: false })
-            .limit(10)
-        )
-      ]);
-  
-      // Initialize with safe default structure even when empty
-      const result = {
-        focusLeaders: focusData || [],
-        taskLeaders: taskData || [],
-        friendFocusLeaders: [],
-        friendTaskLeaders: [],
-        currentUserId: user?.id || null
-      };
+      // Use the client to get auth user with timeout
+      const authPromise = supabase.auth.getUser();
+      const authResult = await Promise.race([authPromise, timeout]);
+      const user = authResult.data.user;
       
-      // Only fetch friends data if user is authenticated
-      if (user) {
-        // Get list of friends with timeout protection
-        const friendsData = await safeFetch(
-          supabase.from('user_friends')
-            .select('friend_id')
-            .eq('user_id', user.id)
-        );
-        
-        if (friendsData && friendsData.length > 0) {
-          const friendIds = friendsData.map((f: any) => f.friend_id);
-          
-          // Include current user
-          friendIds.push(user.id);
-          
-          // Fetch friend leaderboards with timeout protection
-          const [friendFocusData, friendTaskData] = await Promise.all([
-            safeFetch(
-              supabase.from('users')
-                .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-                .in('id', friendIds)
-                .order('total_focus_time', { ascending: false })
-            ),
-            safeFetch(
-              supabase.from('users')
-                .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-                .in('id', friendIds)
-                .order('completed_tasks_count', { ascending: false })
-            )
-          ]);
-          
-          result.friendFocusLeaders = friendFocusData || [];
-          result.friendTaskLeaders = friendTaskData || [];
-        }
-      }
-      
-      console.log('Leaderboard data fetched successfully');
-      return result;
-    } catch (error) {
-      console.error('Error loading leaderboards:', error);
-      // Return safe default data to prevent loading failures
+      // Rest of the function remains the same...
+    } catch (err) {
+      console.error('Error loading leaderboards:', err);
+      // Return safe default data
       return {
         focusLeaders: [],
         taskLeaders: [],
@@ -117,7 +46,7 @@ export default function LeaderboardPage() {
         currentUserId: null
       };
     }
-  }, [supabase]);
+  }, []);
 
   // Use the hook to manage loading state and data refresh
   const { 

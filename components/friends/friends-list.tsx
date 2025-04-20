@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/utils/supabase/supabase_wrapper';
 import { Button } from '@/components/ui/button';
 import { 
   Dialog, 
@@ -38,7 +38,6 @@ export default function FriendsList() {
   const [friendUsername, setFriendUsername] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   
-  const supabase = createClient();
   const { searchUser, sendFriendRequest } = useFriendRequests();
 
   // Cancel any hanging requests when component unmounts
@@ -55,6 +54,9 @@ export default function FriendsList() {
       const timeout = new Promise<any>((_, reject) => 
         setTimeout(() => reject(new Error("Fetch timeout")), 3500)
       );
+      
+      // Get initialized client
+      const supabase = await getSupabaseClient();
       
       // Get user with timeout
       const authPromise = supabase.auth.getUser();
@@ -118,7 +120,7 @@ export default function FriendsList() {
       console.error('Friend loading error:', err);
       return []; // Return empty array on error
     }
-  }, [supabase]);  
+  }, []);  
   
   const { 
     isLoading, 
@@ -164,7 +166,10 @@ export default function FriendsList() {
   // Function to remove a friend
   const handleRemoveFriend = async (friend: Friend) => {
     try {
+      // Get initialized client
+      const supabase = await getSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
+  
       if (!user) {
         toast.error('You must be signed in to remove friends');
         return;

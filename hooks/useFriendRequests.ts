@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/utils/supabase/supabase_wrapper';
 import { toast } from 'sonner';
 
 // Define proper type
@@ -13,7 +13,6 @@ interface UserSearchResult {
 export function useFriendRequests() {
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const supabase = createClient();
 
   // Clean up function for component unmount
   useEffect(() => {
@@ -27,9 +26,9 @@ export function useFriendRequests() {
     username: string
   ): Promise<UserSearchResult | null> => {
     setIsSearching(true);
-
     try {
-      // Verify auth first
+      // Get initialized client
+      const supabase = await getSupabaseClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -94,6 +93,8 @@ export function useFriendRequests() {
     setIsSubmitting(true);
 
     try {
+      // Get initialized client
+      const supabase = await getSupabaseClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
