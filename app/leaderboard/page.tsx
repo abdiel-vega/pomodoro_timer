@@ -1,25 +1,23 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { getSupabaseClient } from '@/utils/supabase/supabase-wrapper';
-import { useAuth } from '@/components/auth-provider';
-import { useRouter } from 'next/router';
+import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User } from '@supabase/supabase-js';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LeaderboardUser } from '@/types/user';
 import ProfileImage from '@/components/profile-image';
 import RankBadge from '@/components/rank-badge';
-import { calculateUserRank, formatTime } from '@/utils/rank';
+import { calculateUserRank, RANKS, formatTime } from '@/utils/rank';
 import { Button } from '@/components/ui/button';
 import { Clock, CheckSquare, Trophy, Users, Globe, Info } from 'lucide-react';
 import Link from 'next/link';
 
-const router = useRouter();
-const { isInitialized, isAuthenticated } = useAuth();
 
 export default function LeaderboardPage() {
   const [activeLeaderboard, setActiveLeaderboard] = useState('global');
+  const supabase = createClient();
   
   const fetchLeaderboardData = useCallback(async () => {
     console.log('Fetching leaderboard data');
@@ -29,18 +27,88 @@ export default function LeaderboardPage() {
         setTimeout(() => reject(new Error("Fetch timeout")), 4000)
       );
       
-      // Get Supabase client first
-      const supabase = await getSupabaseClient();
+      // Get auth user with timeout
+      const authPromise = supabase.auth.getUser().then(res => res.data.user);
+      const user = await Promise.race<User | null>([authPromise, timeout])
+        .catch(() => null);
       
-      // Use the client to get auth user with timeout
-      const authPromise = supabase.auth.getUser();
-      const authResult = await Promise.race([authPromise, timeout]);
-      const user = authResult.data.user;
+      // Safe fetch with timeout pattern
+      const safeFetch = async (query: any) => {
+        try {
+          const result = await Promise.race([query, timeout]);
+          return result.data || [];
+        } catch (e) {
+          console.warn('Query timeout:', e);
+          return [];
+        }
+      };
+  
+      // Parallel data fetching with timeout protection
+      const [focusData, taskData] = await Promise.all([
+        safeFetch(
+          supabase.from('users')
+            .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+            .order('total_focus_time', { ascending: false })
+            .limit(10)
+        ),
+        safeFetch(
+          supabase.from('users')
+            .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+            .order('completed_tasks_count', { ascending: false })
+            .limit(10)
+        )
+      ]);
+  
+      // Initialize with safe default structure even when empty
+      const result = {
+        focusLeaders: focusData || [],
+        taskLeaders: taskData || [],
+        friendFocusLeaders: [],
+        friendTaskLeaders: [],
+        currentUserId: user?.id || null
+      };
       
-      // Rest of the function remains the same...
-    } catch (err) {
-      console.error('Error loading leaderboards:', err);
-      // Return safe default data
+      // Only fetch friends data if user is authenticated
+      if (user) {
+        // Get list of friends with timeout protection
+        const friendsData = await safeFetch(
+          supabase.from('user_friends')
+            .select('friend_id')
+            .eq('user_id', user.id)
+        );
+        
+        if (friendsData && friendsData.length > 0) {
+          const friendIds = friendsData.map((f: any) => f.friend_id);
+          
+          // Include current user
+          friendIds.push(user.id);
+          
+          // Fetch friend leaderboards with timeout protection
+          const [friendFocusData, friendTaskData] = await Promise.all([
+            safeFetch(
+              supabase.from('users')
+                .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+                .in('id', friendIds)
+                .order('total_focus_time', { ascending: false })
+            ),
+            safeFetch(
+              supabase.from('users')
+                .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
+                .in('id', friendIds)
+                .order('completed_tasks_count', { ascending: false })
+            )
+          ]);
+          
+          result.friendFocusLeaders = friendFocusData || [];
+          result.friendTaskLeaders = friendTaskData || [];
+        }
+      }
+      
+      console.log('Leaderboard data fetched successfully');
+      return result;
+    } catch (error) {
+      console.error('Error loading leaderboards:', error);
+      // Return safe default data to prevent loading failures
       return {
         focusLeaders: [],
         taskLeaders: [],
@@ -49,7 +117,7 @@ export default function LeaderboardPage() {
         currentUserId: null
       };
     }
-  }, []);
+  }, [supabase]);
 
   // Use the hook to manage loading state and data refresh
   const { 
@@ -208,21 +276,6 @@ export default function LeaderboardPage() {
     return renderUserRow(user, index, false);
   };
   
-  if (!isInitialized) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
-      </div>
-    );
-  }
-  
-  // If not authenticated after initialization, redirect
-  useEffect(() => {
-    if (isInitialized && !isAuthenticated) {
-      router.push('/sign-in');
-    }
-  }, [isInitialized, isAuthenticated, router]);
-
   return (
     <div className="container mx-auto max-w-3xl py-8">
       <div className="flex items-center justify-between mb-6">

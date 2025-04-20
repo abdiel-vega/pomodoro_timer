@@ -2,15 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { useAuth } from '@/components/auth-provider';
 import { useRouter } from 'next/navigation';
-import { getSupabaseClient } from '@/utils/supabase/supabase-wrapper';
+import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider'; 
 import { FormMessage } from '@/components/form-message';
-import { Camera, Check, Clock, CheckSquare, Trophy, X, ZoomIn, ZoomOut, Flame, Award } from 'lucide-react';
+import { Camera, Check, Clock, CheckSquare, Trophy, X, Move, ZoomIn, ZoomOut, Flame, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import ProfileImage from '@/components/profile-image';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -31,7 +30,6 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { isInitialized, isAuthenticated } = useAuth();
   
   // Rank state
   const [userRank, setUserRank] = useState(RANKS.bronze);
@@ -53,6 +51,7 @@ export default function ProfilePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const router = useRouter();
+  const supabase = createClient();
 
   const fetchUserProfile = useCallback(async () => {
     console.log('Fetching user profile');
@@ -62,14 +61,11 @@ export default function ProfilePage() {
         setTimeout(() => reject(new Error("Auth fetch timeout")), 3500)
       );
       
-      // Get initialized client
-      const supabase = await getSupabaseClient();
-      
       // Auth check with timeout
       const authResult = await Promise.race([
         supabase.auth.getUser(),
         timeout
-      ]);  
+      ]);
       
       const authUser = authResult.data.user;
       
@@ -129,7 +125,7 @@ export default function ProfilePage() {
         completed_tasks_count: 0
       };
     }
-  }, [router]);  
+  }, [supabase, router]);  
   
   // Use the hook
   const { 
@@ -172,9 +168,6 @@ export default function ProfilePage() {
     
     try {
       setIsUpdating(true);
-      
-      // Get initialized client
-      const supabase = await getSupabaseClient();  
       
       // Only check for duplicate username if it has changed
       if (username !== user?.username) {
@@ -529,20 +522,13 @@ export default function ProfilePage() {
   // Determine if we have changes to enable the update button
   const hasChanges = username !== user?.username || croppedImageFile !== null;
 
-  if (!isInitialized) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
       </div>
     );
   }
-
-  // If not authenticated after initialization, redirect
-  useEffect(() => {
-    if (isInitialized && !isAuthenticated) {
-      router.push('/sign-in');
-    }
-  }, [isInitialized, isAuthenticated, router]);
 
   return (
     <div className="container mx-auto max-w-2xl py-8">

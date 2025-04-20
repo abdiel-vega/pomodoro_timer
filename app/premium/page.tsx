@@ -1,10 +1,8 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { getSupabaseClient } from '@/utils/supabase/supabase-wrapper';
-import { useAuth } from '@/components/auth-provider';
-import { useRouter } from 'next/router';
+import { createClient } from '@/utils/supabase/client';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PremiumPurchase from '@/components/premium/premium-purchase';
@@ -18,9 +16,9 @@ import { HomeIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PremiumPage() {
-  const router = useRouter();
   const { isPremium, refreshUserSettings } = usePomodoroTimer();
-  const { isInitialized, isAuthenticated } = useAuth();
+
+  const supabase = createClient();
   
   const fetchPremiumStatus = useCallback(async () => {
     console.log('Fetching premium status');
@@ -30,16 +28,13 @@ export default function PremiumPage() {
         setTimeout(() => reject(new Error("Premium status timeout")), 3500)
       );
       
-      // Get initialized client
-      const supabase = await getSupabaseClient();
-      
       // Refresh user settings first with timeout
       const refreshPromise = refreshUserSettings();
       await Promise.race([refreshPromise, timeout])
         .catch(() => console.warn('Settings refresh timed out'));
       
       // Get auth status with timeout
-      const authPromise = supabase.auth.getUser();  
+      const authPromise = supabase.auth.getUser();
       const authResult = await Promise.race([authPromise, timeout])
         .catch(() => ({ data: { user: null } }));
       
@@ -64,7 +59,7 @@ export default function PremiumPage() {
       // Return current state from context as fallback
       return isPremium;
     }
-  }, [refreshUserSettings, isPremium]);
+  }, [refreshUserSettings, supabase, isPremium]);
   
   
   // Use the hook
@@ -78,7 +73,7 @@ export default function PremiumPage() {
   });
   
 
-  if (isInitialized) {
+  if (isLoading) {
     return (
       <div className="container mx-auto max-w-6xl">
         <div className="flex items-center justify-between mb-6">
@@ -95,13 +90,6 @@ export default function PremiumPage() {
       </div>
     );
   }
-
-  // If not authenticated after initialization, redirect
-  useEffect(() => {
-    if (isInitialized && !isAuthenticated) {
-      router.push('/sign-in');
-    }
-  }, [isInitialized, isAuthenticated, router]);
 
   return (
     <div className="container mx-auto max-w-6xl">
