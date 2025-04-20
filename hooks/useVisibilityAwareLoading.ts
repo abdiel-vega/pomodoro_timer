@@ -3,10 +3,10 @@
 - Hook that handles data loading and refreshes when tab becomes visible
 
 */
-// hooks/useVisibilityAwareLoading.ts
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useAuth } from '@/components/auth-provider';
 
 interface LoadingOptions {
   refreshOnVisibility?: boolean;
@@ -32,8 +32,15 @@ export function useVisibilityAwareLoading<T>(
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  // Add this to force re-renders when needed
   const [updateKey, setUpdateKey] = useState(0);
+  const { isInitialized } = useAuth();
+
+  useEffect(() => {
+    if (!isInitialized) {
+      // Don't load data until auth is initialized
+      return;
+    }
+  }, [isInitialized]);
 
   // Force an update function
   const forceUpdate = useCallback(() => {

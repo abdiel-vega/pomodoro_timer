@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { getSupabaseClient } from '@/utils/supabase/supabase_wrapper';
+import { getSupabaseClient } from '@/utils/supabase/supabase-wrapper';
+import { useAuth } from '@/components/auth-provider';
+import { useRouter } from 'next/router';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PremiumPurchase from '@/components/premium/premium-purchase';
@@ -16,7 +18,9 @@ import { HomeIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PremiumPage() {
+  const router = useRouter();
   const { isPremium, refreshUserSettings } = usePomodoroTimer();
+  const { isInitialized, isAuthenticated } = useAuth();
   
   const fetchPremiumStatus = useCallback(async () => {
     console.log('Fetching premium status');
@@ -74,7 +78,7 @@ export default function PremiumPage() {
   });
   
 
-  if (isLoading) {
+  if (isInitialized) {
     return (
       <div className="container mx-auto max-w-6xl">
         <div className="flex items-center justify-between mb-6">
@@ -91,6 +95,13 @@ export default function PremiumPage() {
       </div>
     );
   }
+
+  // If not authenticated after initialization, redirect
+  useEffect(() => {
+    if (isInitialized && !isAuthenticated) {
+      router.push('/sign-in');
+    }
+  }, [isInitialized, isAuthenticated, router]);
 
   return (
     <div className="container mx-auto max-w-6xl">

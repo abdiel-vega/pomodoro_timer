@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { getSupabaseClient } from '@/utils/supabase/supabase_wrapper';
+import { useAuth } from '@/components/auth-provider';
+import { getSupabaseClient } from '@/utils/supabase/supabase-wrapper';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { 
   Dialog, 
@@ -37,8 +39,10 @@ export default function FriendsList() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [friendUsername, setFriendUsername] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  
+  const { isInitialized, isAuthenticated } = useAuth();
   const { searchUser, sendFriendRequest } = useFriendRequests();
+
+  const router = useRouter();
 
   // Cancel any hanging requests when component unmounts
   useEffect(() => {
@@ -209,6 +213,22 @@ export default function FriendsList() {
       toast.error('Failed to remove friend');
     }
   };
+
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
+      </div>
+    );
+  }
+  
+  // If not authenticated after initialization, redirect
+  useEffect(() => {
+    if (isInitialized && !isAuthenticated) {
+      router.push('/sign-in');
+    }
+  }, [isInitialized, isAuthenticated, router]);
+
 
   return (
     <div className="container mx-auto max-w-3xl py-8">

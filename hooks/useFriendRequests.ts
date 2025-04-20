@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSupabaseClient } from '@/utils/supabase/supabase_wrapper';
+import { getSupabaseClient } from '@/utils/supabase/supabase-wrapper';
 import { toast } from 'sonner';
 
 // Define proper type

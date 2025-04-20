@@ -1,19 +1,22 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { getSupabaseClient } from '@/utils/supabase/supabase_wrapper';
+import { getSupabaseClient } from '@/utils/supabase/supabase-wrapper';
+import { useAuth } from '@/components/auth-provider';
+import { useRouter } from 'next/router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User } from '@supabase/supabase-js';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LeaderboardUser } from '@/types/user';
 import ProfileImage from '@/components/profile-image';
 import RankBadge from '@/components/rank-badge';
-import { calculateUserRank, RANKS, formatTime } from '@/utils/rank';
+import { calculateUserRank, formatTime } from '@/utils/rank';
 import { Button } from '@/components/ui/button';
 import { Clock, CheckSquare, Trophy, Users, Globe, Info } from 'lucide-react';
 import Link from 'next/link';
 
+const router = useRouter();
+const { isInitialized, isAuthenticated } = useAuth();
 
 export default function LeaderboardPage() {
   const [activeLeaderboard, setActiveLeaderboard] = useState('global');
@@ -205,6 +208,21 @@ export default function LeaderboardPage() {
     return renderUserRow(user, index, false);
   };
   
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-secondary-foreground"></div>
+      </div>
+    );
+  }
+  
+  // If not authenticated after initialization, redirect
+  useEffect(() => {
+    if (isInitialized && !isAuthenticated) {
+      router.push('/sign-in');
+    }
+  }, [isInitialized, isAuthenticated, router]);
+
   return (
     <div className="container mx-auto max-w-3xl py-8">
       <div className="flex items-center justify-between mb-6">
