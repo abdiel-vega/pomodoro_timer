@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PremiumPurchase from '@/components/premium/premium-purchase';
@@ -18,7 +18,7 @@ import Link from 'next/link';
 export default function PremiumPage() {
   const { isPremium, refreshUserSettings } = usePomodoroTimer();
 
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   
   const fetchPremiumStatus = useCallback(async () => {
     console.log('Fetching premium status');

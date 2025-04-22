@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { calculateUserRank, formatTime, calculateProgressToNextRank, RANKS } fro
 import RankBadge from '@/components/rank-badge';
 import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
+import { getUserProfile, updateUserProfile } from '@/lib/api';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
@@ -51,66 +52,21 @@ export default function ProfilePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
 
   const fetchUserProfile = useCallback(async () => {
     console.log('Fetching user profile');
     try {
-      // Safety timeout
-      const timeout = new Promise<any>((_, reject) => 
-        setTimeout(() => reject(new Error("Auth fetch timeout")), 3500)
-      );
-      
-      // Auth check with timeout
-      const authResult = await Promise.race([
-        supabase.auth.getUser(),
-        timeout
-      ]);
-      
-      const authUser = authResult.data.user;
-      
-      if (!authUser) {
-        router.push('/sign-in');
-        throw new Error('Authentication required');
-      }
-      
-      // Fetch user profile with timeout
-      const profilePromise = supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
-        
-      const profileResult = await Promise.race([
-        profilePromise,
-        new Promise<any>((_, reject) => 
-          setTimeout(() => reject(new Error("Profile fetch timeout")), 3500)
-        )
-      ]);
-      
-      // Handle errors explicitly
-      if (profileResult.error) {
-        console.error('Error fetching profile:', profileResult.error);
-        
-        // Return minimal valid data to avoid loading state
-        return {
-          id: authUser.id,
-          email: authUser.email,
-          username: authUser.user_metadata?.username || 'User',
-          created_at: authUser.created_at,
-          updated_at: new Date().toISOString(),
-          total_focus_time: 0,
-          completed_tasks_count: 0
-        };
-      }
-    
-      return profileResult.data;
+      // Use the API function instead of direct Supabase calls
+      const profileData = await getUserProfile();
+      return profileData;
     } catch (error) {
       // Proper error handling with safe fallback
       console.error('Profile fetch error:', error);
       
       // If this is an auth error, let the router push happen
       if (error instanceof Error && error.message === 'Authentication required') {
+        router.push('/sign-in');
         throw error;
       }
       
@@ -125,13 +81,14 @@ export default function ProfilePage() {
         completed_tasks_count: 0
       };
     }
-  }, [supabase, router]);  
+  }, [router]);  
   
   // Use the hook
   const { 
     isLoading, 
     data: userData, 
-    error: profileError 
+    error: profileError,
+    refresh: refreshProfile
   } = useVisibilityAwareLoading(fetchUserProfile, {
     refreshOnVisibility: false,
     loadingTimeout: 4000
@@ -211,19 +168,11 @@ export default function ProfilePage() {
         profilePictureUrl = urlData.publicUrl;
       }
       
-      // Update user profile
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          username,
-          profile_picture: profilePictureUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-        
-      if (updateError) {
-        throw updateError;
-      }
+      // Use API function to update profile
+      await updateUserProfile({
+        username,
+        profile_picture: profilePictureUrl
+      });
       
       // After successful update:
       const updatedProfile = { 
@@ -245,6 +194,7 @@ export default function ProfilePage() {
       });
       
       toast.success('Profile updated successfully');
+      refreshProfile();
 
     } catch (err: any) {
       console.error('Error updating profile:', err);

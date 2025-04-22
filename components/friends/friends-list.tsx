@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { 
   Dialog, 
@@ -19,6 +19,7 @@ import FriendRequests from './friend-requests';
 import { useFriendRequests } from '@/hooks/useFriendRequests';
 import { calculateUserRank, RankInfo, formatTime } from '@/utils/rank';
 import RankBadge from '@/components/rank-badge';
+import { getFriends, searchUsers, sendFriendRequest, removeFriend } from '@/lib/api';
 
 // Enhanced Friend interface with rank
 interface Friend {
@@ -38,7 +39,6 @@ export default function FriendsList() {
   const [friendUsername, setFriendUsername] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   
-  const supabase = createClient();
   const { searchUser, sendFriendRequest } = useFriendRequests();
 
   // Cancel any hanging requests when component unmounts
@@ -51,52 +51,10 @@ export default function FriendsList() {
   const fetchFriends = useCallback(async () => {
     console.log('Fetching friends list');
     try {
-      // Safety timeout
-      const timeout = new Promise<any>((_, reject) => 
-        setTimeout(() => reject(new Error("Fetch timeout")), 3500)
-      );
+      // Using the API function instead of direct Supabase calls
+      const friendsData = await getFriends();
       
-      // Get user with timeout
-      const authPromise = supabase.auth.getUser();
-      const authResult = await Promise.race([authPromise, timeout]);
-      const user = authResult.data.user;
-      
-      if (!user) {
-        return []; // Return empty array for unauthenticated users
-      }
-      
-      // Safe fetch with timeout helper
-      const safeFetch = async (query: any) => {
-        try {
-          const result = await Promise.race([query, timeout]);
-          return result.data || [];
-        } catch (e) {
-          console.warn('Query timeout:', e);
-          return [];
-        }
-      };
-      
-      // Fetch friend IDs with timeout protection
-      const friendIdsData = await safeFetch(
-        supabase.from('user_friends')
-          .select('friend_id')
-          .eq('user_id', user.id)
-      );
-      
-      if (!friendIdsData || friendIdsData.length === 0) {
-        return [];
-      }
-      
-      const friendIds = friendIdsData.map((row: any) => row.friend_id);
-      
-      // Fetch friend details with timeout protection
-      const usersData = await safeFetch(
-        supabase.from('users')
-          .select('id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium')
-          .in('id', friendIds)
-      );
-      
-      return (usersData || []).map((userData: any) => {
+      return friendsData.map((userData: any) => {
         // Calculate rank for each friend
         const rank = calculateUserRank(
           userData.total_focus_time || 0,
@@ -118,7 +76,7 @@ export default function FriendsList() {
       console.error('Friend loading error:', err);
       return []; // Return empty array on error
     }
-  }, [supabase]);  
+  }, []);  
   
   const { 
     isLoading, 
@@ -164,33 +122,7 @@ export default function FriendsList() {
   // Function to remove a friend
   const handleRemoveFriend = async (friend: Friend) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('You must be signed in to remove friends');
-        return;
-      }
-      
-      // Delete both friendship entries
-      const promises = [
-        // Delete current user -> friend relationship
-        supabase
-          .from('user_friends')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('friend_id', friend.id),
-          
-        // Delete friend -> current user relationship
-        supabase
-          .from('user_friends')
-          .delete()
-          .eq('user_id', friend.id)
-          .eq('friend_id', user.id)
-      ];
-      
-      const [result1, result2] = await Promise.all(promises);
-      
-      if (result1.error) throw result1.error;
-      if (result2.error) throw result2.error;
+      await removeFriend(friend.id);
       
       // Close dialog and refresh friends list
       setIsDialogOpen(false);
