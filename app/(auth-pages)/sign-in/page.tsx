@@ -1,9 +1,8 @@
-// app/(auth-pages)/sign-in/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
@@ -17,14 +16,15 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const supabase = createClient();
-
+  
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      const supabase = getSupabaseClient();
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -49,6 +49,8 @@ export default function SignIn() {
 
   const handleGoogleSignIn = async () => {
     try {
+      const supabase = getSupabaseClient();
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

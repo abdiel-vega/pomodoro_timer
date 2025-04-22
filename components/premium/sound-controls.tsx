@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Volume2, VolumeX, Music, CloudRain, Wind, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { playSound, stopSound, setVolume } from '@/lib/audio.helper';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 
 // Sound categories and sources
 const SOUNDS = {
@@ -30,11 +31,19 @@ const SOUNDS = {
 
 export default function SoundControls() {
   const { isPremium, soundEnabled, setSoundEnabled, currentSound, setCurrentSound } = usePomodoroTimer();
-  const [volume, setVolume] = useState(70);
+  const [volume, setVolumeState] = useState(70);
   const [activeCategory, setActiveCategory] = useState('nature');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
+
+  // Check premium status
+  const checkPremium = useCallback(async () => {
+    return isPremium;
+  }, [isPremium]);
+
+  const { data: premiumStatus } = useVisibilityAwareLoading(checkPremium, {
+    refreshOnVisibility: true
+  });
 
   // Initialize audio on component mount
   useEffect(() => {
@@ -70,11 +79,10 @@ export default function SoundControls() {
   // Handle volume change
   const handleVolumeChange = (values: number[]) => {
     const newVolume = values[0];
-    setVolume(newVolume);
+    setVolumeState(newVolume);
     setVolume(newVolume / 100);
   };
   
-
   // Select a sound
   const selectSound = (soundId: string) => {
     if (!isPremium) return;
@@ -83,7 +91,7 @@ export default function SoundControls() {
     setSoundEnabled(true);
   };
 
-  if (!isPremium) {
+  if (!premiumStatus) {
     return (
       <Card className="w-full">
         <CardHeader>

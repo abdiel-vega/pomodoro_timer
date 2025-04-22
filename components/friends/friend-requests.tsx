@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useState, useEffect, useCallback } from 'react';
+import { getSupabaseClient } from '@/lib/supabase';
 import ProfileImage from '@/components/profile-image';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Bell, Check, X, Clock, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 
 interface FriendRequest {
   id: string;
@@ -20,49 +21,23 @@ interface FriendRequest {
   recipient_id: string;
   status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
-  // Joined data
   sender_username?: string;
   sender_profile_picture?: string | null;
   recipient_username?: string;
   recipient_profile_picture?: string | null;
 }
 
-// Proper interface for the joined data structure
-interface RequestWithSender extends FriendRequest {
-  sender: {
-    username: string | null;
-    profile_picture: string | null;
-  } | null; // Note: it's an object, not an array
-  
-  recipient: {
-    username: string | null;
-    profile_picture: string | null;
-  } | null;
-}
-
 export default function FriendRequests() {
-  const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([]);
-  const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('received');
   
-  const supabase = createClient();
-  
-  // Load requests when popover opens
-  useEffect(() => {
-    if (isOpen) {
-      loadRequests();
-    }
-  }, [isOpen]);
-  
-  const loadRequests = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
+  // Fetch friend requests
+  const fetchRequests = useCallback(async () => {
+    const supabase = getSupabaseClient();
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return { received: [], sent: [] };
       
       // Load received requests (with sender info)
       const { data: receivedData, error: receivedError } = await supabase
@@ -110,16 +85,38 @@ export default function FriendRequests() {
         recipient_profile_picture: request.recipient?.profile_picture || null,
       }));      
       
-      setReceivedRequests(formattedReceivedRequests);
-      setSentRequests(formattedSentRequests);
+      return {
+        received: formattedReceivedRequests,
+        sent: formattedSentRequests,
+      };
     } catch (err) {
       console.error('Error loading friend requests:', err);
-    } finally {
-      setIsLoading(false);
+      return { received: [], sent: [] };
     }
-  };
+  }, []);
+
+  const { 
+    isLoading, 
+    data: requests, 
+    refresh: loadRequests 
+  } = useVisibilityAwareLoading(fetchRequests, {
+    refreshOnVisibility: true,
+    loadingTimeout: 3000
+  });
+
+  // Load requests when popover opens
+  useEffect(() => {
+    if (isOpen) {
+      loadRequests();
+    }
+  }, [isOpen, loadRequests]);
+
+  const receivedRequests: FriendRequest[] = requests?.received || [];
+  const sentRequests = requests?.sent || [];
   
   const handleAccept = async (requestId: string) => {
+    const supabase = getSupabaseClient();
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -141,7 +138,7 @@ export default function FriendRequests() {
       
       if (updateError) throw updateError;
       
-      // Add friend relationship with better error handling
+      // Add friend relationship
       const { error: friendError } = await supabase
         .from('user_friends')
         .insert([
@@ -154,9 +151,9 @@ export default function FriendRequests() {
         throw friendError;
       }
       
-      // Update UI
-      setReceivedRequests(prev => prev.filter(req => req.id !== requestId));
+      // Update UI by removing the accepted request
       toast.success('Friend request accepted');
+      loadRequests();
     } catch (err: any) {
       console.error('Error accepting friend request:', err);
       toast.error('Failed to accept request');
@@ -164,6 +161,8 @@ export default function FriendRequests() {
   };
   
   const handleReject = async (requestId: string) => {
+    const supabase = getSupabaseClient();
+    
     try {
       // Update the request status to 'rejected'
       const { error } = await supabase
@@ -174,8 +173,8 @@ export default function FriendRequests() {
       if (error) throw error;
       
       // Update UI
-      setReceivedRequests(prev => prev.filter(req => req.id !== requestId));
       toast.success('Friend request rejected');
+      loadRequests();
     } catch (err) {
       console.error('Error rejecting friend request:', err);
       toast.error('Failed to reject request');
@@ -183,6 +182,8 @@ export default function FriendRequests() {
   };
   
   const handleCancel = async (requestId: string) => {
+    const supabase = getSupabaseClient();
+    
     try {
       // Delete the request (simpler than updating status)
       const { error } = await supabase
@@ -193,8 +194,8 @@ export default function FriendRequests() {
       if (error) throw error;
       
       // Update UI
-      setSentRequests(prev => prev.filter(req => req.id !== requestId));
       toast.success('Friend request cancelled');
+      loadRequests();
     } catch (err) {
       console.error('Error cancelling friend request:', err);
       toast.error('Failed to cancel request');
@@ -251,7 +252,7 @@ export default function FriendRequests() {
               </div>
             ) : receivedRequests.length > 0 ? (
               <div className="space-y-2 py-2">
-                {receivedRequests.map(request => (
+                {receivedRequests.map((request: FriendRequest) => (
                   <div key={request.id} className="flex items-center justify-between p-2 bg-card rounded-md">
                     <div className="flex items-center gap-2">
                       <ProfileImage
@@ -300,7 +301,7 @@ export default function FriendRequests() {
               </div>
             ) : sentRequests.length > 0 ? (
               <div className="space-y-2 py-2">
-                {sentRequests.map(request => (
+                {sentRequests.map((request: FriendRequest) => (
                   <div key={request.id} className="flex items-center justify-between p-2 bg-muted/40 rounded-md">
                     <div className="flex items-center gap-2">
                       <ProfileImage

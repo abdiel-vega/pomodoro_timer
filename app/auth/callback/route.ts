@@ -1,5 +1,4 @@
-// app/auth/callback/route.ts
-import { createClient } from '@/utils/supabase/server';
+import { getServerSupabaseClient } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -17,7 +16,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = await getServerSupabaseClient();
 
   try {
     // Log for debugging the timestamp issue

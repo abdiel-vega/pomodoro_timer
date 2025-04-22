@@ -1,14 +1,6 @@
-/*
-
-task dialog component
- 
-- a modal dialog for creating and editing tasks
-
- */
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { createTask, updateTask, getTaskById } from '@/lib/supabase';
+import React, { useState, useEffect, useCallback } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Task } from '@/types/database';
 import { 
@@ -25,6 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { getTaskById, createTask, updateTask } from '@/lib/api';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 
 interface TaskDialogProps {
   isOpen: boolean;
@@ -39,44 +33,47 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
   const [estimatedPomodoros, setEstimatedPomodoros] = useState(1);
   const [isImportant, setIsImportant] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   
   // Get refreshTasks from context
   const { refreshTasks } = usePomodoroTimer();
 
+  // Task loading function
+  const loadTask = useCallback(async () => {
+    if (!taskId) return null;
+    return await getTaskById(taskId);
+  }, [taskId]);
+
+  // Use visibility-aware loading
+  const { 
+    isLoading, 
+    data: task, 
+    refresh: refreshTask 
+  } = useVisibilityAwareLoading(loadTask, {
+    refreshOnVisibility: false
+  });
+
   // Reset form when dialog is opened/closed
   useEffect(() => {
     if (isOpen) {
-      // Reset form when opening
       if (!taskId) {
+        // Reset form when opening for a new task
         setTitle('');
         setDescription('');
         setEstimatedPomodoros(1);
         setIsImportant(false);
       }
-      
-      loadData();
     }
   }, [isOpen, taskId]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      // If editing existing task, load task data
-      if (taskId) {
-        const task = await getTaskById(taskId);
-        setTitle(task.title);
-        setDescription(task.description || '');
-        setEstimatedPomodoros(task.estimated_pomodoros);
-        setIsImportant(task.is_important || false);
-      }
-    } catch (error) {
-      console.error('Error loading form data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setIsLoading(false);
+  // Update form when task data is loaded
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title);
+      setDescription(task.description || '');
+      setEstimatedPomodoros(task.estimated_pomodoros);
+      setIsImportant(task.is_important || false);
     }
-  };
+  }, [task]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,10 +102,8 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
       // Use refreshTasks to update all UI components
       await refreshTasks();
 
-      // Call onSuccess callback
+      // Call onSuccess callback and close dialog
       onSuccess();
-
-      // Close dialog
       onClose();
     } catch (error) {
       console.error('Error saving task:', error);
@@ -166,14 +161,9 @@ export default function TaskDialog({ isOpen, onClose, onSuccess, taskId }: TaskD
                 value={[estimatedPomodoros]}
                 onValueChange={values => setEstimatedPomodoros(values[0])}
                 className="mt-2"
-                style={{ 
-                  "--slider-bg": "#CDCDCD",
-                  "--slider-fg": "#000000"
-                } as React.CSSProperties}
               />
             </div>
 
-            {/* Added margin-top (mt-6) to increase spacing */}
             <div className="flex items-center space-x-2 mt-6">
               <Switch
                 id="isImportant"
