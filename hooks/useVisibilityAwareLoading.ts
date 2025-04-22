@@ -6,7 +6,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useAuth } from '@/components/auth-provider';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LoadingOptions {
   refreshOnVisibility?: boolean;

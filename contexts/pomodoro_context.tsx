@@ -176,18 +176,15 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           if (userSettings) {
             setSettings(userSettings);
           }
-          return true;
         } catch (settingsErr) {
           console.error('Failed to get user settings:', settingsErr);
-          return false;
         }
       };
       
-      // Race against timeout
-      return await Promise.race([getSettingsPromise(), timeout]);
+      // Race against timeout and wait for completion
+      await Promise.race([getSettingsPromise(), timeout]);
     } catch (error) {
       console.error('Failed to refresh user settings:', error);
-      return false;
     }
   }, [refreshPremium]);
 
@@ -241,13 +238,10 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         // Increment the version to trigger UI updates
         setTasksVersion(prev => prev + 1);
       }
-      
-      return true;
     } catch (error) {
       console.error('Failed to refresh tasks:', error);
       // Still increment version to potentially trigger fallback UI
       setTasksVersion(prev => prev + 1);
-      return false;
     }
   }, [currentTask]);
 
@@ -660,8 +654,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [deepFocusMode, isPremium]);
-   
-  const value = {
+
+  const value: PomodoroContextType = {
     timerState,
     timerType,
     timeRemaining,
@@ -689,9 +683,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     deepFocusMode,
     setDeepFocusMode,
     animationType,
-    setAnimationType,
+    setAnimationType,  
   };
-  
+
   return (
     <PomodoroContext.Provider value={value}>
       {children}
