@@ -17,10 +17,10 @@ import {
   updateUserSettings,
   updateTask,
   getTasks
-} from '@/lib/supabase';
+} from '@/lib/api';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase';
 import { recordFocusTime } from '@/app/actions';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 
@@ -105,34 +105,44 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   // References
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const currentSessionId = useRef<string | null>(null);
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   
   // Function to check premium status using the visibility-aware hook
   const checkPremiumStatus = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Apply timeout to prevent hanging
+      const timeout = new Promise<boolean>((_, reject) => 
+        setTimeout(() => reject(new Error("Premium status check timeout")), 3000)
+      );
       
-      if (user) {
-        console.log('User authenticated, checking premium status');
-        const { data } = await supabase
-          .from('users')
-          .select('is_premium, settings')
-          .eq('id', user.id)
-          .single();
-          
-        // If we have user settings, update them
-        if (data?.settings) {
-          setSettings(data.settings);
-        }
+      const checkPremiumPromise = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
         
-        return !!data?.is_premium;
-      }
-      return false;
+        if (user) {
+          console.log('User authenticated, checking premium status');
+          const { data } = await supabase
+            .from('users')
+            .select('is_premium, settings')
+            .eq('id', user.id)
+            .single();
+            
+          // If we have user settings, update them
+          if (data?.settings) {
+            setSettings(data.settings);
+          }
+          
+          return !!data?.is_premium;
+        }
+        return false;
+      };
+      
+      // Race the promises to handle timeout
+      return await Promise.race([checkPremiumPromise(), timeout]);
     } catch (error) {
       console.error('Failed to check premium status:', error);
       return false;
     }
-  }, [supabase]);
+  }, []);  
 
   // Use the visibility-aware loading hook for premium status
   const { 
@@ -149,24 +159,42 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   
   // Function to refresh user settings, including premium status
   const refreshUserSettings = useCallback(async () => {
-    // Refresh premium status
-    refreshPremium();
-    
     try {
-      // Get user settings
-      const userSettings = await getUserSettings();
-      if (userSettings) {
-        setSettings(userSettings);
-      }
+      // Apply timeout to prevent hanging
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("User settings refresh timeout")), 3000)
+      );
+      
+      // Refresh premium status first
+      await Promise.race([refreshPremium(), timeout])
+        .catch(err => console.warn('Premium refresh timeout:', err));
+      
+      // Get user settings with timeout
+      const getSettingsPromise = async () => {
+        try {
+          const userSettings = await getUserSettings();
+          if (userSettings) {
+            setSettings(userSettings);
+          }
+          return true;
+        } catch (settingsErr) {
+          console.error('Failed to get user settings:', settingsErr);
+          return false;
+        }
+      };
+      
+      // Race against timeout
+      return await Promise.race([getSettingsPromise(), timeout]);
     } catch (error) {
       console.error('Failed to refresh user settings:', error);
+      return false;
     }
-  }, [refreshPremium]);  
+  }, [refreshPremium]);
 
   // Set up auth listener for premium status sync
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event) => {
+      async (event: string) => {
         console.log('Auth state changed in context:', event);
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           refreshPremium();
@@ -187,20 +215,39 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   // Function to refresh tasks - can be called by any component to get the latest task data
   const refreshTasks = useCallback(async () => {
     try {
-      const taskData = await getTasks();
+      // Apply timeout to prevent hanging
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Tasks refresh timeout")), 3000)
+      );
       
-      // If we have a current task, update it with the latest data
-      if (currentTask) {
-        const updatedCurrentTask = taskData.find(task => task.id === currentTask.id);
-        if (updatedCurrentTask) {
-          setCurrentTask(updatedCurrentTask);
+      // Get tasks with timeout
+      const tasksPromise = getTasks();
+      const taskData = await Promise.race([tasksPromise, timeout])
+        .catch(err => {
+          console.warn('Tasks refresh timeout or error:', err);
+          return []; // Return empty array as fallback
+        });
+      
+      // Only continue if we got actual data
+      if (Array.isArray(taskData) && taskData.length > 0) {
+        // If we have a current task, update it with the latest data
+        if (currentTask) {
+          const updatedCurrentTask = taskData.find(task => task.id === currentTask.id);
+          if (updatedCurrentTask) {
+            setCurrentTask(updatedCurrentTask);
+          }
         }
+        
+        // Increment the version to trigger UI updates
+        setTasksVersion(prev => prev + 1);
       }
       
-      // Increment the version to trigger UI updates
-      setTasksVersion(prev => prev + 1);
+      return true;
     } catch (error) {
       console.error('Failed to refresh tasks:', error);
+      // Still increment version to potentially trigger fallback UI
+      setTasksVersion(prev => prev + 1);
+      return false;
     }
   }, [currentTask]);
 
@@ -298,6 +345,28 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to complete session:', error);
       }
     }  
+
+    // Only record focus time if this was a work session
+    if (timerType === 'work') {
+      // Record the focus time server-side (anti-cheat)
+      const totalSeconds = settings.workDuration * 60;
+      
+      // Add timeout to prevent hanging
+      const recordPromise = recordFocusTime(totalSeconds);
+      const timeout = new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error("Record focus time timeout")), 3000)
+      );
+      
+      try {
+        const response = await Promise.race([recordPromise, timeout]);
+        
+        if (response.error) {
+          console.error('Failed to record focus time:', response.error);
+        }
+      } catch (err) {
+        console.warn('Recording focus time timed out or failed:', err);
+      }
+    }
     
     // Play sound if sound is enabled (premium feature)
     if (soundEnabled && currentSound && isPremium) {

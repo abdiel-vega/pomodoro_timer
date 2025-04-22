@@ -1,6 +1,6 @@
 // lib/api.ts
 import { getSupabaseClient } from './supabase';
-import { Task, UserSettings, Session } from '@/types/database';
+import { Task, UserSettings, Session, User } from '@/types/database';
 
 // Default settings for new users
 const DEFAULT_SETTINGS: UserSettings = {
@@ -75,6 +75,71 @@ export async function updateUserSettings(
   }
 
   return updatedSettings;
+}
+
+// Auth state checking helper (specifically for layout)
+export async function getUserWithAuthState() {
+  const supabase = getSupabaseClient();
+
+  try {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error('Session error:', error);
+      return { isAuthenticated: false, user: null, isPremium: false };
+    }
+
+    if (!data?.session) {
+      return { isAuthenticated: false, user: null, isPremium: false };
+    }
+
+    // Try to get full user profile
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.session.user.id)
+        .single();
+
+      if (!userError && userData) {
+        return {
+          isAuthenticated: true,
+          user: userData,
+          isPremium: userData.is_premium || false,
+        };
+      }
+    } catch (profileErr) {
+      console.warn('Error fetching full profile:', profileErr);
+      // Continue to fallback
+    }
+
+    // Fallback: just get premium status
+    try {
+      const { data: premiumData } = await supabase
+        .from('users')
+        .select('is_premium')
+        .eq('id', data.session.user.id)
+        .single();
+
+      return {
+        isAuthenticated: true,
+        user: data.session.user,
+        isPremium: premiumData?.is_premium || false,
+      };
+    } catch (premiumErr) {
+      console.warn('Error fetching premium status:', premiumErr);
+    }
+
+    // Final fallback: just return auth user without premium
+    return {
+      isAuthenticated: true,
+      user: data.session.user,
+      isPremium: false,
+    };
+  } catch (err) {
+    console.error('Auth check failed:', err);
+    return { isAuthenticated: false, user: null, isPremium: false };
+  }
 }
 
 // Task API
@@ -289,25 +354,31 @@ export async function completeSession(sessionId: string): Promise<Session> {
 }
 
 // User Profile API
-export async function getUserProfile() {
+export async function getUserProfile(): Promise<User> {
   const supabase = getSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error('User not authenticated');
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (error) throw error;
+    return data as User;
+  } catch (error) {
+    console.error('Error in getUserProfile:', error);
+    // Re-throw to allow caller to handle
+    throw error;
   }
-
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (error) throw error;
-  return data;
 }
 
 export async function updateUserProfile(updates: {

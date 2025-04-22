@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 import { User } from '@/types/user';
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { EVENTS, ProfileUpdatePayload } from '@/utils/events';
 import { calculateUserRank } from '@/utils/rank';
 import RankBadge from './rank-badge';
+import { getUserProfile } from '@/lib/api';
+import { signOut } from '@/lib/auth';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 
 interface UserProfileProps {
   user: {
@@ -38,32 +40,80 @@ export default function UserProfile({ user }: UserProfileProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [showSignOutConfirmation, setShowSignOutConfirmation] = useState(false);
+
+  const router = useRouter();
   
-  // Initialize with safe defaults when user might be null
-  const [profileData, setProfileData] = useState<User>({
-    id: user?.id || '',
-    email: user?.email || '',
-    username: user?.username || null,
-    profile_picture: user?.profile_picture || null,
-    is_premium: user?.is_premium || false,
-    total_focus_time: user?.total_focus_time || 0,
-    completed_tasks_count: user?.completed_tasks_count || 0,
-    created_at: '',
-    updated_at: ''
+  // Define profile fetch function using api.ts
+  const fetchProfileData = useCallback(async () => {
+    try {
+      if (!user?.id) {
+        // Set safe defaults
+        return {
+          id: '',
+          email: user?.email || '',
+          username: user?.username || null,
+          profile_picture: user?.profile_picture || null,
+          is_premium: user?.is_premium || false,
+          total_focus_time: 0,
+          completed_tasks_count: 0,
+          created_at: '',
+          updated_at: ''
+        };
+      }
+      
+      // Use timeout to prevent hanging
+      const timeout = new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error("Profile data timeout")), 3000)
+      );
+      
+      // Get profile data with timeout
+      return await Promise.race([getUserProfile(), timeout])
+        .catch(err => {
+          console.warn('Profile fetch timeout or error:', err);
+          // Create fallback data from user prop
+          return {
+            id: user.id,
+            email: user.email || '',
+            username: user.username || null,
+            profile_picture: user.profile_picture || null,
+            is_premium: user.is_premium || false,
+            total_focus_time: user.total_focus_time || 0,
+            completed_tasks_count: user.completed_tasks_count || 0,
+            created_at: '',
+            updated_at: ''
+          };
+        });
+    } catch (error) {
+      console.error('Error in fetchProfileData:', error);
+      // Safe fallback using prop data
+      return {
+        id: user?.id || '',
+        email: user?.email || '',
+        username: user?.username || null,
+        profile_picture: user?.profile_picture || null,
+        is_premium: user?.is_premium || false,
+        total_focus_time: 0,
+        completed_tasks_count: 0,
+        created_at: '',
+        updated_at: ''
+      };
+    }
+  }, [user]);
+
+  // Use visibility-aware loading
+  const { 
+    data: profileData,
+    refresh: refreshProfile 
+  } = useVisibilityAwareLoading(fetchProfileData, {
+    refreshOnVisibility: isOpen, // Only refresh when popup is open
+    loadingTimeout: 3000
   });
   
-  // Add user rank state
-  const [userRank, setUserRank] = useState(calculateUserRank(0, 0));
-  
-  const router = useRouter();
-  const supabase = createClient();
-  
-  // Load profile data on component mount AND when popup opens
-  useEffect(() => {
-    if (user?.id) {
-      refreshUserProfile();
-    }
-  }, [user?.id]);
+  // Calculate user rank
+  const userRank = calculateUserRank(
+    profileData?.total_focus_time || 0, 
+    profileData?.completed_tasks_count || 0
+  );
   
   // Listen for profile update events
   useEffect(() => {
@@ -71,12 +121,8 @@ export default function UserProfile({ user }: UserProfileProps) {
       const updatedProfile = event.detail;
       
       // Only update if it's for the current user
-      if (updatedProfile.id === profileData.id) {
-        setProfileData(prev => ({
-          ...prev,
-          username: updatedProfile.username ?? prev.username,
-          profile_picture: updatedProfile.profile_picture ?? prev.profile_picture
-        }));
+      if (updatedProfile.id === profileData?.id) {
+        refreshProfile();
       }
     };
     
@@ -93,30 +139,7 @@ export default function UserProfile({ user }: UserProfileProps) {
         handleProfileUpdate as EventListener
       );
     };
-  }, [profileData.id]);
-  
-  const refreshUserProfile = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const { data } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-        
-      if (data) {
-        setProfileData(data as User);
-        
-        // Calculate user rank based on focus time and completed tasks
-        const focusTime = data.total_focus_time || 0;
-        const completedTasks = data.completed_tasks_count || 0;
-        setUserRank(calculateUserRank(focusTime, completedTasks));
-      }
-    } catch (error) {
-      console.error('Error fetching profile data:', error);
-    }
-  };
+  }, [profileData?.id, refreshProfile]);
 
   const requestSignOut = () => {
     setShowSignOutConfirmation(true);
@@ -125,7 +148,7 @@ export default function UserProfile({ user }: UserProfileProps) {
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
-      await supabase.auth.signOut();
+      await signOut();
       router.refresh();
       router.push('/sign-in');
     } catch (error) {
@@ -150,15 +173,14 @@ export default function UserProfile({ user }: UserProfileProps) {
         <Button variant="ghost" size="sm" className="px-2 h-10">
           <div className="flex items-center gap-2">
             <ProfileImage 
-              src={profileData.profile_picture} 
-              alt={profileData.username || 'User'} 
+              src={profileData?.profile_picture} 
+              alt={profileData?.username || 'User'} 
               size={32} 
             />
             <span className="text-sm hidden md:inline">
-              {profileData.username || 'User'}
-
+              {profileData?.username || 'User'}
             </span>
-            {profileData.is_premium && (
+            {profileData?.is_premium && (
               <span title="Premium User">
                 <Sparkles size={14} className="text-yellow-500" />
               </span>
@@ -170,17 +192,17 @@ export default function UserProfile({ user }: UserProfileProps) {
         <div className="flex flex-col space-y-3">
           <div className="flex items-center gap-3">
             <ProfileImage 
-              src={profileData.profile_picture} 
-              alt={profileData.username || 'User'} 
+              src={profileData?.profile_picture} 
+              alt={profileData?.username || 'User'} 
               size={40} 
             />
             <div>
               <div className="font-medium flex items-center">
-                {profileData.username || 'User'}
+                {profileData?.username || 'User'}
                 {/* Add rank badge in dropdown */}
                 <RankBadge rank={userRank} size="sm" />
               </div>
-              <div className="text-xs text-muted-foreground truncate">{profileData.email}</div>
+              <div className="text-xs text-muted-foreground truncate">{profileData?.email}</div>
             </div>
           </div>
           
@@ -191,14 +213,14 @@ export default function UserProfile({ user }: UserProfileProps) {
                 <Clock className="h-3 w-3" />
                 <span>Focus Time</span>
               </div>
-              <span className="font-medium">{formatTime(profileData.total_focus_time || 0)}</span>
+              <span className="font-medium">{formatTime(profileData?.total_focus_time || 0)}</span>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-1">
                 <CheckSquare className="h-3 w-3" />
                 <span>Tasks Completed</span>
               </div>
-              <span className="font-medium">{profileData.completed_tasks_count || 0}</span>
+              <span className="font-medium">{profileData?.completed_tasks_count || 0}</span>
             </div>
           </div>
           
@@ -225,7 +247,7 @@ export default function UserProfile({ user }: UserProfileProps) {
               </Link>
             </Button>
             
-            {profileData.is_premium ? (
+            {profileData?.is_premium ? (
               <Button variant="ghost" size="sm" className="w-full my-1 justify-start bg-background hover:bg-muted" asChild>
                 <Link href="/premium">
                   <Sparkles className="mr-2 h-4 w-4 text-foreground" />
@@ -277,7 +299,7 @@ export default function UserProfile({ user }: UserProfileProps) {
                 onClick={handleSignOut}
                 disabled={isSigningOut}
               >
-                {isSigningOut ? "Signing out..." : "Sign Out"}
+                {isSigningOut ? "Signing out..." : "Sign out"}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -1,13 +1,13 @@
-// hooks/useAuth.ts
 import { useContext, createContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types/user';
-import { getSupabaseClient } from '@/lib/supabase';
-import { signIn as authSignIn, signOut as authSignOut } from '@/lib/auth';
+import { signIn as authSignIn, signOut as authSignOut, getCurrentUser } from '@/lib/auth';
+import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isPremium: boolean;
+  isInitialized: boolean;
   signIn: (credentials: { email: string; password: string }) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -18,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   isPremium: false,
+  isInitialized: false,
   signIn: async () => { throw new Error('AuthContext not initialized') },
   signOut: async () => { throw new Error('AuthContext not initialized') },
   refreshUser: async () => { throw new Error('AuthContext not initialized') },
@@ -25,62 +26,43 @@ const AuthContext = createContext<AuthContextType>({
 
 // Provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isPremium, setIsPremium] = useState(false);
-  const supabase = getSupabaseClient();
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  const refreshUser = async () => {
-    setIsLoading(true);
+  // Define the user fetch function
+  const fetchUser = async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      // Apply timeout to prevent hanging
+      const timeout = new Promise<User | null>((_, reject) => 
+        setTimeout(() => reject(new Error("User fetch timeout")), 3000)
+      );
       
-      if (!authUser) {
-        setUser(null);
-        setIsPremium(false);
-        return;
-      }
-      
-      // Get full user profile
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
-        
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        setUser(null);
-        setIsPremium(false);
-      } else {
-        setUser(data);
-        setIsPremium(data?.is_premium || false);
-      }
+      // Get user with timeout
+      return await Promise.race([getCurrentUser(), timeout]);
     } catch (error) {
-      console.error('Error refreshing user:', error);
-      setUser(null);
-      setIsPremium(false);
-    } finally {
-      setIsLoading(false);
+      console.error('Error fetching user:', error);
+      return null;
     }
   };
   
+  // Use visibility-aware loading hook
+  const {
+    isLoading,
+    data: user,
+    refresh: refreshUser
+  } = useVisibilityAwareLoading(fetchUser, {
+    refreshOnVisibility: true,
+    loadingTimeout: 3500
+  });
+  
+  // Set premium status
+  const isPremium = !!user?.is_premium;
+  
+  // Mark as initialized once initial loading is complete
   useEffect(() => {
-    refreshUser();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED') => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await refreshUser();
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setIsPremium(false);
-        }
-      }
-    );
-    
-    return () => subscription.unsubscribe();
-  }, []);
+    if (!isLoading) {
+      setIsInitialized(true);
+    }
+  }, [isLoading]);
   
   const signIn = async (credentials: { email: string; password: string }) => {
     try {
@@ -95,8 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await authSignOut();
-      setUser(null);
-      setIsPremium(false);
+      await refreshUser();
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;
@@ -104,13 +85,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   
   return (
-    <AuthContext.Provider value={{ user, isLoading, isPremium, signIn, signOut, refreshUser}}>
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        isLoading, 
+        isPremium, 
+        isInitialized,
+        signIn, 
+        signOut, 
+        refreshUser
+      }}
+    >
       { children }
     </AuthContext.Provider>
   );
 }
-
-export default AuthProvider;
 
 // Custom hook to use the context
 export function useAuth() {
@@ -122,3 +111,5 @@ export function useAuth() {
   
   return context;
 }
+
+export default AuthProvider;

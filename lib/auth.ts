@@ -1,5 +1,5 @@
 import { User } from '@/types/user';
-import { getSupabaseClient, getServerSupabaseClient } from './supabase';
+import { getSupabaseClient } from '@/lib/supabase';
 
 export async function signIn({
   email,
@@ -10,21 +10,33 @@ export async function signIn({
 }) {
   const supabase = getSupabaseClient();
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Sign in error:', error);
+    throw error;
   }
-
-  return data;
 }
 
 export async function signOut() {
   const supabase = getSupabaseClient();
-  await supabase.auth.signOut();
+
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    console.error('Sign out error:', error);
+    throw error;
+  }
 }
 
 export async function getCurrentUser(): Promise<User | null> {
@@ -32,41 +44,42 @@ export async function getCurrentUser(): Promise<User | null> {
 
   try {
     const {
-      data: { user },
+      data: { user: authUser },
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (!user) return null;
+    if (authError || !authUser) {
+      console.warn('Auth error or no user:', authError);
+      return null;
+    }
 
     // Get full user profile
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', authUser.id)
       .single();
 
-    return data;
+    if (error) {
+      console.warn('Error getting user profile:', error);
+
+      // Fallback to basic user info
+      return {
+        id: authUser.id,
+        email: authUser.email || '',
+        username: authUser.user_metadata?.username || null,
+        profile_picture: null,
+        created_at: authUser.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_premium: false,
+        total_focus_time: 0,
+        completed_tasks_count: 0,
+      };
+    }
+
+    return data as User;
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
   }
-}
-
-// Server-side auth functions
-export async function getServerUser() {
-  const supabase = await getServerSupabaseClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  // Get full user profile
-  const { data } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  return data;
 }
