@@ -1,14 +1,14 @@
 'use server';
 
 import { encodedRedirect } from '@/utils/utils';
-import { createClient } from '@/utils/supabase/server';
+import { getServerSupabaseClient } from '@/lib/supabase-server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get('email')?.toString();
   const password = formData.get('password')?.toString();
-  const supabase = await createClient();
+  const supabase = await getServerSupabaseClient();
   const origin = (await headers()).get('origin');
 
   if (!email || !password) {
@@ -39,7 +39,7 @@ export const signUpAction = async (formData: FormData) => {
 export const signInAction = async (formData: FormData) => {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const supabase = await createClient();
+  const supabase = await getServerSupabaseClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -55,7 +55,7 @@ export const signInAction = async (formData: FormData) => {
 
 export const forgotPasswordAction = async (formData: FormData) => {
   const email = formData.get('email')?.toString();
-  const supabase = await createClient();
+  const supabase = await getServerSupabaseClient();
   const origin = (await headers()).get('origin');
 
   console.log('Local server time:', new Date().toISOString());
@@ -96,7 +96,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
 };
 
 export const resetPasswordAction = async (formData: FormData) => {
-  const supabase = await createClient();
+  const supabase = await getServerSupabaseClient();
 
   const password = formData.get('password') as string;
   const confirmPassword = formData.get('confirmPassword') as string;
@@ -133,7 +133,7 @@ export const resetPasswordAction = async (formData: FormData) => {
 };
 
 export const signOutAction = async () => {
-  const supabase = await createClient();
+  const supabase = await getServerSupabaseClient();
 
   try {
     // Sign out the user
@@ -151,7 +151,7 @@ export const signOutAction = async () => {
 
 export async function handleGoogleAuthCallback(userId: string) {
   try {
-    const supabase = await createClient();
+    const supabase = await getServerSupabaseClient();
 
     // Get user info
     const {
@@ -232,12 +232,14 @@ export async function handleGoogleAuthCallback(userId: string) {
 }
 
 export async function incrementCompletedTaskCount() {
-  const supabase = await createClient();
-  
+  const supabase = await getServerSupabaseClient();
+
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized' };
-    
+
     // Apply rate limiting - max 1 completion every 30 seconds
     const { data: recentActivity } = await supabase
       .from('task_completions')
@@ -245,31 +247,34 @@ export async function incrementCompletedTaskCount() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1);
-    
+
     if (recentActivity?.[0]) {
-      const lastCompletionTime = new Date(recentActivity[0].created_at).getTime();
+      const lastCompletionTime = new Date(
+        recentActivity[0].created_at
+      ).getTime();
       const now = Date.now();
       const timeDiff = now - lastCompletionTime;
-      
+
       // Enforce 30 second cooldown between completions
       if (timeDiff < 30000) {
         return { error: 'Rate limited' };
       }
     }
-    
+
     // Record this completion for rate limiting
-    await supabase
-      .from('task_completions')
-      .insert({
-        user_id: user.id,
-        created_at: new Date().toISOString()
-      });
-    
-    // Use RPC function to update counter server-side
-    const { data, error } = await supabase.rpc('increment_user_completed_tasks', {
-      user_id: user.id
+    await supabase.from('task_completions').insert({
+      user_id: user.id,
+      created_at: new Date().toISOString(),
     });
-    
+
+    // Use RPC function to update counter server-side
+    const { data, error } = await supabase.rpc(
+      'increment_user_completed_tasks',
+      {
+        user_id: user.id,
+      }
+    );
+
     if (error) throw error;
     return { success: true, count: data };
   } catch (err) {
@@ -279,23 +284,25 @@ export async function incrementCompletedTaskCount() {
 }
 
 export async function recordFocusTime(seconds: number) {
-  const supabase = await createClient();
-  
+  const supabase = await getServerSupabaseClient();
+
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return { error: 'Unauthorized' };
-    
+
     // Validate time is reasonable (max 25 minutes + small buffer)
     if (seconds <= 0 || seconds > 1560) {
       return { error: 'Invalid time value' };
     }
-    
+
     // Use RPC function to update time server-side
     const { data, error } = await supabase.rpc('add_user_focus_time', {
       user_id: user.id,
-      seconds: seconds
+      seconds: seconds,
     });
-    
+
     if (error) throw error;
     return { success: true, totalTime: data };
   } catch (err) {
