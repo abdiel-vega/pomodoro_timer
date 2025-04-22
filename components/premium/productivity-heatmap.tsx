@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getSessions } from '@/lib/supabase';
+import { getSessions } from '@/lib/api';
 import { Session } from '@/types/database';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, startOfMonth, addMonths, subMonths } from 'date-fns';
 import { Sparkles, ArrowLeft, ArrowRight, CalendarRange } from 'lucide-react';

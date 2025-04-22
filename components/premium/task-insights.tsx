@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getTasks } from '@/lib/supabase';
+import { getTasks } from '@/lib/api';
 import { Task } from '@/types/database';
 import { format, subDays } from 'date-fns';
 import { 
