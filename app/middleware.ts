@@ -1,26 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { getServerSupabaseClient } from '@/lib/supabase-server';
 
 export async function middleware(request: NextRequest) {
   // Create a Supabase client for auth verification
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name, value, options) {
-          // This is a read-only operation in middleware
-        },
-        remove(name, options) {
-          // This is a read-only operation in middleware
-        },
-      },
-    }
-  );
+  const supabase = await getServerSupabaseClient();
 
   // Verify session
   const {

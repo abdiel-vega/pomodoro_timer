@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/form-message";
 import { Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 import { 
   Card, 
@@ -33,7 +33,7 @@ export default function ResetPassword() {
   const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
 
   // Check for errors in query params and session status on load
   useEffect(() => {

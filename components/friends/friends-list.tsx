@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
-import { getSupabaseClient } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { 
   Dialog, 

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, User as UserIcon } from "lucide-react";
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase';
 import { FormMessage } from '@/components/form-message';
 
 export default function SignUp() {
@@ -21,7 +21,7 @@ export default function SignUp() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
