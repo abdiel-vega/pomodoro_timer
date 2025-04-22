@@ -1,36 +1,17 @@
-import { createClient } from '@/utils/supabase/client';
+// utils/supabase.ts
+import { getSupabaseClient } from '@/lib/supabase';
+import { getServerSupabaseClient } from '@/lib/supabase-server';
 
-// Global client reference
-let supabaseClient: ReturnType<typeof createClient> | null = null;
-let initializationPromise: Promise<ReturnType<typeof createClient>> | null =
-  null;
+// Re-export the client functions
+export { getSupabaseClient };
 
-export function getSupabaseClient() {
-  // Return existing client if already initialized
-  if (supabaseClient) return supabaseClient;
+// For backward compatibility
+export const createClient = getSupabaseClient;
 
-  // Return in-progress initialization if one exists
-  if (initializationPromise) return initializationPromise;
-
-  // Create new initialization promise with async/await pattern
-  initializationPromise = new Promise<ReturnType<typeof createClient>>(
-    async (resolve) => {
-      const client = createClient();
-
-      try {
-        // Use auth API which is guaranteed to exist in any Supabase project
-        await client.auth.getSession();
-        console.log('Supabase client initialized successfully');
-      } catch (error) {
-        // Log but continue if test fails
-        console.warn('Supabase initialization check failed:', error);
-      }
-
-      // Always resolve with the client
-      supabaseClient = client;
-      resolve(client);
-    }
+// Warn about server client usage
+export const createServerClient = () => {
+  console.warn(
+    'createServerClient from utils/supabase.ts is deprecated. Import getServerSupabaseClient from lib/supabase-server.ts instead.'
   );
-
-  return initializationPromise;
-}
+  throw new Error('Server client cannot be used in client components');
+};
