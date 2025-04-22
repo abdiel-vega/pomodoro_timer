@@ -5,7 +5,7 @@ import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { getSessions, getTasks } from '@/lib/supabase';
+import { getSessions, getTasks } from '@/lib/api';
 import { Session, Task } from '@/types/database';
 import { 
   BarChart3, 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { calculateUserRank, RANKS, calculateProgressToNextRank, formatTime, RankInfo } from '@/utils/rank';
@@ -55,7 +55,7 @@ export default function RankInfoPage() {
     return `#${rNew}${gNew}${bNew}`;
   };
   
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   
   useEffect(() => {
     const loadUserData = async () => {

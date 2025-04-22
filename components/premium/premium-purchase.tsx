@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, Check } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { getSupabaseClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 
 export default function PremiumPurchase() {
   const [isProcessing, setIsProcessing] = useState(false);
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   const { refreshUserSettings } = usePomodoroTimer();
   const handlePurchase = async () => {
     setIsProcessing(true);

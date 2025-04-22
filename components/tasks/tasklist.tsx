@@ -8,7 +8,7 @@ taskList component
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getTasks, deleteTask, toggleTaskCompletion } from '@/lib/supabase';
+import { getTasks, deleteTask, toggleTaskCompletion } from '@/lib/api';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
 import { Task } from '@/types/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { usePomodoroTimer } from '@/contexts/pomodoro_context';
-import { Task } from '@/types/database';
 import { 
   Dialog, 
   DialogContent, 

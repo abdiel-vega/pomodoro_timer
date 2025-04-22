@@ -99,11 +99,11 @@ export default function ProfilePage() {
     if (userData) {
       setUser(userData);
       setUsername(userData.username || '');
-      setProfilePicture(userData.profile_picture);
+      setProfilePicture('profile_picture' in userData ? userData.profile_picture : null);
       
       // Calculate user rank based on focus time and tasks
-      const focusTime = userData.total_focus_time || 0;
-      const completedTasks = userData.completed_tasks_count || 0;
+      const focusTime = 'total_focus_time' in userData ? userData.total_focus_time : 0;
+      const completedTasks = 'completed_tasks_count' in userData ? userData.completed_tasks_count : 0;
       const calculatedRank = calculateUserRank(focusTime, completedTasks);
       setUserRank(calculatedRank);
       

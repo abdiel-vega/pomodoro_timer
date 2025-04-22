@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User } from '@/types/user';
 import { Button } from '@/components/ui/button';
 import ProfileImage from './profile-image';
 import { 

@@ -7,7 +7,7 @@ task form component
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createTask, updateTask, getTaskById } from '@/lib/supabase';
+import { createTask, updateTask, getTaskById } from '@/lib/api';
 import { Task } from '@/types/database';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
