@@ -20,7 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { EVENTS, ProfileUpdatePayload } from '@/utils/events';
 import { calculateUserRank } from '@/utils/rank';
 import RankBadge from './rank-badge';
-import { getUserProfile } from '@/lib/api';
+import { getSupabaseClient } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
 import { useVisibilityAwareLoading } from '@/hooks/useVisibilityAwareLoading';
 
@@ -44,17 +44,27 @@ export default function UserProfile({ user }: UserProfileProps) {
   
   // Define profile fetch function using api.ts
   const fetchProfileData = useCallback(async () => {
+    // Get Supabase client
+    const supabase = getSupabaseClient();
+    
     try {
-      // Always ensure we have user ID before making API call
+      // Log the input user data for debugging
+      console.log('User profile fetch starting with user data:', {
+        id: user?.id || 'none',
+        username: user?.username || 'none',
+        hasProfilePicture: !!user?.profile_picture,
+        isPremium: !!user?.is_premium
+      });
+      
+      // If no user ID, return default values but don't attempt to fetch
       if (!user?.id) {
         console.warn('No user ID available for profile fetch');
-        // Set safe defaults from the user prop
         return {
           id: '',
           email: user?.email || '',
-          username: user?.username || 'User',
-          profile_picture: user?.profile_picture || null,
-          is_premium: !!user?.is_premium,
+          username: 'User',
+          profile_picture: null,
+          is_premium: false,
           total_focus_time: 0,
           completed_tasks_count: 0,
           created_at: '',
@@ -62,46 +72,40 @@ export default function UserProfile({ user }: UserProfileProps) {
         };
       }
       
-      // First check if we already have premium status in the user object
-      const initialIsPremium = !!user.is_premium;
-      
-      console.log('Fetching profile data for user:', user.id, 'Initial premium status:', initialIsPremium);
-      
-      // Use timeout to prevent hanging
-      const timeout = new Promise<any>((_, reject) => 
-        setTimeout(() => reject(new Error("Profile data timeout")), 3000)
-      );
-      
-      // Get profile data with timeout
-      try {
-        const profileData = await Promise.race([getUserProfile(), timeout]);
+      // Always make direct DB query instead of using API for better reliability
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
         
-        // Log the result for debugging
-        console.log('Profile data fetched successfully:', 
-          profileData ? {
-            username: profileData.username,
-            isPremium: profileData.is_premium
-          } : 'null');
-          
-        return profileData;
-      } catch (err) {
-        console.warn('Profile fetch timeout or error:', err);
-        // Create comprehensive fallback data from user prop
+      if (error) {
+        console.error('DB query error in fetchProfileData:', error);
+        // Fall back to passed-in user data with defaults
         return {
           id: user.id,
           email: user.email || '',
           username: user.username || 'User',
           profile_picture: user.profile_picture || null,
-          is_premium: initialIsPremium, // Use the value we already had
-          total_focus_time: user.total_focus_time || 0,
-          completed_tasks_count: user.completed_tasks_count || 0,
+          is_premium: !!user.is_premium,
+          total_focus_time: 0,
+          completed_tasks_count: 0,
           created_at: '',
           updated_at: ''
         };
       }
+      
+      // Log the retrieved data
+      console.log('Profile data retrieved successfully:', {
+        username: data.username || 'none',
+        hasProfilePicture: !!data.profile_picture,
+        isPremium: !!data.is_premium
+      });
+      
+      return data;
     } catch (error) {
       console.error('Error in fetchProfileData:', error);
-      // Safe fallback using prop data with defaults for required fields
+      // Safe fallback
       return {
         id: user?.id || '',
         email: user?.email || '',

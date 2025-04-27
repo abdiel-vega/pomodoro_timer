@@ -64,59 +64,77 @@ export default function RootLayout({
   // Define the auth check function for the visibility-aware hook
   const checkAuthStatus = useCallback(async (): Promise<AuthState> => {
     try {
-      // Apply timeout to prevent hanging but with a longer timeout
-      const timeout = new Promise<AuthState>((_, reject) => 
-        setTimeout(() => reject(new Error("Auth check timeout")), 5000)
-      );
-      
       // First try to get basic auth state directly from Supabase
+      const defaultState = { isAuthenticated: false, user: null, isPremium: false };
+      
       try {
+        // Simple check first - don't use timeout here since it's lightweight
         const { data, error } = await supabase.auth.getSession();
         
-        if (error) {
-          console.warn('Session error:', error);
-          return { isAuthenticated: false, user: null, isPremium: false };
+        if (error || !data?.session) {
+          console.log('Auth check: No session found');
+          return defaultState;
         }
         
-        const isAuthenticated = !!data?.session;
-        console.log('Auth check: User authenticated =', isAuthenticated);
+        // We have a session, create a minimal user object
+        const basicUser = {
+          id: data.session.user.id,
+          email: data.session.user.email,
+          username: data.session.user.user_metadata?.username || 'User',
+          is_premium: !!data.session.user.user_metadata?.is_premium
+        };
         
-        if (!isAuthenticated) {
-          return { isAuthenticated: false, user: null, isPremium: false };
-        }
-        
-        // If we have basic auth, now get full user info
+        // Try to get more user details, but with a fallback
         try {
-          // Use API function to get user with auth state
-          const authCheckPromise = getUserWithAuthState();
-          const fullAuthState = await Promise.race([authCheckPromise, timeout]);
+          // Use a shorter timeout for the enhanced user data
+          const userDataPromise = supabase
+            .from('users')
+            .select('id, username, profile_picture, is_premium')
+            .eq('id', data.session.user.id)
+            .single();
+            
+          const timeoutPromise = new Promise<null>((_, reject) => 
+            setTimeout(() => reject(new Error("User details fetch timeout")), 2000)
+          );
           
-          console.log('Auth check complete:', {
-            isAuthenticated: fullAuthState.isAuthenticated,
-            username: fullAuthState.user?.username || 'No username',
-            isPremium: fullAuthState.isPremium
-          });
-          
-          return fullAuthState;
-        } catch (apiError) {
-          console.error("Full auth check failed:", apiError);
-          
-          // Fallback to basic auth info with no premium
-          return { 
-            isAuthenticated: true, 
-            user: data.session.user,
-            isPremium: false
+          // Race the promises
+          const { data: userData } = await Promise.race([userDataPromise, timeoutPromise])
+            .catch(() => ({ data: null }));
+            
+          // Use enhanced user data if available, otherwise fall back to basic user
+          const enhancedUser = userData 
+            ? {
+                id: data.session.user.id,
+                email: data.session.user.email,
+                username: userData.username || basicUser.username,
+                profile_picture: userData.profile_picture || null,
+                is_premium: !!userData.is_premium
+              }
+            : basicUser;
+            
+          return {
+            isAuthenticated: true,
+            user: enhancedUser,
+            isPremium: enhancedUser.is_premium
+          };
+        } catch (detailsError) {
+          console.warn('Failed to get enhanced user details:', detailsError);
+          // Fall back to basic user info
+          return {
+            isAuthenticated: true,
+            user: basicUser,
+            isPremium: basicUser.is_premium
           };
         }
-      } catch (authError) {
-        console.error("Direct auth check failed:", authError);
-        return { isAuthenticated: false, user: null, isPremium: false };
+      } catch (sessionError) {
+        console.error('Session check error:', sessionError);
+        return defaultState;
       }
     } catch (err) {
-      console.error("Auth check failed:", err);
+      console.error("Auth check critical error:", err);
       return { isAuthenticated: false, user: null, isPremium: false };
     }
-  }, []);
+  }, [supabase.auth]);  
 
   // Use the visibility-aware loading hook with safety timeout
   const { 

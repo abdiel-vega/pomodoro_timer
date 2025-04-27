@@ -146,22 +146,33 @@ export async function getUserWithAuthState() {
 export async function getTasks(): Promise<Task[]> {
   const supabase = getSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error('User not authenticated');
+    if (!user) {
+      // Return empty array instead of throwing an error for unauthenticated users
+      console.log('getTasks: No authenticated user, returning empty task list');
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching tasks:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Error in getTasks:', err);
+    return []; // Return empty array on any error
   }
-
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
 }
 
 export async function getTaskById(taskId: string): Promise<Task> {

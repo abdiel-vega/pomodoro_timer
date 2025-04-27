@@ -196,49 +196,46 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   // Function to refresh user settings, including premium status
   const refreshUserSettings = useCallback(async () => {
     try {
-      // Apply timeout to prevent hanging
-      const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("User settings refresh timeout")), 3000)
-      );
+      console.log('Refreshing user settings...');
       
-      // Refresh premium status first
-      await Promise.race([refreshPremium(), timeout])
-        .catch(err => console.warn('Premium refresh timeout:', err));
+      // Get current auth user
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // Get user settings with timeout
-      const getSettingsPromise = async () => {
-        try {
-          const userSettings = await getUserSettings();
-          if (userSettings) {
-            setSettings(userSettings);
-          }
-        } catch (settingsErr) {
-          console.error('Failed to get user settings:', settingsErr);
-        }
-      };
+      if (!user) {
+        console.log('No authenticated user, setting non-premium status');
+        setIsPremium(false);
+        return;
+      }
       
-      // Race against timeout and wait for completion
-      await Promise.race([getSettingsPromise(), timeout]);
+      console.log('Checking premium status for user:', user.id);
+      
+      // Directly check premium status in DB
+      const { data, error } = await supabase
+        .from('users')
+        .select('is_premium, settings')
+        .eq('id', user.id)
+        .single();
+        
+      if (error) {
+        console.error('Error checking premium status:', error);
+        return;
+      }
+      
+      // Update settings if available
+      if (data?.settings) {
+        console.log('Updating settings from DB');
+        setSettings(data.settings);
+      }
+      
+      // Update premium status
+      const isPremiumValue = !!data?.is_premium;
+      console.log('Setting premium status to:', isPremiumValue);
+      setIsPremium(isPremiumValue);
+      
     } catch (error) {
       console.error('Failed to refresh user settings:', error);
     }
-  }, [refreshPremium]);
-
-  // Set up auth listener for premium status sync
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string) => {
-        console.log('Auth state changed in context:', event);
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          refreshPremium();
-        } else if (event === 'SIGNED_OUT') {
-          setIsPremium(false);
-        }
-      }
-    );
-    
-    return () => subscription.unsubscribe();
-  }, [refreshPremium, supabase.auth]);
+  }, [supabase]);  
   
   // Load premium status on initialization
   useEffect(() => {
