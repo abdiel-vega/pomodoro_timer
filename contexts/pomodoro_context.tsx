@@ -110,29 +110,65 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   // Function to check premium status using the visibility-aware hook
   const checkPremiumStatus = useCallback(async () => {
     try {
-      // Apply timeout to prevent hanging
+      // Apply longer timeout to prevent hanging
       const timeout = new Promise<boolean>((_, reject) => 
-        setTimeout(() => reject(new Error("Premium status check timeout")), 3000)
+        setTimeout(() => reject(new Error("Premium status check timeout")), 5000)
       );
       
       const checkPremiumPromise = async () => {
+        // Get current auth status
         const { data: { user } } = await supabase.auth.getUser();
         
-        if (user) {
-          console.log('User authenticated, checking premium status');
-          const { data } = await supabase
+        if (!user) {
+          console.log('No authenticated user found, returning non-premium status');
+          return false;
+        }
+        
+        console.log('User authenticated, checking premium status for:', user.id);
+        
+        // Try multiple approaches to get premium status
+        try {
+          // Method 1: Check users table (most reliable)
+          const { data, error } = await supabase
             .from('users')
-            .select('is_premium, settings')
+            .select('is_premium, settings, premium_purchased_at')
             .eq('id', user.id)
             .single();
             
-          // If we have user settings, update them
-          if (data?.settings) {
-            setSettings(data.settings);
+          if (error) {
+            console.warn('Error fetching user data:', error);
+          } else {
+            // If we have user settings, update them
+            if (data?.settings) {
+              setSettings(data.settings);
+            }
+            
+            const isPremiumValue = !!data?.is_premium;
+            console.log('Premium status from database:', isPremiumValue, 
+              data?.premium_purchased_at ? 
+                `(purchased at ${new Date(data.premium_purchased_at).toLocaleString()})` : 
+                '(no purchase date)'
+            );
+            
+            return isPremiumValue;
           }
-          
-          return !!data?.is_premium;
+        } catch (dbError) {
+          console.error('DB query error:', dbError);
         }
+        
+        // Method 2: Try user metadata as fallback
+        try {
+          const isPremiumMetadata = !!user.user_metadata?.is_premium;
+          if (isPremiumMetadata) {
+            console.log('Using premium status from user metadata:', isPremiumMetadata);
+            return isPremiumMetadata;
+          }
+        } catch (metadataError) {
+          console.warn('Error checking metadata:', metadataError);
+        }
+        
+        // Default to false if all other methods fail
+        console.log('All premium status checks failed, defaulting to non-premium');
         return false;
       };
       
@@ -142,7 +178,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to check premium status:', error);
       return false;
     }
-  }, []);  
+  }, []);
 
   // Use the visibility-aware loading hook for premium status
   const { 

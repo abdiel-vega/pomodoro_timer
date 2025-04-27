@@ -45,14 +45,16 @@ export default function UserProfile({ user }: UserProfileProps) {
   // Define profile fetch function using api.ts
   const fetchProfileData = useCallback(async () => {
     try {
+      // Always ensure we have user ID before making API call
       if (!user?.id) {
-        // Set safe defaults
+        console.warn('No user ID available for profile fetch');
+        // Set safe defaults from the user prop
         return {
           id: '',
           email: user?.email || '',
-          username: user?.username || null,
+          username: user?.username || 'User',
           profile_picture: user?.profile_picture || null,
-          is_premium: user?.is_premium || false,
+          is_premium: !!user?.is_premium,
           total_focus_time: 0,
           completed_tasks_count: 0,
           created_at: '',
@@ -60,37 +62,52 @@ export default function UserProfile({ user }: UserProfileProps) {
         };
       }
       
+      // First check if we already have premium status in the user object
+      const initialIsPremium = !!user.is_premium;
+      
+      console.log('Fetching profile data for user:', user.id, 'Initial premium status:', initialIsPremium);
+      
       // Use timeout to prevent hanging
       const timeout = new Promise<any>((_, reject) => 
         setTimeout(() => reject(new Error("Profile data timeout")), 3000)
       );
       
       // Get profile data with timeout
-      return await Promise.race([getUserProfile(), timeout])
-        .catch(err => {
-          console.warn('Profile fetch timeout or error:', err);
-          // Create fallback data from user prop
-          return {
-            id: user.id,
-            email: user.email || '',
-            username: user.username || null,
-            profile_picture: user.profile_picture || null,
-            is_premium: user.is_premium || false,
-            total_focus_time: user.total_focus_time || 0,
-            completed_tasks_count: user.completed_tasks_count || 0,
-            created_at: '',
-            updated_at: ''
-          };
-        });
+      try {
+        const profileData = await Promise.race([getUserProfile(), timeout]);
+        
+        // Log the result for debugging
+        console.log('Profile data fetched successfully:', 
+          profileData ? {
+            username: profileData.username,
+            isPremium: profileData.is_premium
+          } : 'null');
+          
+        return profileData;
+      } catch (err) {
+        console.warn('Profile fetch timeout or error:', err);
+        // Create comprehensive fallback data from user prop
+        return {
+          id: user.id,
+          email: user.email || '',
+          username: user.username || 'User',
+          profile_picture: user.profile_picture || null,
+          is_premium: initialIsPremium, // Use the value we already had
+          total_focus_time: user.total_focus_time || 0,
+          completed_tasks_count: user.completed_tasks_count || 0,
+          created_at: '',
+          updated_at: ''
+        };
+      }
     } catch (error) {
       console.error('Error in fetchProfileData:', error);
-      // Safe fallback using prop data
+      // Safe fallback using prop data with defaults for required fields
       return {
         id: user?.id || '',
         email: user?.email || '',
-        username: user?.username || null,
+        username: user?.username || 'User',
         profile_picture: user?.profile_picture || null,
-        is_premium: user?.is_premium || false,
+        is_premium: !!user?.is_premium,
         total_focus_time: 0,
         completed_tasks_count: 0,
         created_at: '',

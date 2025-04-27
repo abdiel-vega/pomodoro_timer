@@ -64,16 +64,54 @@ export default function RootLayout({
   // Define the auth check function for the visibility-aware hook
   const checkAuthStatus = useCallback(async (): Promise<AuthState> => {
     try {
-      // Apply timeout to prevent hanging
+      // Apply timeout to prevent hanging but with a longer timeout
       const timeout = new Promise<AuthState>((_, reject) => 
-        setTimeout(() => reject(new Error("Auth check timeout")), 3000)
+        setTimeout(() => reject(new Error("Auth check timeout")), 5000)
       );
       
-      // Use API function to get user with auth state
-      const authCheckPromise = getUserWithAuthState();
-      
-      // Race the promises to handle timeout
-      return await Promise.race([authCheckPromise, timeout]);
+      // First try to get basic auth state directly from Supabase
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.warn('Session error:', error);
+          return { isAuthenticated: false, user: null, isPremium: false };
+        }
+        
+        const isAuthenticated = !!data?.session;
+        console.log('Auth check: User authenticated =', isAuthenticated);
+        
+        if (!isAuthenticated) {
+          return { isAuthenticated: false, user: null, isPremium: false };
+        }
+        
+        // If we have basic auth, now get full user info
+        try {
+          // Use API function to get user with auth state
+          const authCheckPromise = getUserWithAuthState();
+          const fullAuthState = await Promise.race([authCheckPromise, timeout]);
+          
+          console.log('Auth check complete:', {
+            isAuthenticated: fullAuthState.isAuthenticated,
+            username: fullAuthState.user?.username || 'No username',
+            isPremium: fullAuthState.isPremium
+          });
+          
+          return fullAuthState;
+        } catch (apiError) {
+          console.error("Full auth check failed:", apiError);
+          
+          // Fallback to basic auth info with no premium
+          return { 
+            isAuthenticated: true, 
+            user: data.session.user,
+            isPremium: false
+          };
+        }
+      } catch (authError) {
+        console.error("Direct auth check failed:", authError);
+        return { isAuthenticated: false, user: null, isPremium: false };
+      }
     } catch (err) {
       console.error("Auth check failed:", err);
       return { isAuthenticated: false, user: null, isPremium: false };

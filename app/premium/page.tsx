@@ -23,44 +23,74 @@ export default function PremiumPage() {
   const fetchPremiumStatus = useCallback(async () => {
     console.log('Fetching premium status');
     try {
-      // Apply timeout to prevent hanging
-      const timeout = new Promise<any>((_, reject) => 
-        setTimeout(() => reject(new Error("Premium status timeout")), 3500)
+      // Apply longer timeout to prevent hanging
+      const timeout = new Promise<boolean>((_, reject) => 
+        setTimeout(() => reject(new Error("Premium status timeout")), 5000)
       );
       
-      // Refresh user settings first with timeout
-      const refreshPromise = refreshUserSettings();
-      await Promise.race([refreshPromise, timeout])
-        .catch(() => console.warn('Settings refresh timed out'));
+      // Try to get current premium status from context first
+      const currentIsPremium = isPremium;
+      console.log('Current premium status from context:', currentIsPremium);
       
-      // Get auth status with timeout
-      const authPromise = supabase.auth.getUser();
-      const authResult = await Promise.race([authPromise, timeout])
-        .catch(() => ({ data: { user: null } }));
-      
-      if (!authResult.data.user) {
-        return false; // Not premium if not authenticated
+      // First check auth status directly
+      let userId = '';
+      try {
+        const { data } = await supabase.auth.getUser();
+        userId = data.user?.id || '';
+        console.log('Auth check: User ID:', userId ? userId : 'Not authenticated');
+        
+        if (!userId) {
+          console.log('No authenticated user found, returning non-premium status');
+          return false;
+        }
+      } catch (authError) {
+        console.error('Auth check failed:', authError);
+        // Fall back to context value if auth check fails
+        return currentIsPremium;
       }
       
-      // Get premium status with timeout
-      const statusPromise = supabase
-        .from('users')
-        .select('is_premium')
-        .eq('id', authResult.data.user.id)
-        .single();
+      // If we have a user ID, directly check premium status
+      try {
+        console.log('Checking premium status for user:', userId);
+        const { data, error } = await supabase
+          .from('users')
+          .select('is_premium, premium_purchased_at')
+          .eq('id', userId)
+          .single();
+          
+        if (error) {
+          console.error('DB query error:', error);
+          return currentIsPremium;
+        }
         
-      const statusResult = await Promise.race([statusPromise, timeout])
-        .catch(() => ({ data: null }));
-      
-      // Return premium status or false if fetch failed
-      return !!statusResult?.data?.is_premium;
+        const dbIsPremium = !!data?.is_premium;
+        console.log('Premium status from database:', dbIsPremium, 
+          data?.premium_purchased_at ? 
+            `(purchased at ${new Date(data.premium_purchased_at).toLocaleString()})` : 
+            '(no purchase date)'
+        );
+        
+        // If there's a discrepancy between context and DB, refresh settings
+        if (dbIsPremium !== currentIsPremium) {
+          console.log('Premium status mismatch between context and DB. Refreshing settings...');
+          try {
+            await refreshUserSettings();
+          } catch (refreshError) {
+            console.warn('Settings refresh failed:', refreshError);
+          }
+        }
+        
+        return dbIsPremium;
+      } catch (dbError) {
+        console.error('Failed to query premium status:', dbError);
+        return currentIsPremium;
+      }
     } catch (error) {
       console.error('Failed to check premium status:', error);
       // Return current state from context as fallback
       return isPremium;
     }
   }, [refreshUserSettings, supabase, isPremium]);
-  
   
   // Use the hook
   const { 
