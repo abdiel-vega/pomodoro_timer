@@ -65,6 +65,23 @@ export function useVisibilityAwareLoading<T>(
       setIsLoading(true);
     }
 
+    // Try to get data from localStorage first as a quick fallback
+    let cachedData = null;
+    try {
+      // Create a cache key based on the function name or a provided key
+      const cacheKey = `cache_${loadDataFn.name || 'data'}_${Date.now() % 86400000}`;
+      const cachedItem = localStorage.getItem(cacheKey);
+      if (cachedItem) {
+        cachedData = JSON.parse(cachedItem);
+        // If we're already loading and have cached data, use it immediately
+        if (isLoading && cachedData) {
+          setData(cachedData);
+        }
+      }
+    } catch (cacheErr) {
+      console.warn('Error accessing cache:', cacheErr);
+    }
+
     // Ensure Supabase client is ready
     try {
       const requestId = Date.now();
@@ -73,8 +90,17 @@ export function useVisibilityAwareLoading<T>(
       // Safety timeout to prevent infinite loading
       loadingTimeoutRef.current = setTimeout(() => {
         if (isMountedRef.current && activeRequestRef.current === requestId) {
-          console.warn('Loading timeout reached. Forcing completion.');
+          console.warn(
+            'Loading timeout reached. Using cached data if available.'
+          );
           setIsLoading(false);
+
+          // If we have cached data and the request timed out, use the cached data
+          if (cachedData && !data) {
+            setData(cachedData);
+            setError(new Error('Loading timeout - using cached data'));
+          }
+
           forceUpdate(); // Force a re-render
         }
       }, loadingTimeout);
@@ -87,6 +113,14 @@ export function useVisibilityAwareLoading<T>(
         setData(result);
         setError(null);
         setIsLoading(false);
+
+        // Cache successful result for future fallbacks
+        try {
+          const cacheKey = `cache_${loadDataFn.name || 'data'}_${Date.now() % 86400000}`;
+          localStorage.setItem(cacheKey, JSON.stringify(result));
+        } catch (cacheErr) {
+          console.warn('Error caching data:', cacheErr);
+        }
 
         // Force an update after a short delay to ensure rendering
         setTimeout(() => {
@@ -101,6 +135,13 @@ export function useVisibilityAwareLoading<T>(
       if (isMountedRef.current) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsLoading(false);
+
+        // If we have cached data and the request failed, use it as fallback
+        if (cachedData && !data) {
+          setData(cachedData);
+          console.log('Using cached data as fallback after fetch error');
+        }
+
         forceUpdate(); // Force a re-render
       }
     } finally {
@@ -110,18 +151,6 @@ export function useVisibilityAwareLoading<T>(
       }
     }
   }, [loadDataFn, data, isLoading, loadingTimeout, forceUpdate]);
-
-  // Initial data loading effect
-  useEffect(() => {
-    loadData();
-
-    return () => {
-      isMountedRef.current = false;
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-    };
-  }, [loadData]);
 
   // Tab visibility effect
   useEffect(() => {

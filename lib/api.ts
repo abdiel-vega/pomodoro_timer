@@ -1,6 +1,7 @@
 // lib/api.ts
 import { getSupabaseClient } from './supabase';
 import { Task, UserSettings, Session, User } from '@/types/database';
+import { executeWithTimeout } from './supabase';
 
 // Default settings for new users
 const DEFAULT_SETTINGS: UserSettings = {
@@ -152,22 +153,25 @@ export async function getTasks(): Promise<Task[]> {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      // Return empty array instead of throwing an error for unauthenticated users
       console.log('getTasks: No authenticated user, returning empty task list');
       return [];
     }
 
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    // Use the timeout helper
+    const { data, error } = await executeWithTimeout(
+      supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+      4000 // 4 second timeout
+    );
 
     if (error) {
       console.error('Error fetching tasks:', error);
       return [];
     }
-    
+
     return data || [];
   } catch (err) {
     console.error('Error in getTasks:', err);

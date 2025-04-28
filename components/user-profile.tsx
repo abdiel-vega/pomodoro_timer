@@ -168,15 +168,30 @@ export default function UserProfile({ user }: UserProfileProps) {
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
-      await signOut();
+      
+      // Add timeout for sign out
+      const signOutPromise = signOut();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => {
+          console.warn('Sign out timeout - forcing page refresh');
+          // Force a page refresh even if the sign out times out
+          window.location.href = '/sign-in';
+        }, 3000)
+      );
+      
+      // Race the sign out with timeout
+      await Promise.race([signOutPromise, timeoutPromise]);
+      
       router.refresh();
       router.push('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
+      // Even if there's an error, redirect to sign-in
+      router.push('/sign-in');
     } finally {
       setIsSigningOut(false);
     }
-  };
+  };  
   
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);

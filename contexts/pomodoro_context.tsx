@@ -112,7 +112,10 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     try {
       // Apply longer timeout to prevent hanging
       const timeout = new Promise<boolean>((_, reject) => 
-        setTimeout(() => reject(new Error("Premium status check timeout")), 5000)
+        setTimeout(() => {
+          console.warn("Premium status check timeout - defaulting to previous state");
+          return isPremium; // Return current state on timeout instead of rejecting
+        }, 5000)
       );
       
       const checkPremiumPromise = async () => {
@@ -156,29 +159,22 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           console.error('DB query error:', dbError);
         }
         
-        // Method 2: Try user metadata as fallback
-        try {
-          const isPremiumMetadata = !!user.user_metadata?.is_premium;
-          if (isPremiumMetadata) {
-            console.log('Using premium status from user metadata:', isPremiumMetadata);
-            return isPremiumMetadata;
-          }
-        } catch (metadataError) {
-          console.warn('Error checking metadata:', metadataError);
-        }
-        
-        // Default to false if all other methods fail
-        console.log('All premium status checks failed, defaulting to non-premium');
-        return false;
+        // Fallback to current state
+        return isPremium;
       };
       
-      // Race the promises to handle timeout
-      return await Promise.race([checkPremiumPromise(), timeout]);
+      // Race the promises but with a fallback to current state
+      try {
+        return await Promise.race([checkPremiumPromise(), timeout]);
+      } catch (raceError) {
+        console.error('Premium status race error:', raceError);
+        return isPremium; // Fallback to current state
+      }
     } catch (error) {
       console.error('Failed to check premium status:', error);
-      return false;
+      return isPremium; // Return current state on any error
     }
-  }, []);
+  }, [isPremium, supabase.auth, supabase]);  
 
   // Use the visibility-aware loading hook for premium status
   const { 
@@ -355,7 +351,13 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     // If we have an active session, complete it
     if (currentSessionId.current) {
       try {
-        await completeSession(currentSessionId.current);
+        // Add a timeout to prevent hanging on session completion
+        const completePromise = completeSession(currentSessionId.current);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Session completion timeout")), 5000)
+        );
+        
+        await Promise.race([completePromise, timeoutPromise]);
         currentSessionId.current = null;
         
         // Only record focus time if this was a work session
@@ -370,6 +372,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Failed to complete session:', error);
+        // IMPORTANT: Reset the session ID even if the completion fails
+        currentSessionId.current = null;
       }
     }  
 
@@ -631,6 +635,18 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         }, 10);
       }
     }
+
+    useEffect(() => {
+      return () => {
+        // Cleanup function - runs when component unmounts
+        if (currentSessionId.current && timerState === 'running') {
+          // Try to close any running session
+          completeSession(currentSessionId.current).catch(err => {
+            console.error('Failed to complete session on unmount:', err);
+          });
+        }
+      };
+    }, []);    
     
     return () => {
       // Only clean up if deep focus mode was on
