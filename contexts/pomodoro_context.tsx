@@ -636,17 +636,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    useEffect(() => {
-      return () => {
-        // Cleanup function - runs when component unmounts
-        if (currentSessionId.current && timerState === 'running') {
-          // Try to close any running session
-          completeSession(currentSessionId.current).catch(err => {
-            console.error('Failed to complete session on unmount:', err);
-          });
-        }
-      };
-    }, []);    
     
     return () => {
       // Only clean up if deep focus mode was on
@@ -703,6 +692,19 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [deepFocusMode, isPremium]);
+
+  useEffect(() => {
+    // Cleanup function for running sessions
+    return () => {
+      // Runs when component unmounts
+      if (currentSessionId.current && timerState === 'running') {
+        // Try to close any running session
+        completeSession(currentSessionId.current).catch(err => {
+          console.error('Failed to complete session on unmount:', err);
+        });
+      }
+    };
+  }, [timerState]);  
 
   const value: PomodoroContextType = {
     timerState,
