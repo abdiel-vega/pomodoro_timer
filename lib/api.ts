@@ -26,18 +26,35 @@ export async function getUserSettings(): Promise<UserSettings> {
     return DEFAULT_SETTINGS;
   }
 
-  const { data, error } = await supabase
-    .from('users')
-    .select('settings')
-    .eq('id', user.id)
-    .single();
+  try {
+    const query = supabase
+      .from('users')
+      .select('settings')
+      .eq('id', user.id)
+      .single();
 
-  if (error) {
-    console.error('Failed to get user settings:', error);
+    // Apply timeout to the promise from the query with proper type assertion
+    const result = (await executeWithTimeout(
+      query as unknown as Promise<{
+        data: { settings: UserSettings } | null;
+        error: any;
+      }>,
+      4000
+    )) as {
+      data: { settings: UserSettings } | null;
+      error: any;
+    };
+
+    if (result.error) {
+      console.error('Failed to get user settings:', result.error);
+      return DEFAULT_SETTINGS;
+    }
+
+    return (result.data?.settings as UserSettings) || DEFAULT_SETTINGS;
+  } catch (error) {
+    console.error('Settings fetch timeout or error:', error);
     return DEFAULT_SETTINGS;
   }
-
-  return (data?.settings as UserSettings) || DEFAULT_SETTINGS;
 }
 
 export async function updateUserSettings(
@@ -157,22 +174,28 @@ export async function getTasks(): Promise<Task[]> {
       return [];
     }
 
-    // Use the timeout helper
-    const { data, error } = await executeWithTimeout(
-      supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false }),
-      4000 // 4 second timeout
-    );
+    // Fix for the timeout implementation
+    const query = supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching tasks:', error);
+    // Apply timeout to the promise from the query with proper type assertion
+    const result = (await executeWithTimeout(
+      query as unknown as Promise<{ data: Task[] | null; error: any }>,
+      4000
+    )) as {
+      data: Task[] | null;
+      error: any;
+    }; // 4 second timeout
+
+    if (result.error) {
+      console.error('Error fetching tasks:', result.error);
       return [];
     }
 
-    return data || [];
+    return result.data || [];
   } catch (err) {
     console.error('Error in getTasks:', err);
     return []; // Return empty array on any error
@@ -268,22 +291,35 @@ export async function toggleTaskCompletion(taskId: string): Promise<Task> {
 export async function getSessions(): Promise<Session[]> {
   const supabase = getSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error('User not authenticated');
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    const query = supabase
+      .from('sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('started_at', { ascending: false });
+
+    const result = (await executeWithTimeout(
+      query as unknown as Promise<{ data: Session[] | null; error: any }>,
+      4000
+    )) as {
+      data: Session[] | null;
+      error: any;
+    };
+
+    if (result.error) throw result.error;
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    return []; // Return empty array as a fallback
   }
-
-  const { data, error } = await supabase
-    .from('sessions')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('started_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
 }
 
 export async function getSessionById(sessionId: string): Promise<Session> {
@@ -381,14 +417,18 @@ export async function getUserProfile(): Promise<User> {
       throw new Error('User not authenticated');
     }
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    const query = supabase.from('users').select('*').eq('id', user.id).single();
 
-    if (error) throw error;
-    return data as User;
+    const result = (await executeWithTimeout(
+      query as unknown as Promise<{ data: Session[] | null; error: any }>,
+      4000
+    )) as {
+      data: User | null;
+      error: any;
+    };
+
+    if (result.error) throw result.error;
+    return result.data as User;
   } catch (error) {
     console.error('Error in getUserProfile:', error);
     // Re-throw to allow caller to handle
@@ -476,40 +516,58 @@ export async function searchUsers(username: string) {
 export async function getFriends() {
   const supabase = getSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error('User not authenticated');
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Get friend IDs with timeout
+    const friendIdsQuery = supabase
+      .from('user_friends')
+      .select('friend_id')
+      .eq('user_id', user.id);
+
+    const friendIdsResult = (await executeWithTimeout(
+      friendIdsQuery as unknown as Promise<{ data: any[]; error: any }>,
+      3000
+    )) as { data: any[]; error: any };
+
+    if (friendIdsResult.error) throw friendIdsResult.error;
+
+    if (!friendIdsResult.data || friendIdsResult.data.length === 0) {
+      return [];
+    }
+
+    // Get friend details with timeout
+    const friendIdArray = friendIdsResult.data.map(
+      (row: { friend_id: string }) => row.friend_id
+    );
+
+    const friendsQuery = supabase
+      .from('users')
+      .select(
+        'id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium'
+      )
+      .in('id', friendIdArray);
+
+    const friendsResult = (await executeWithTimeout(
+      friendsQuery as unknown as Promise<{ data: any; error: any }>,
+      3000
+    )) as {
+      data: any;
+      error: any;
+    };
+
+    if (friendsResult.error) throw friendsResult.error;
+    return friendsResult.data || [];
+  } catch (error) {
+    console.error('Error fetching friends:', error);
+    return []; // Return empty array as fallback
   }
-
-  // Get friend IDs
-  const { data: friendIds, error: friendError } = await supabase
-    .from('user_friends')
-    .select('friend_id')
-    .eq('user_id', user.id);
-
-  if (friendError) throw friendError;
-
-  if (!friendIds || friendIds.length === 0) {
-    return [];
-  }
-
-  // Get friend details
-  const friendIdArray = friendIds.map(
-    (row: { friend_id: string }) => row.friend_id
-  );
-
-  const { data: friends, error } = await supabase
-    .from('users')
-    .select(
-      'id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium'
-    )
-    .in('id', friendIdArray);
-
-  if (error) throw error;
-  return friends || [];
 }
 
 export async function sendFriendRequest(recipientId: string) {
@@ -789,66 +847,91 @@ export async function recordFocusSession(durationSeconds: number) {
 export async function getLeaderboardData() {
   const supabase = getSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
 
-  // Get top focus time users
-  const { data: focusLeaders, error: focusError } = await supabase
-    .from('users')
-    .select(
-      'id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium'
-    )
-    .order('total_focus_time', { ascending: false })
-    .limit(10);
-
-  if (focusError) throw focusError;
-
-  // Get top task completers
-  const { data: taskLeaders, error: taskError } = await supabase
-    .from('users')
-    .select(
-      'id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium'
-    )
-    .order('completed_tasks_count', { ascending: false })
-    .limit(10);
-
-  if (taskError) throw taskError;
-
-  // Get friend IDs for friend leaderboard
-  const { data: friendIds, error: friendError } = await supabase
-    .from('user_friends')
-    .select('friend_id')
-    .eq('user_id', user.id);
-
-  if (friendError) throw friendError;
-
-  let friendLeaders = [];
-  if (friendIds && friendIds.length > 0) {
-    const friendIdArray = friendIds.map(
-      (row: { friend_id: string }) => row.friend_id
-    );
-
-    // Get friend leaderboard data
-    const { data: friends, error: friendsError } = await supabase
+    // Get top focus time users with timeout
+    const focusQuery = supabase
       .from('users')
       .select(
         'id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium'
       )
-      .in('id', friendIdArray)
-      .order('total_focus_time', { ascending: false });
+      .order('total_focus_time', { ascending: false })
+      .limit(10);
 
-    if (friendsError) throw friendsError;
-    friendLeaders = friends || [];
+    const focusResult = (await executeWithTimeout(
+      focusQuery as unknown as Promise<{ data: any; error: any }>,
+      3000
+    )) as {
+      data: any;
+      error: any;
+    };
+
+    if (focusResult.error) throw focusResult.error;
+
+    // Get top task completers with timeout
+    const taskQuery = supabase
+      .from('users')
+      .select(
+        'id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium'
+      )
+      .order('completed_tasks_count', { ascending: false })
+      .limit(10);
+
+    const taskResult = (await executeWithTimeout(
+      taskQuery as unknown as Promise<{ data: any; error: any }>,
+      3000
+    )) as {
+      data: any;
+      error: any;
+    };
+
+    if (taskResult.error) throw taskResult.error;
+
+    // Get friend IDs for friend leaderboard
+    const { data: friendIds, error: friendError } = await supabase
+      .from('user_friends')
+      .select('friend_id')
+      .eq('user_id', user.id);
+
+    if (friendError) throw friendError;
+
+    let friendLeaders = [];
+    if (friendIds && friendIds.length > 0) {
+      const friendIdArray = friendIds.map(
+        (row: { friend_id: string }) => row.friend_id
+      );
+
+      // Get friend leaderboard data
+      const { data: friends, error: friendsError } = await supabase
+        .from('users')
+        .select(
+          'id, username, profile_picture, total_focus_time, completed_tasks_count, streak_days, is_premium'
+        )
+        .in('id', friendIdArray)
+        .order('total_focus_time', { ascending: false });
+
+      if (friendsError) throw friendsError;
+      friendLeaders = friends || [];
+    }
+
+    return {
+      focusLeaders: focusResult.data || [],
+      taskLeaders: taskResult.data || [],
+      // Include friend leaders...
+    };
+  } catch (error) {
+    console.error('Error fetching leaderboard data:', error);
+    return {
+      focusLeaders: [],
+      taskLeaders: [],
+      friendLeaders: [],
+    };
   }
-
-  return {
-    focusLeaders: focusLeaders || [],
-    taskLeaders: taskLeaders || [],
-    friendLeaders,
-  };
 }
